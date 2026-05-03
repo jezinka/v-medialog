@@ -380,6 +380,13 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
                   placeholder="URL okładki"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
                 />
+                <textarea
+                  value={createForm.description}
+                  onChange={(e) => setCreateForm((f) => ({ ...f, description: e.target.value }))}
+                  placeholder="Opis"
+                  rows={3}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none resize-none"
+                />
                 <input
                   type="number"
                   value={createForm.universe_id}

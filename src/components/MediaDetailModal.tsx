@@ -521,6 +521,7 @@ export default function MediaDetailModal({ item, onClose, onRefresh }: Props) {
             tags: item.tagList?.map((t) => t.name).join(", ") ?? item.tags ?? "",
             discontinued: item.discontinued ?? false,
             cover_url: item.coverUrl ?? "",
+            description: item.description ?? "",
             additional_sessions: item.additionalSessions ?? "",
             tmdb_id: item.tmdbId ? String(item.tmdbId) : "",
             ol_key: item.olKey ?? "",
