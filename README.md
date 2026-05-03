@@ -22,21 +22,14 @@ npm run dev        # http://localhost:5000
 - Docker + docker compose plugin
 - SSH dostęp (najlepiej przez klucz)
 
-### Migracja serwer → serwer (gotowy obraz Docker + baza)
+### Migracja serwer → serwer (manualna)
 
-Jeśli app już działa na starym serwerze i chcesz przenieść wszystko na nowy:
+Jeśli aplikacja już działa na starym serwerze i chcesz przenieść dane na nowy serwer, wykonaj ręczną migrację:
 
-```bash
-# Uruchom lokalnie z katalogu projektu
-./scripts/server-to-server.sh user@stary-serwer.com user@nowy-serwer.com
-# domyślnie używa ~/medialog na obu serwerach; możesz podać inny katalog jako 3. argument
-```
-
-Skrypt automatycznie:
-1. Eksportuje obraz Docker ze starego serwera
-2. Przesyła go strumieniowo na nowy serwer (`docker save | docker load`)
-3. Kopiuje bazę danych SQLite
-4. Uruchamia kontener na nowym serwerze
+- Eksport obrazu Docker na źródłowym serwerze (`docker save`) i zaimportowanie na serwerze docelowym (`docker load`),
+- Skopiowanie pliku bazy danych SQLite (`/data/medialog.db`) na serwer docelowy,
+- Skopiowanie pliku `docker-compose.yml` oraz pliku `.env` na serwer docelowy,
+- Uruchomienie kontenera na serwerze docelowym (`docker compose up -d`).
 
 ### Pierwsze uruchomienie (budowanie od zera)
 
@@ -75,9 +68,6 @@ VPS
 │   ├── .env
 │   └── data/
 │       └── medialog.db     ← baza SQLite (wolumen Docker)
-│
-├── /opt/life-admin/        ← port 5001 (przyszły projekt)
-└── /opt/life-events/       ← port 5002 (przyszły projekt)
 ```
 
 Każdy projekt to osobne repozytorium z własnym `docker-compose.yml` i własną bazą danych. Deployowane niezależnie.
@@ -89,6 +79,5 @@ Każdy projekt to osobne repozytorium z własnym `docker-compose.yml` i własną
 | Zmienna | Opis |
 |---|---|
 | `TMDB_API_KEY` | Klucz API do The Movie Database |
-| `GOOGLE_BOOKS_API_KEY` | Klucz API do Google Books |
 | `DATABASE_URL` | Ścieżka do pliku SQLite (domyślnie `/data/medialog.db`) |
 

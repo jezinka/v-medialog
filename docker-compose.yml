@@ -11,7 +11,6 @@ services:
       - DATABASE_URL=/data/medialog.db
       - NODE_ENV=production
       - TMDB_API_KEY=${TMDB_API_KEY}
-      - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY}
     restart: unless-stopped
 volumes:
     medialog_data:

@@ -998,7 +998,7 @@ function BulkSyncTab() {
         infoData = await res.json() as TmdbInfoResponse;
       } else if (item.source === "books") {
         const res = await fetch(`/api/books/info?ol_key=${encodeURIComponent(String(candidateId))}`);
-        if (!res.ok) throw new Error("Błąd Google Books");
+        if (!res.ok) throw new Error("Błąd serwisu książek");
         infoData = await res.json() as BookInfoResponse;
       } else if (item.source === "itunes") {
         const type = item.media_type === "podcast" ? "podcast" : "record";
@@ -1094,7 +1094,7 @@ function BulkSyncTab() {
       <div>
         <h3 className="text-sm font-semibold text-gray-800 mb-1">Masowe pobieranie opisów i okładek</h3>
         <p className="text-xs text-gray-500 mb-4">
-          Automatycznie pobiera opisy, gatunki i okładki z TMDB (filmy/seriale), Google Books (książki/komiksy) i iTunes (muzyka/podcasty).
+          Automatycznie pobiera opisy, gatunki i okładki z TMDB (filmy/seriale), lubimyczytac (książki/komiksy) i iTunes (muzyka/podcasty).
           Jeśli jest tylko jedno dopasowanie — zostaje zastosowane od razu.
         </p>
         <label className="flex items-center gap-2 text-sm text-gray-700 mb-4 cursor-pointer">
