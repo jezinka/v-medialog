@@ -5,7 +5,9 @@ import { parseTagsInput, setMediaTags, getMediaTags } from "@/lib/tags";
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const item = sqlite.prepare(`SELECT * FROM media WHERE id=?`).get(parseInt(id));
+    const item = sqlite.prepare(
+      `SELECT m.*, u.name as universe_name FROM media m LEFT JOIN universes u ON u.id = m.universe_id WHERE m.id=?`
+    ).get(parseInt(id));
     if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const seasons = sqlite.prepare(

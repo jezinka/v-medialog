@@ -7,8 +7,6 @@ import Statistics from "./Statistics";
 import AddMediaModal from "./AddMediaModal";
 import WishlistPage from "./WishlistPage";
 import ImportPage from "./ImportPage";
-import CoverGallery from "./CoverGallery";
-import UniverseView from "./UniverseView";
 import MergeMediaModal from "./MergeMediaModal";
 import MediaLibraryView from "./MediaLibraryView";
 import PeopleView from "./PeopleView";
@@ -16,7 +14,7 @@ import PersonDetailPage from "./PersonDetailPage";
 import { BOOK_TYPES, SCREEN_TYPES } from "@/lib/utils";
 import { toast } from "./Toast";
 
-type Tab = "log" | "wishlist" | "gallery" | "stats" | "import" | "library" | "media" | "people";
+type Tab = "log" | "wishlist" | "stats" | "import" | "media" | "people";
 
 export interface SessionRow {
   id: number;
@@ -111,11 +109,9 @@ interface Props {
 
 const TAB_BUTTONS: { id: Tab; icon: string; tooltip: string }[] = [
   { id: "log", icon: "/icons/icons8-library-96.png", tooltip: "Dziennik" },
-  { id: "library", icon: "/icons/icons8-books-96.png", tooltip: "Biblioteka" },
   { id: "media", icon: "/icons/icons8-tv-show-96.png", tooltip: "Media" },
   { id: "people", icon: "/icons/icons8-person-96.png", tooltip: "Ludzie" },
   { id: "wishlist", icon: "/icons/icons8-planner-96.png", tooltip: "Do obejrzenia" },
-  { id: "gallery", icon: "/icons/icons8-movie-96.png", tooltip: "Galeria" },
   { id: "stats", icon: "/icons/icons8-combo-chart-96.png", tooltip: "Statystyki" },
   { id: "import", icon: "/icons/icons8-gear-96.png", tooltip: "Import / Eksport" },
 ];
@@ -288,19 +284,7 @@ export default function MainPage({ initialYear }: Props) {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        {activeTab === "library" ? (
-          <>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setShowMerge(true)}
-                className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
-              >
-                🔗 Połącz tomy / odcinki
-              </button>
-            </div>
-            <UniverseView onItemClick={openMedia} />
-          </>
-        ) : activeTab === "media" ? (
+        {activeTab === "media" ? (
           <>
             <div className="flex justify-end">
               <button
@@ -324,8 +308,6 @@ export default function MainPage({ initialYear }: Props) {
           )
         ) : activeTab === "wishlist" ? (
           <WishlistPage />
-        ) : activeTab === "gallery" ? (
-          <CoverGallery onItemClick={openMedia} />
         ) : activeTab === "stats" ? (
           <Statistics items={calendarItems} year={year} />
         ) : activeTab === "import" ? (
@@ -338,13 +320,6 @@ export default function MainPage({ initialYear }: Props) {
               </div>
             ) : (
               <>
-                <div>
-                  <h2 className="text-base font-semibold text-gray-700 mb-3">🖼️ Okładki {year}</h2>
-                  <CoverGallery
-                    year={year}
-                    onItemClick={openMedia}
-                  />
-                </div>
                 <div className="grid lg:grid-cols-2 gap-6">
                   <Calendar
                     year={year}

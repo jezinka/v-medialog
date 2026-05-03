@@ -8,7 +8,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     if (!universe) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const media = sqlite.prepare(
-      `SELECT id, title, original_title, media_type, cover_url, release_year, discontinued FROM media WHERE universe_id=? ORDER BY title`
+      `SELECT m.id, m.title, m.original_title, m.media_type, m.cover_url, m.release_year, m.discontinued,
+              MIN(s.session_date) as first_seen
+       FROM media m
+       LEFT JOIN sessions s ON s.media_id = m.id
+       WHERE m.universe_id=?
+       GROUP BY m.id
+       ORDER BY COALESCE(m.release_year, CAST(strftime('%Y', first_seen) AS INTEGER), 9999) ASC, m.title ASC`
     ).all(parseInt(id));
 
     return NextResponse.json({ ...universe as object, media });

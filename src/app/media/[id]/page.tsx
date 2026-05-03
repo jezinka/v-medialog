@@ -15,6 +15,7 @@ export default function MediaDetailPage() {
       mediaId={mediaId}
       onClose={() => router.back()}
       onOpenPerson={(personId) => router.push(`/people/${personId}`)}
+      onOpenDetail={(id) => router.push(`/media/${id}`)}
     />
   );
 }
