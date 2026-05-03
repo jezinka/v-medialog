@@ -1,0 +1,18 @@
+services:
+  medialog:
+    build: .
+    image: medialog
+    container_name: medialog
+    ports:
+      - "10.0.0.1:5000:5000"
+    volumes:
+      - medialog_data:/data
+    environment:
+      - DATABASE_URL=/data/medialog.db
+      - NODE_ENV=production
+      - TMDB_API_KEY=${TMDB_API_KEY}
+      - GOOGLE_BOOKS_API_KEY=${GOOGLE_BOOKS_API_KEY}
+    restart: unless-stopped
+volumes:
+    medialog_data:
+        driver: local
