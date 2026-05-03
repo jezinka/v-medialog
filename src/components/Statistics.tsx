@@ -1,9 +1,13 @@
 "use client";
 import { useMemo, useState } from "react";
-import { BOOK_TYPES, SCREEN_TYPES, MONTH_NAMES, daysBetween } from "@/lib/utils";
+import { BOOK_TYPES, MONTH_NAMES } from "@/lib/utils";
+
+const MOVIE_TYPES = ["movie"];
+const SERIES_TYPES = ["series", "anime", "cartoon"];
 
 interface MediaItem {
   id: number;
+  seasonId?: number | null;
   title: string;
   author: string | null;
   mediaType: string;
@@ -28,6 +32,26 @@ function mediaOverlapsMonth(item: MediaItem, year: number, month: number): boole
   return item.startDate <= monthEnd && end >= monthStart;
 }
 
+function groupBySeason(items: MediaItem[]): MediaItem[] {
+  const map = new Map<string, MediaItem[]>();
+  for (const item of items) {
+    const key = item.seasonId != null
+      ? `s${item.seasonId}`
+      : `${item.title}__${item.mediaType}__${item.volumeEpisode ?? ""}`;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(item);
+  }
+  return Array.from(map.values()).map((group) => {
+    const first = group[0];
+    const startDate = group.reduce((min, i) => i.startDate < min ? i.startDate : min, first.startDate);
+    const allHaveEnd = group.every((i) => i.endDate != null);
+    const endDate = allHaveEnd
+      ? group.reduce((max, i) => i.endDate! > max ? i.endDate! : max, first.endDate!)
+      : null;
+    return { ...first, startDate, endDate };
+  });
+}
+
 export default function Statistics({ items, year }: Props) {
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
 
@@ -36,16 +60,16 @@ export default function Statistics({ items, year }: Props) {
     return items.filter((item) => mediaOverlapsMonth(item, year, selectedMonth));
   }, [items, year, selectedMonth]);
 
-  const books = filtered.filter((i) => BOOK_TYPES.includes(i.mediaType));
-  const screens = filtered.filter((i) => SCREEN_TYPES.includes(i.mediaType));
-  const plays = filtered.filter((i) => i.mediaType === "play");
-  const games = filtered.filter((i) => i.mediaType === "game");
-  const podcasts = filtered.filter((i) => i.mediaType === "podcast");
-  const records = filtered.filter((i) => i.mediaType === "record");
-  const cinemaMovies = filtered.filter((i) => i.mediaType === "movie" && i.cinema);
+  const grouped = useMemo(() => groupBySeason(filtered), [filtered]);
 
-  const bookDays = books.reduce((sum, i) => sum + daysBetween(i.startDate, i.endDate), 0);
-  const screenDays = screens.reduce((sum, i) => sum + daysBetween(i.startDate, i.endDate), 0);
+  const books = grouped.filter((i) => BOOK_TYPES.includes(i.mediaType));
+  const movies = grouped.filter((i) => MOVIE_TYPES.includes(i.mediaType));
+  const series = grouped.filter((i) => SERIES_TYPES.includes(i.mediaType));
+  const plays = grouped.filter((i) => i.mediaType === "play");
+  const games = grouped.filter((i) => i.mediaType === "game");
+  const podcasts = grouped.filter((i) => i.mediaType === "podcast");
+  const records = grouped.filter((i) => i.mediaType === "record");
+  const cinemaMovies = movies.filter((i) => i.cinema);
 
   return (
     <div className="bg-white rounded-2xl shadow border border-gray-100 p-4">
@@ -74,17 +98,19 @@ export default function Statistics({ items, year }: Props) {
           <div className="text-xs text-gray-500">Książek / Komiksów</div>
         </div>
         <div className="bg-gray-50 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-gray-900">{bookDays}</div>
-          <div className="text-xs text-gray-500">Dni czytania</div>
+          <div className="text-2xl font-bold text-gray-900">{movies.length}</div>
+          <div className="text-xs text-gray-500">Filmów</div>
         </div>
         <div className="bg-gray-50 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-gray-900">{screens.length}</div>
-          <div className="text-xs text-gray-500">Filmów / Seriali</div>
+          <div className="text-2xl font-bold text-gray-900">{series.length}</div>
+          <div className="text-xs text-gray-500">Seriali</div>
         </div>
-        <div className="bg-gray-50 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-gray-900">{screenDays}</div>
-          <div className="text-xs text-gray-500">Dni oglądania</div>
-        </div>
+        {cinemaMovies.length > 0 && (
+          <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <div className="text-2xl font-bold text-gray-900">{cinemaMovies.length}</div>
+            <div className="text-xs text-gray-500">🎟️ W kinie</div>
+          </div>
+        )}
         {plays.length > 0 && (
           <div className="bg-gray-50 rounded-xl p-3 text-center">
             <div className="text-2xl font-bold text-gray-900">{plays.length}</div>
@@ -109,94 +135,49 @@ export default function Statistics({ items, year }: Props) {
             <div className="text-xs text-gray-500">🎵 Płyt</div>
           </div>
         )}
-        {cinemaMovies.length > 0 && (
-          <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <div className="text-2xl font-bold text-gray-900">{cinemaMovies.length}</div>
-            <div className="text-xs text-gray-500">🎟️ Filmów w kinie</div>
-          </div>
-        )}
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-3 gap-4">
         {books.length > 0 && (
           <div>
             <h4 className="text-sm font-semibold text-gray-700 mb-2">📚 Przeczytane</h4>
             <div className="space-y-1">
               {books.map((item) => (
-                <div key={item.id} className="text-xs text-gray-600 flex justify-between gap-2">
-                  <span className={`flex-1 truncate ${item.discontinued ? "line-through opacity-60" : ""}`}>
-                    {item.title}{item.volumeEpisode ? ` (${item.volumeEpisode})` : ""}
-                  </span>
-                  <span className="text-gray-400 whitespace-nowrap">
-                    {item.endDate ? `${daysBetween(item.startDate, item.endDate)} dni` : "W trakcie"}
-                  </span>
+                <div
+                  key={item.seasonId ?? `${item.title}__${item.id}`}
+                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
+                >
+                  {item.title}{item.author ? ` — ${item.author}` : ""}
                 </div>
               ))}
             </div>
           </div>
         )}
-        {screens.length > 0 && (
+        {movies.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎬 Obejrzane</h4>
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎬 Filmy</h4>
             <div className="space-y-1">
-              {screens.map((item) => (
-                <div key={item.id} className="text-xs text-gray-600 flex justify-between gap-2">
-                  <span className={`flex-1 truncate ${item.discontinued ? "line-through opacity-60" : ""}`}>
-                    {item.title}{item.volumeEpisode ? ` (${item.volumeEpisode})` : ""}
-                  </span>
-                  <span className="text-gray-400 whitespace-nowrap">
-                    {item.endDate ? `${daysBetween(item.startDate, item.endDate)} dni` : "W trakcie"}
-                  </span>
+              {movies.map((item) => (
+                <div
+                  key={item.seasonId ?? `${item.title}__${item.id}`}
+                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
+                >
+                  {item.title}
                 </div>
               ))}
             </div>
           </div>
         )}
-        {plays.length > 0 && (
+        {series.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎭 Sztuki teatralne</h4>
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">📺 Seriale</h4>
             <div className="space-y-1">
-              {plays.map((item) => (
-                <div key={item.id} className="text-xs text-gray-600 flex justify-between gap-2">
-                  <span className={`flex-1 truncate ${item.discontinued ? "line-through opacity-60" : ""}`}>{item.title}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {games.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎮 Gry</h4>
-            <div className="space-y-1">
-              {games.map((item) => (
-                <div key={item.id} className="text-xs text-gray-600 flex justify-between gap-2">
-                  <span className={`flex-1 truncate ${item.discontinued ? "line-through opacity-60" : ""}`}>{item.title}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {podcasts.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎙️ Podcasty</h4>
-            <div className="space-y-1">
-              {podcasts.map((item) => (
-                <div key={item.id} className="text-xs text-gray-600 flex justify-between gap-2">
-                  <span className={`flex-1 truncate ${item.discontinued ? "line-through opacity-60" : ""}`}>{item.title}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {records.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎵 Płyty</h4>
-            <div className="space-y-1">
-              {records.map((item) => (
-                <div key={item.id} className="text-xs text-gray-600 flex justify-between gap-2">
-                  <span className={`flex-1 truncate ${item.discontinued ? "line-through opacity-60" : ""}`}>
-                    {item.title}{item.author ? ` — ${item.author}` : ""}
-                  </span>
+              {series.map((item) => (
+                <div
+                  key={item.seasonId ?? `${item.title}__${item.volumeEpisode}__${item.id}`}
+                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
+                >
+                  {item.title}{item.volumeEpisode ? ` (sezon ${item.volumeEpisode})` : ""}
                 </div>
               ))}
             </div>

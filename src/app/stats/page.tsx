@@ -9,6 +9,7 @@ import { BOOK_TYPES, SCREEN_TYPES } from "@/lib/utils";
 function mapToCalendarItem(raw: any) {
   return {
     id: raw.id,
+    seasonId: raw.season_id ?? null,
     title: raw.media_title,
     author: raw.author ?? null,
     mediaType: raw.media_type,

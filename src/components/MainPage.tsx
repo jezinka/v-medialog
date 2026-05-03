@@ -44,6 +44,7 @@ export interface SessionRow {
 // Shape expected by Calendar and Statistics components
 interface CalendarItem {
   id: number;
+  seasonId?: number | null;
   mediaId?: number;
   title: string;
   author: string | null;
@@ -60,6 +61,7 @@ interface CalendarItem {
 function sessionToCalendarItem(s: SessionRow): CalendarItem {
   return {
     id: s.id,
+    seasonId: s.seasonId,
     mediaId: s.mediaId,
     title: s.mediaTitle,
     author: s.author,
