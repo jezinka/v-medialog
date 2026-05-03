@@ -9,12 +9,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
     const media = sqlite.prepare(
       `SELECT m.id, m.title, m.original_title, m.media_type, m.cover_url, m.release_year, m.discontinued,
-              MIN(s.session_date) as first_seen
+              MIN(s.start_date) as first_seen
        FROM media m
-       LEFT JOIN sessions s ON s.media_id = m.id
+       LEFT JOIN seasons se ON se.media_id = m.id
+       LEFT JOIN sessions s ON s.season_id = se.id
        WHERE m.universe_id=?
-       GROUP BY m.id
-       ORDER BY COALESCE(m.release_year, CAST(strftime('%Y', first_seen) AS INTEGER), 9999) ASC, m.title ASC`
+       GROUP BY m.id, m.title, m.original_title, m.media_type, m.cover_url, m.release_year, m.discontinued
+       ORDER BY COALESCE(m.release_year, CAST(strftime('%Y', MIN(s.start_date)) AS INTEGER), 9999), m.title`
     ).all(parseInt(id));
 
     return NextResponse.json({ ...universe as object, media });
