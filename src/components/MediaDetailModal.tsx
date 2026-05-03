@@ -22,7 +22,6 @@ interface MediaItem {
   endDate: string | null;
   volumeEpisode: string | null;
   tags: string | null;
-  notes: string | null;
   discontinued: boolean | null;
   coverUrl: string | null;
   cinema?: boolean | number | null;
@@ -177,7 +176,6 @@ export default function MediaDetailModal({ item, onClose, onRefresh }: Props) {
               end_date: item.endDate ?? "",
               volume_episode: item.volumeEpisode ?? "",
               tags: item.tagList?.map((t) => t.name).join(", ") ?? item.tags ?? "",
-              notes: item.notes ?? "",
               discontinued: item.discontinued ?? false,
               cover_url: path,
               cinema: item.cinema ?? false,
@@ -362,12 +360,6 @@ export default function MediaDetailModal({ item, onClose, onRefresh }: Props) {
                 )}
 
                 {/* Notes */}
-                {item.notes && (
-                  <div className="bg-amber-50 border border-amber-100 rounded-lg p-3 text-sm text-gray-700 mt-2">
-                    <span className="text-amber-600 font-medium text-xs uppercase tracking-wider block mb-1">Notatki</span>
-                    {item.notes}
-                  </div>
-                )}
               </div>
             </div>
 
@@ -527,7 +519,6 @@ export default function MediaDetailModal({ item, onClose, onRefresh }: Props) {
             end_date: item.endDate ?? "",
             volume_episode: item.volumeEpisode ?? "",
             tags: item.tagList?.map((t) => t.name).join(", ") ?? item.tags ?? "",
-            notes: item.notes ?? "",
             discontinued: item.discontinued ?? false,
             cover_url: item.coverUrl ?? "",
             additional_sessions: item.additionalSessions ?? "",

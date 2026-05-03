@@ -558,7 +558,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     title: "",
     original_title: "",
     author: "",
-    notes: "",
+    description: "",
     tags: "",
     cover_url: "",
     discontinued: false,
@@ -632,7 +632,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
         original_title: data.original_title || f.original_title,
         author: data.author || f.author,
         cover_url: data.cover_url || f.cover_url,
-        notes: data.description || f.notes,
+        description: data.description || f.description,
       }));
       toast("Dane pobrane ✓", "success");
     } catch {
@@ -715,7 +715,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
       title: m.title,
       original_title: m.original_title ?? "",
       author: m.author ?? "",
-      notes: m.notes ?? "",
+      description: m.description ?? "",
       tags: m.tags ?? "",
       cover_url: m.cover_url ?? "",
       discontinued: !!(m.discontinued),
@@ -739,7 +739,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
           author: mediaEditForm.author || null,
           media_type: mediaEditForm.media_type,
           cover_url: mediaEditForm.cover_url || null,
-          notes: mediaEditForm.notes || null,
+          description: mediaEditForm.description || null,
           tags: mediaEditForm.tags || null,
           discontinued: mediaEditForm.discontinued,
           tmdb_id: mediaEditForm.tmdb_id ? parseInt(mediaEditForm.tmdb_id) : null,
@@ -934,7 +934,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
             body: JSON.stringify({
               title: media?.title, original_title: media?.original_title ?? "",
               author: media?.author ?? "", media_type: media?.media_type,
-              cover_url: path, notes: media?.notes, tags: media?.tags,
+              cover_url: path, tags: media?.tags,
               discontinued: media?.discontinued, tmdb_id: media?.tmdb_id, ol_key: media?.ol_key,
             }),
           });
@@ -1032,7 +1032,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
               body: JSON.stringify({
                 title: media.title, original_title: media.original_title ?? "",
                 author: media.author ?? "", media_type: media.media_type,
-                cover_url: path, notes: media.notes, tags: media.tags,
+                cover_url: path, tags: media.tags,
                 discontinued: media.discontinued, tmdb_id: media.tmdb_id, ol_key: media.ol_key,
               }),
             });
@@ -1612,11 +1612,11 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
               />
             </div>
             <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Notatki</label>
+              <label className="text-xs font-medium text-gray-600 block mb-1">Opis</label>
               <textarea
-                value={mediaEditForm.notes}
-                onChange={(e) => setMediaEditForm((f) => ({ ...f, notes: e.target.value }))}
-                rows={2}
+                value={mediaEditForm.description}
+                onChange={(e) => setMediaEditForm((f) => ({ ...f, description: e.target.value }))}
+                rows={3}
                 className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm resize-none"
               />
             </div>
@@ -1922,9 +1922,6 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
               <p className="text-xs text-gray-500">
                 ⏱ {Math.floor(cachedData.runtime / 60)}h {cachedData.runtime % 60}m
               </p>
-            )}
-            {media.notes && (
-              <p className="text-xs text-gray-500 italic">{media.notes}</p>
             )}
             {cachedData?.trackList && cachedData.trackList.length > 0 && (
               <div className="mt-3">

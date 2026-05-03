@@ -25,7 +25,7 @@ interface MediaFormData {
   end_date: string;
   volume_episode: string;
   tags: string;
-  notes: string;
+  description: string;
   discontinued: boolean;
   cinema: boolean;
   cover_url: string;
@@ -44,7 +44,7 @@ interface PlaceholderItem {
   coverUrl?: string | null;
   originalTitle?: string | null;
   tags?: string | null;
-  notes?: string | null;
+  discontinued: boolean;
 }
 
 interface Props {
@@ -64,7 +64,7 @@ const emptyForm: MediaFormData = {
   end_date: "",
   volume_episode: "",
   tags: "",
-  notes: "",
+  description: "",
   discontinued: false,
   cinema: false,
   cover_url: "",
@@ -124,18 +124,12 @@ export default function MediaForm({ initialData, onSuccess, onCancel, mode = "ad
   };
 
   const handleSelectResult = (result: SearchResult) => {
-    const isBook = BOOK_TYPES.includes(form.media_type);
-    let notes = "";
-    if (isBook && result.year) {
-      notes = `Rok: ${result.year}`;
-    }
     setForm((f) => ({
       ...f,
       title: f.title.trim() ? f.title : result.title,
       original_title: result.original_title ?? result.title,
       author: result.author ?? f.author,
       cover_url: result.coverUrl ?? f.cover_url,
-      notes: notes || f.notes,
     }));
     setSelectedResult(result);
     setShowDropdown(false);
@@ -340,7 +334,6 @@ export default function MediaForm({ initialData, onSuccess, onCancel, mode = "ad
                           media_type: item.mediaType,
                           cover_url: item.coverUrl ?? "",
                           tags: item.tags ?? "",
-                          notes: item.notes ?? "",
                         }));
                       }
                     } else {
@@ -472,10 +465,10 @@ export default function MediaForm({ initialData, onSuccess, onCancel, mode = "ad
             )}
 
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Notatki</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Opis</label>
               <textarea
-                value={form.notes}
-                onChange={(e) => set("notes", e.target.value)}
+                value={form.description}
+                onChange={(e) => set("description", e.target.value)}
                 rows={3}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gray-400 focus:border-transparent"
               />

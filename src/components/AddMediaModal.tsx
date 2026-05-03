@@ -33,7 +33,7 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
     media_type: "book",
     universe_id: "",
     cover_url: "",
-    notes: "",
+    description: "",
     tmdb_id: "",
   });
   const [createLoading, setCreateLoading] = useState(false);
@@ -100,7 +100,7 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
         original_title: data.original_title || f.original_title,
         author: data.author || f.author,
         cover_url: data.cover_url || f.cover_url,
-        notes: data.description || f.notes,
+        description: data.description || f.description,
         media_type: "book",
       }));
       setShowCreate(true);
@@ -130,7 +130,7 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
         original_title: data.original_title || f.original_title,
         author: data.director || f.author,
         cover_url: data.poster_url || f.cover_url,
-        notes: data.overview || f.notes,
+        description: data.overview || f.description,
         media_type: type,
         tmdb_id: tmdbId,
       }));
@@ -157,7 +157,7 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
           media_type: createForm.media_type,
           universe_id: createForm.universe_id ? parseInt(createForm.universe_id) : null,
           cover_url: createForm.cover_url || null,
-          notes: createForm.notes || null,
+          description: createForm.description || null,
           tmdb_id: createForm.tmdb_id || null,
         }),
       });
