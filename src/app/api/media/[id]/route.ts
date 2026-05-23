@@ -55,6 +55,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       ["external_synced_at", external_synced_at],
       ["tags", tagsInput],
       ["notes", notes],
+      ["source_url", body.source_url],
     ];
 
     for (const [col, val] of optionals) {
@@ -91,7 +92,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    sqlite.prepare(`DELETE FROM media WHERE id=?`).run(parseInt(id));
+    const numId = parseInt(id);
+
+    sqlite.prepare(`DELETE FROM media WHERE id=?`).run(numId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error(error);

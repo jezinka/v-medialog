@@ -7,11 +7,11 @@ export const MEDIA_TYPE_LABELS: Record<string, string> = {
   movie: "Film",
   series: "Serial",
   anime: "Anime",
-  cartoon: "Kreskówka",
-  play: "🎭 Sztuka teatralna",
-  game: "🎮 Gra",
-  podcast: "🎙️ Podcast",
-  record: "🎵 Płyta",
+  cartoon: "Film animowany",
+  play: "Sztuka teatralna",
+  game: "Gra",
+  podcast: "Podcast",
+  record: "Płyta",
 };
 
 export const MEDIA_TYPE_COLORS: Record<string, string> = {

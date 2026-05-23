@@ -90,13 +90,15 @@ export async function POST() {
       `).all(itemType, itemId) as { provider_slug: string; monetization_type: string }[];
       const existingKeys = new Set(existing.map((r) => `${r.provider_slug}__${r.monetization_type}`));
 
-      if (!jwResult || jwResult.offers.length === 0) {
+      const subOffers = jwResult?.offers.filter((o: JwOffer) => o.monetizationType === "FLATRATE" || o.monetizationType === "FREE") ?? [];
+
+      if (!jwResult || subOffers.length === 0) {
         sqlite.prepare(`DELETE FROM vod_offers WHERE item_type=? AND item_id=?`).run(itemType, itemId);
         sqlite.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, datetime('now'))`).run(`vod_last_check:${itemType}:${itemId}`);
         return;
       }
 
-      const incomingKeys = new Set(jwResult.offers.map((o: JwOffer) => `${o.providerSlug}__${o.monetizationType}`));
+      const incomingKeys = new Set(subOffers.map((o: JwOffer) => `${o.providerSlug}__${o.monetizationType}`));
 
       const txn = sqlite.transaction((offers: JwOffer[]) => {
         for (const o of offers) {
@@ -132,7 +134,7 @@ export async function POST() {
         }
       });
 
-      txn(jwResult.offers);
+      txn(subOffers);
       sqlite.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES (?, datetime('now'))`).run(`vod_last_check:${itemType}:${itemId}`);
     }
 

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
   const offers = sqlite.prepare(`
     SELECT * FROM vod_offers
-    WHERE item_type=? AND item_id=?
+    WHERE item_type=? AND item_id=? AND monetization_type IN ('FLATRATE', 'FREE')
     ORDER BY provider_name, monetization_type
   `).all(itemType, parseInt(itemId));
 

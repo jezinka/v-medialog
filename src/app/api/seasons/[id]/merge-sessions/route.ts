@@ -26,11 +26,20 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
 
       if (sessions.length === 0) return 0;
 
+      // Separate placeholder sessions (duration ≥ 364 days, e.g. YYYY-01-01 → YYYY-12-31)
+      // from real sessions — placeholders must never absorb real sessions.
+      const isPlaceholder = (s: SessionRecord) => {
+        const end = s.end_date ?? s.start_date;
+        const ms = new Date(end).getTime() - new Date(s.start_date).getTime();
+        return ms >= 364 * 24 * 60 * 60 * 1000;
+      };
+      const realSessions = sessions.filter((s) => !isPlaceholder(s));
+
       // Build merged groups: each group is [startDate, endDate, cinema, ids[]]
       type Group = { start: string; end: string; cinema: number; ids: number[] };
       const groups: Group[] = [];
 
-      for (const s of sessions) {
+      for (const s of realSessions) {
         const end = s.end_date ?? s.start_date;
         if (groups.length === 0) {
           groups.push({ start: s.start_date, end, cinema: s.cinema, ids: [s.id] });

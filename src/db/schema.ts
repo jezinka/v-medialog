@@ -34,6 +34,7 @@ export const media = sqliteTable("media", {
   seriesStatus: text("series_status"),
   tmdbSeasonsCount: integer("tmdb_seasons_count"),
   trackList: text("track_list"),
+  sourceUrl: text("source_url"),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
   updatedAt: text("updated_at").default(sql`(datetime('now'))`),
 });

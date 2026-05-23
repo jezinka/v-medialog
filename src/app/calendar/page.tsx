@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import CoverImg from "@/components/CoverImg";
-import { MONTH_NAMES, DAY_LABELS } from "@/lib/utils";
+import { MONTH_NAMES, DAY_LABELS, MEDIA_TYPES, MEDIA_TYPE_LABELS, MEDIA_TYPE_EMOJI } from "@/lib/utils";
 
 interface CalendarEntry {
   media_id: number;
@@ -34,18 +34,45 @@ function CalendarInner() {
     const p = searchParams.get("year");
     return p ? parseInt(p) : new Date().getFullYear();
   });
+  const [activeTypes, setActiveTypes] = useState<Set<string>>(() => {
+    const t = searchParams.get("types");
+    return t ? new Set(t.split(",").filter(Boolean)) : new Set<string>();
+  });
   const [entries, setEntries] = useState<CalendarEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const buildUrl = useCallback((y: number, types: Set<string>) => {
+    const params = new URLSearchParams({ year: String(y) });
+    if (types.size > 0) params.set("types", Array.from(types).join(","));
+    return `/calendar?${params.toString()}`;
+  }, []);
+
   const changeYear = useCallback((newYear: number) => {
     setYear(newYear);
-    router.replace(`/calendar?year=${newYear}`);
-  }, [router]);
+    router.replace(buildUrl(newYear, activeTypes));
+  }, [router, activeTypes, buildUrl]);
+
+  const toggleType = useCallback((type: string) => {
+    setActiveTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) next.delete(type);
+      else next.add(type);
+      router.replace(buildUrl(year, next));
+      return next;
+    });
+  }, [year, router, buildUrl]);
+
+  const clearTypes = useCallback(() => {
+    setActiveTypes(new Set());
+    router.replace(buildUrl(year, new Set()));
+  }, [year, router, buildUrl]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/calendar-gallery?year=${year}`);
+      const params = new URLSearchParams({ year: String(year) });
+      if (activeTypes.size > 0) params.set("types", Array.from(activeTypes).join(","));
+      const res = await fetch(`/api/calendar-gallery?${params.toString()}`);
       const data = await res.json();
       setEntries(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -54,7 +81,7 @@ function CalendarInner() {
     } finally {
       setLoading(false);
     }
-  }, [year]);
+  }, [year, activeTypes]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -84,6 +111,33 @@ function CalendarInner() {
         >
           ›
         </button>
+      </div>
+
+      {/* Type filter chips */}
+      <div className="flex flex-wrap gap-1.5 mb-4">
+        <button
+          onClick={clearTypes}
+          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+            activeTypes.size === 0
+              ? "bg-gray-800 text-white"
+              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+          }`}
+        >
+          Wszystko
+        </button>
+        {MEDIA_TYPES.map((t) => (
+          <button
+            key={t}
+            onClick={() => toggleType(t)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+              activeTypes.has(t)
+                ? "bg-gray-800 text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+            }`}
+          >
+            {MEDIA_TYPE_EMOJI[t]} {MEDIA_TYPE_LABELS[t]}
+          </button>
+        ))}
       </div>
 
       {loading ? (

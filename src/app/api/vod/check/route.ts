@@ -51,8 +51,9 @@ export async function POST(request: NextRequest) {
       id: number; provider_slug: string; monetization_type: string; available_to: string | null;
     }[];
 
+    const subOffers = jwResult.offers.filter((o) => o.monetizationType === "FLATRATE" || o.monetizationType === "FREE");
     const existingKeys = new Set(existing.map((r) => `${r.provider_slug}__${r.monetization_type}`));
-    const incomingKeys = new Set(jwResult.offers.map((o) => `${o.providerSlug}__${o.monetizationType}`));
+    const incomingKeys = new Set(subOffers.map((o) => `${o.providerSlug}__${o.monetizationType}`));
 
     const upsert = sqlite.prepare(`
       INSERT INTO vod_offers
@@ -129,7 +130,7 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    txn(jwResult.offers);
+    txn(subOffers);
 
     // Record check timestamp (also covers the "has offers" path)
     sqlite.prepare(`

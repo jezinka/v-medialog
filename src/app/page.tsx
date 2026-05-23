@@ -73,6 +73,8 @@ function LogContent() {
       } else {
         seasonId = seasons[0].id;
       }
+      // Remove year-placeholder before adding a real session
+      await fetch(`/api/seasons/${seasonId}/placeholders`, { method: "DELETE" });
       const sessRes = await fetch("/api/sessions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

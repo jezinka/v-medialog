@@ -7,7 +7,7 @@ interface PersonRow {
   photo_url: string | null;
   tmdb_id: number | null;
   media_count: number;
-  roles: string;
+  roles: string | null;
 }
 
 export async function GET() {
@@ -15,19 +15,20 @@ export async function GET() {
     const rows = sqlite
       .prepare(
         `SELECT p.id, p.name, p.photo_url, p.tmdb_id,
-                COUNT(DISTINCT mp.media_id) as media_count,
+                COUNT(DISTINCT CASE WHEN mp.role != 'yt_channel' THEN mp.media_id END) as media_count,
                 GROUP_CONCAT(DISTINCT mp.role) as roles
          FROM persons p
-         JOIN media_persons mp ON mp.person_id = p.id
+         LEFT JOIN media_persons mp ON mp.person_id = p.id
          GROUP BY p.id
+         HAVING COUNT(DISTINCT CASE WHEN mp.role != 'yt_channel' THEN mp.media_id END) > 0
          ORDER BY media_count DESC, p.name ASC`
       )
       .all() as PersonRow[];
 
-    const result = rows.map((row) => ({
-      ...row,
-      roles: row.roles ? row.roles.split(",") : [],
-    }));
+    const result = rows.map((row) => {
+      const roles = (row.roles ? row.roles.split(",") : []).filter((r) => r !== "yt_channel");
+      return { ...row, roles };
+    });
 
     return NextResponse.json(result);
   } catch (error) {

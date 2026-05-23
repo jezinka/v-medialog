@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import CoverImg from "./CoverImg";
 import { MEDIA_TYPE_EMOJI, MEDIA_TYPE_LABELS, MEDIA_TYPE_COLORS, formatDate } from "@/lib/utils";
 import { toast } from "./Toast";
 import type { SuggestionGroup } from "@/app/api/universes/suggestions/route";
+
+const PAGE_SIZE = 50;
 
 interface MediaItem {
   id: number;
@@ -41,12 +43,15 @@ type TypeFilter = (typeof TYPE_FILTERS)[number];
 
 export default function MediaLibraryView({ onOpenDetail }: Props) {
   const [items, setItems] = useState<MediaItem[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [noCoverOnly, setNoCoverOnly] = useState(false);
   const [ongoingOnly, setOngoingOnly] = useState(false);
   const [behindOnly, setBehindOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<"title" | "recently_added">("title");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [seasons, setSeasons] = useState<Record<number, SeasonRow[]>>({});
   const [seasonsLoading, setSeasonsLoading] = useState<Set<number>>(new Set());
@@ -63,18 +68,34 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
   // Upcoming seasons job
   const [checkingUpcoming, setCheckingUpcoming] = useState(false);
 
+  // Debounce search
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => setDebouncedSearch(search), 300);
+  }, [search]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/media?all=true");
-      const data = await res.json() as MediaItem[];
-      setItems(data);
+      const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      if (typeFilter !== "all") params.set("type", typeFilter);
+      if (noCoverOnly) params.set("noCover", "1");
+      if (ongoingOnly) params.set("ongoing", "1");
+      if (behindOnly) params.set("behind", "1");
+      if (sortBy === "recently_added") params.set("sortBy", "recently_added");
+      const res = await fetch(`/api/media?${params.toString()}`);
+      const data = await res.json() as { items: MediaItem[]; total: number; page: number };
+      setItems(data.items);
+      setTotal(data.total);
     } catch {
       toast("Błąd ładowania mediów", "error");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, debouncedSearch, typeFilter, noCoverOnly, ongoingOnly, behindOnly, sortBy]);
 
   const fetchSuggestions = useCallback(async () => {
     setLoadingSuggestions(true);
@@ -137,29 +158,10 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
 
   useEffect(() => { void load(); }, [load]);
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return items.filter((m) => {
-      if (typeFilter !== "all" && m.media_type !== typeFilter) return false;
-      if (noCoverOnly && m.cover_url) return false;
-      if (ongoingOnly) {
-        const ended = ["Ended", "Canceled", "Cancelled"];
-        const tvTypes = ["series", "anime", "cartoon"];
-        if (!tvTypes.includes(m.media_type) || ended.includes(m.series_status ?? "")) return false;
-      }
-      if (behindOnly) {
-        const tvTypes = ["series", "anime", "cartoon"];
-        if (!tvTypes.includes(m.media_type)) return false;
-        if (m.tmdb_seasons_count == null || m.season_count >= m.tmdb_seasons_count) return false;
-      }
-      if (!q) return true;
-      return (
-        m.title.toLowerCase().includes(q) ||
-        (m.original_title?.toLowerCase().includes(q) ?? false) ||
-        (m.author?.toLowerCase().includes(q) ?? false)
-      );
-    });
-  }, [items, search, typeFilter, noCoverOnly, ongoingOnly, behindOnly]);
+  // Reset to page 1 when filters change
+  useEffect(() => { setPage(1); }, [debouncedSearch, typeFilter, noCoverOnly, ongoingOnly, behindOnly, sortBy]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const loadSeasons = useCallback(async (mediaId: number) => {
     if (seasons[mediaId]) return;
@@ -249,14 +251,6 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
     return `Sezon #${s.id}`;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       {/* Toolbar */}
@@ -313,7 +307,30 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
             ⏳ Niedokończone
           </button>
         </div>
-        <span className="text-sm text-gray-500 ml-auto">{filtered.length} mediów</span>
+        <span className="text-sm text-gray-500 ml-auto">{total} mediów</span>
+        <div className="flex items-center gap-1 text-xs text-gray-500">
+          <span>Sortuj:</span>
+          <button
+            onClick={() => setSortBy("title")}
+            className={`px-2 py-1 rounded-full border transition-colors ${
+              sortBy === "title"
+                ? "bg-gray-700 text-white border-gray-700"
+                : "border-gray-300 text-gray-600 hover:border-gray-400"
+            }`}
+          >
+            A–Z
+          </button>
+          <button
+            onClick={() => setSortBy("recently_added")}
+            className={`px-2 py-1 rounded-full border transition-colors ${
+              sortBy === "recently_added"
+                ? "bg-gray-700 text-white border-gray-700"
+                : "border-gray-300 text-gray-600 hover:border-gray-400"
+            }`}
+          >
+            🆕 Ostatnio dodane
+          </button>
+        </div>
         <button
           onClick={handleToggleSuggestions}
           title="Sugestie scalania"
@@ -399,10 +416,14 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
 
       {/* List */}
       <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-10">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400" />
+          </div>
+        ) : items.length === 0 ? (
           <p className="text-sm text-gray-500 p-6 text-center">Brak wyników</p>
         ) : (
-          filtered.map((medium) => {
+          items.map((medium) => {
             const isExpanded = expandedId === medium.id;
             const isSelected = selectedMedia.has(medium.id);
             const mediaSeasons = seasons[medium.id] ?? [];
@@ -527,6 +548,67 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
           })
         )}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-1 pt-2">
+          <button
+            onClick={() => setPage(1)}
+            disabled={page === 1}
+            className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+          >
+            «
+          </button>
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+          >
+            ‹
+          </button>
+          {Array.from({ length: totalPages }, (_, i) => i + 1)
+            .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+            .reduce<(number | "...")[]>((acc, p, idx, arr) => {
+              if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("...");
+              acc.push(p);
+              return acc;
+            }, [])
+            .map((p, i) =>
+              p === "..." ? (
+                <span key={`ellipsis-${i}`} className="px-2 text-xs text-gray-400">…</span>
+              ) : (
+                <button
+                  key={p}
+                  onClick={() => setPage(p as number)}
+                  className={`px-2.5 py-1 text-xs rounded border transition-colors ${
+                    page === p
+                      ? "bg-purple-600 text-white border-purple-600"
+                      : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  {p}
+                </button>
+              )
+            )}
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+          >
+            ›
+          </button>
+          <button
+            onClick={() => setPage(totalPages)}
+            disabled={page === totalPages}
+            className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+          >
+            »
+          </button>
+          <span className="text-xs text-gray-400 ml-2">
+            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} z {total}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

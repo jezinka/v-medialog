@@ -32,6 +32,7 @@ interface MediaFormData {
   additional_sessions: string; // JSON: [{start_date, end_date}]
   tmdb_id: string;
   ol_key: string;
+  source_url: string;
 }
 
 interface PlaceholderItem {
@@ -71,6 +72,7 @@ const emptyForm: MediaFormData = {
   additional_sessions: "",
   tmdb_id: "",
   ol_key: "",
+  source_url: "",
 };
 
 export default function MediaForm({ initialData, onSuccess, onCancel, mode = "add", placeholderItems }: Props) {
@@ -153,6 +155,7 @@ export default function MediaForm({ initialData, onSuccess, onCancel, mode = "ad
           ...form,
           tmdb_id: form.tmdb_id ? parseInt(form.tmdb_id) : null,
           ol_key: form.ol_key || null,
+          source_url: form.source_url || null,
           additional_sessions: extraSessions.length > 0 ? JSON.stringify(extraSessions) : null,
         }),
       });

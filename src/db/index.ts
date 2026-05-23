@@ -125,11 +125,24 @@ sqlite.exec(`
 try { sqlite.exec("CREATE UNIQUE INDEX idx_persons_tmdb_id ON persons (tmdb_id) WHERE tmdb_id IS NOT NULL"); } catch { /* already exists */ }
 try { sqlite.exec("CREATE UNIQUE INDEX idx_persons_name ON persons (name)"); } catch { /* already exists */ }
 
+try {
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS person_yt_channels (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      person_id INTEGER NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+      channel_name TEXT NOT NULL,
+      channel_url TEXT,
+      UNIQUE(person_id, channel_name)
+    )
+  `);
+} catch { /* already exists */ }
+
 // Migrations for existing databases
 try { sqlite.exec("ALTER TABLE media ADD COLUMN volume_episode TEXT"); } catch { /* already exists */ }
 try { sqlite.exec("ALTER TABLE media ADD COLUMN series_status TEXT"); } catch { /* already exists */ }
 try { sqlite.exec("ALTER TABLE media ADD COLUMN tmdb_seasons_count INTEGER"); } catch { /* already exists */ }
 try { sqlite.exec("ALTER TABLE media ADD COLUMN track_list TEXT"); } catch { /* already exists */ }
+try { sqlite.exec("ALTER TABLE media ADD COLUMN source_url TEXT"); } catch { /* already exists */ }
 try { sqlite.exec("ALTER TABLE seasons ADD COLUMN want_to_watch INTEGER DEFAULT 0"); } catch { /* already exists */ }
 
 // Fix seasons table if it incorrectly references "media_old" instead of "media"
@@ -222,6 +235,37 @@ try {
     console.log("[db] Added notes to reading_list_items");
   }
 } catch (e) { console.error("[db] reading_list_items season columns migration error:", e); }
+
+try {
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS yt_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      video_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      channel_name TEXT NOT NULL DEFAULT '',
+      watched_at TEXT NOT NULL,
+      source_url TEXT NOT NULL,
+      thumbnail_url TEXT NOT NULL DEFAULT '',
+      promoted INTEGER NOT NULL DEFAULT 0,
+      UNIQUE(video_id, watched_at)
+    )
+  `);
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_yt_history_watched_at ON yt_history(watched_at)`);
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_yt_history_channel ON yt_history(channel_name)`);
+  sqlite.exec(`CREATE INDEX IF NOT EXISTS idx_yt_history_video_id ON yt_history(video_id)`);
+} catch {}
+
+try { sqlite.exec(`ALTER TABLE yt_history ADD COLUMN thumbnail_local TEXT`); } catch {}
+try { sqlite.exec(`ALTER TABLE yt_history ADD COLUMN description TEXT`); } catch {}
+try { sqlite.exec(`ALTER TABLE yt_history ADD COLUMN channel_url TEXT`); } catch {}
+try { sqlite.exec(`ALTER TABLE yt_history ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0`); } catch {}
+
+// Fix: YT videos had persons linked as 'director' — correct to 'yt_channel'
+sqlite.exec(`
+  UPDATE media_persons SET role = 'yt_channel'
+  WHERE role = 'director'
+  AND media_id IN (SELECT id FROM media WHERE media_type = 'yt')
+`);
 
 // ── VOD availability tables ──────────────────────────────────────────────────
 sqlite.exec(`

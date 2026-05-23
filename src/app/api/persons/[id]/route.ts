@@ -16,6 +16,7 @@ interface MediaRow {
   release_year: number | null;
   role: string;
   character_name: string | null;
+  watch_dates: string | null;
 }
 
 export async function GET(
@@ -41,7 +42,11 @@ export async function GET(
     const media = sqlite
       .prepare(
         `SELECT m.id as media_id, m.title, m.media_type, m.cover_url, m.release_year,
-                mp.role, mp.character_name
+                mp.role, mp.character_name,
+                (SELECT GROUP_CONCAT(DISTINCT s.start_date ORDER BY s.start_date DESC)
+                 FROM seasons se JOIN sessions s ON s.season_id = se.id
+                 WHERE se.media_id = m.id AND s.start_date IS NOT NULL
+                ) as watch_dates
          FROM media_persons mp
          JOIN media m ON m.id = mp.media_id
          WHERE mp.person_id = ?

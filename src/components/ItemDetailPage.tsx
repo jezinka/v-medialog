@@ -34,6 +34,7 @@ interface MediaData {
   release_year: number | null;
   external_synced_at: string | null;
   series_status: string | null;
+  source_url: string | null;
   season_count: number;
   first_session_date: string | null;
   last_session_date: string | null;
@@ -331,6 +332,11 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
   const [showAirDates, setShowAirDates] = useState(false);
   const [airDateSeasons, setAirDateSeasons] = useState<AirDateSeason[]>([]);
   const [importingDates, setImportingDates] = useState<Set<string>>(new Set());
+  const [showPodcastEpisodes, setShowPodcastEpisodes] = useState(false);
+  const [podcastUrl, setPodcastUrl] = useState("");
+  const [podcastEpisodeDates, setPodcastEpisodeDates] = useState<string[]>([]);
+  const [podcastEpisodesLoading, setPodcastEpisodesLoading] = useState(false);
+  const [podcastEpisodesError, setPodcastEpisodesError] = useState<string | null>(null);
   const [savingCover, setSavingCover] = useState<Set<number>>(new Set()); // tmdbSeasonNum being saved
   const [tmdbLinkSearch, setTmdbLinkSearch] = useState("");
   const [tmdbLinkCandidates, setTmdbLinkCandidates] = useState<TmdbCandidate[]>([]);
@@ -546,6 +552,22 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     onRefresh?.();
   };
 
+  const fetchPodcastEpisodes = useCallback(async (url: string) => {
+    setPodcastEpisodesLoading(true);
+    setPodcastEpisodesError(null);
+    setPodcastEpisodeDates([]);
+    try {
+      const res = await fetch(`/api/podcast/episodes?url=${encodeURIComponent(url)}`);
+      const data = await res.json() as { dates?: string[]; error?: string };
+      if (!res.ok || data.error) { setPodcastEpisodesError(data.error ?? "Błąd"); return; }
+      setPodcastEpisodeDates(data.dates ?? []);
+    } catch {
+      setPodcastEpisodesError("Błąd sieci");
+    } finally {
+      setPodcastEpisodesLoading(false);
+    }
+  }, []);
+
   const [editingSession, setEditingSession] = useState<SessionApiRow | null>(null);
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
@@ -567,6 +589,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     tmdb_id: "",
     ol_key: "",
     media_type: "",
+    source_url: "",
   });
   const [mediaEditSaving, setMediaEditSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -739,6 +762,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
       tmdb_id: m.tmdb_id != null ? String(m.tmdb_id) : "",
       ol_key: m.ol_key ?? "",
       media_type: m.media_type,
+      source_url: m.source_url ?? "",
     });
     setIsEditingMedia(true);
   }, []);
@@ -761,6 +785,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
           discontinued: mediaEditForm.discontinued,
           tmdb_id: mediaEditForm.tmdb_id ? parseInt(mediaEditForm.tmdb_id) : null,
           ol_key: mediaEditForm.ol_key || null,
+          source_url: mediaEditForm.source_url || null,
         }),
       });
       if (!res.ok) throw new Error();
@@ -1139,6 +1164,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     async (date: string, seasonId: number) => {
       setAddingSession(true);
       try {
+        await removePlaceholders(seasonId);
         const res = await fetch("/api/sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1169,6 +1195,67 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     [sessions, seasons]
   );
 
+  const importPodcastDates = useCallback(async (dates: string[]) => {
+    if (!media) return;
+    const newDates = dates.filter((d) => !sessionDaysMap.has(d));
+    if (!newDates.length) { toast("Wszystkie daty już istnieją", "error"); return; }
+
+    let seasonId = seasons[0]?.id ?? null;
+    if (seasonId === null) {
+      try {
+        const sRes = await fetch("/api/seasons", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ media_id: media.id, season_number: 1 }),
+        });
+        if (!sRes.ok) throw new Error();
+        const sData = await sRes.json() as { id: number };
+        seasonId = sData.id;
+      } catch {
+        toast("Błąd tworzenia sezonu", "error");
+        return;
+      }
+    }
+
+    await removePlaceholders(seasonId);
+
+    let added = 0;
+    setImportingDates((prev) => new Set([...prev, ...newDates]));
+    for (const date of newDates) {
+      try {
+        const res = await fetch("/api/sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ season_id: seasonId, start_date: date, end_date: date, cinema: false }),
+        });
+        if (res.ok) added++;
+      } catch { /* skip */ }
+    }
+    setImportingDates((prev) => { const n = new Set(prev); newDates.forEach((d) => n.delete(d)); return n; });
+    toast(`Dodano ${added} sesji ✓`, "success");
+    await loadData();
+    onRefresh?.();
+  }, [media, seasons, sessionDaysMap, loadData, onRefresh]);
+
+  /** True when every session is a year-long placeholder (YYYY-01-01 → YYYY-12-31). */
+  const isOnlyPlaceholders = useMemo(
+    () =>
+      sessions.length > 0 &&
+      sessions.every(
+        (s) =>
+          s.start_date.endsWith("-01-01") &&
+          s.end_date === `${s.start_date.slice(0, 4)}-12-31`
+      ),
+    [sessions]
+  );
+
+  // When only placeholders are present, jump yearViewYear to the placeholder's year.
+  useEffect(() => {
+    if (isOnlyPlaceholders) {
+      setYearViewYear(parseInt(sessions[0].start_date.slice(0, 4)));
+    }
+  }, [isOnlyPlaceholders, sessions]);
+
   const handleYearBatchCreate = useCallback(async () => {
     if (yearSelectedDates.size === 0) return;
     setYearBatchSaving(true);
@@ -1188,6 +1275,8 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
       } else {
         seasonId = seasons[0].id;
       }
+      // Remove year-placeholder before adding real sessions
+      await removePlaceholders(seasonId);
       const dates = Array.from(yearSelectedDates).sort();
       let added = 0;
       for (const date of dates) {
@@ -1338,6 +1427,19 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
       toast("Sezon usunięty ✓", "success");
       await loadData();
       onRefresh?.();
+    } else {
+      toast("Błąd usuwania", "error");
+    }
+  };
+
+  const handleDeleteMedia = async () => {
+    if (!media) return;
+    if (!confirm(`Usunąć "${media.title}"? Operacja jest nieodwracalna.`)) return;
+    const res = await fetch(`/api/media/${media.id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast("Medium usunięte ✓", "success");
+      onRefresh?.();
+      onClose?.();
     } else {
       toast("Błąd usuwania", "error");
     }
@@ -1890,6 +1992,15 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
 
       {/* Sticky header */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
+        <a
+          href="/"
+          className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors shrink-0"
+          title="Strona główna"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7m-9 5v6h4v-6m-4 0H9m6 0h-2" />
+          </svg>
+        </a>
         <button
           onClick={() => onClose?.()}
           className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors shrink-0"
@@ -1915,6 +2026,15 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
           </svg>
         </button>
+        <button
+          onClick={() => void handleDeleteMedia()}
+          className="shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          title="Usuń medium"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-8">
@@ -1938,15 +2058,18 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
             )}
             {(directors.length > 0 || authorPersons.length > 0) ? (
               <p className="text-sm text-gray-600 font-medium flex flex-wrap gap-1">
-                {[...directors, ...authorPersons].map((p, i) => (
-                  <button
-                    key={p.personId}
-                    onClick={() => onOpenPerson?.(p.personId)}
-                    className="hover:text-blue-600 hover:underline transition-colors"
-                  >
-                    {p.name}{i < directors.length + authorPersons.length - 1 ? "," : ""}
-                  </button>
-                ))}
+                {[...directors, ...authorPersons].map((p, i) => {
+                  const total = directors.length + authorPersons.length;
+                  return (
+                    <button
+                      key={p.personId}
+                      onClick={() => onOpenPerson?.(p.personId)}
+                      className="hover:text-blue-600 hover:underline transition-colors"
+                    >
+                      {p.name}{i < total - 1 ? "," : ""}
+                    </button>
+                  );
+                })}
               </p>
             ) : displayAuthor ? (
               <p className="text-sm text-gray-600 font-medium">{displayAuthor}</p>
@@ -1970,6 +2093,17 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
             )}
             {description && (
               <p className="text-sm text-gray-600 leading-relaxed line-clamp-5">{description}</p>
+            )}
+            {/* Watch button for YouTube videos */}
+            {media.media_type === "yt" && media.source_url && (
+              <a
+                href={media.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                ▶ Oglądaj na YouTube
+              </a>
             )}
             {genres.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
@@ -2276,6 +2410,93 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
           </div>
         )}
 
+        {/* Podcast episode dates panel */}
+        {media && media.media_type === "podcast" && (
+          <div className="space-y-3">
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowPodcastEpisodes((v) => !v)}
+                className={`text-xs flex items-center gap-1 px-2 py-1 rounded border transition-colors ${
+                  showPodcastEpisodes
+                    ? "border-cyan-400 bg-cyan-50 text-cyan-700"
+                    : "border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                🎙️ {showPodcastEpisodes ? "Ukryj odcinki" : "Daty odcinków Apple Podcasts"}
+              </button>
+            </div>
+
+            {showPodcastEpisodes && (
+              <div className="border border-gray-200 rounded-lg overflow-hidden">
+                <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100">
+                  <input
+                    type="url"
+                    placeholder="https://podcasts.apple.com/…"
+                    value={podcastUrl}
+                    onChange={(e) => setPodcastUrl(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && podcastUrl) fetchPodcastEpisodes(podcastUrl); }}
+                    className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-cyan-400"
+                  />
+                  <button
+                    onClick={() => { if (podcastUrl) fetchPodcastEpisodes(podcastUrl); }}
+                    disabled={!podcastUrl || podcastEpisodesLoading}
+                    className="text-xs px-3 py-1 bg-cyan-600 text-white rounded hover:bg-cyan-700 disabled:opacity-40"
+                  >
+                    {podcastEpisodesLoading ? "⏳" : "Pobierz"}
+                  </button>
+                  {podcastEpisodeDates.length > 0 && (() => {
+                    const newDates = podcastEpisodeDates.filter((d) => !sessionDaysMap.has(d));
+                    return newDates.length > 0 ? (
+                      <button
+                        onClick={() => importPodcastDates(newDates)}
+                        disabled={newDates.some((d) => importingDates.has(d))}
+                        className="text-xs px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-40"
+                      >
+                        + Dodaj wszystkie nowe ({newDates.length})
+                      </button>
+                    ) : null;
+                  })()}
+                </div>
+
+                {podcastEpisodesError && (
+                  <p className="px-3 py-2 text-xs text-red-500">{podcastEpisodesError}</p>
+                )}
+
+                {!podcastEpisodesLoading && podcastEpisodeDates.length > 0 && (
+                  <div className="p-3 space-y-1">
+                    <p className="text-[10px] text-gray-400 mb-2">
+                      {podcastEpisodeDates.length} odcinków · {podcastEpisodeDates.filter((d) => !sessionDaysMap.has(d)).length} nowych
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {podcastEpisodeDates.map((date) => {
+                        const exists = sessionDaysMap.has(date);
+                        const importing = importingDates.has(date);
+                        return (
+                          <button
+                            key={date}
+                            onClick={() => !exists && !importing && importPodcastDates([date])}
+                            disabled={exists || importing}
+                            title={exists ? "Już zalogowane" : `Dodaj ${date} jako sesję`}
+                            className={`text-[11px] px-2 py-0.5 rounded-full border transition-colors ${
+                              exists
+                                ? "bg-green-100 border-green-200 text-green-700 cursor-default"
+                                : importing
+                                ? "bg-gray-100 border-gray-200 text-gray-400 cursor-wait"
+                                : "bg-white border-gray-300 text-gray-700 hover:bg-cyan-50 hover:border-cyan-300 cursor-pointer"
+                            }`}
+                          >
+                            {formatDate(date)}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Seasons section */}
         {seasons.length > 0 && (
           <div>
@@ -2475,7 +2696,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
             )}
             {vodOffers.length === 0 ? (
               <p className="text-xs text-gray-400 italic">
-                {vodLastChecked ? "Brak dostępności na polskich platformach VOD." : "Nie sprawdzono jeszcze."}
+                {vodLastChecked ? "Brak dostępności w abonamencie na polskich platformach VOD." : "Nie sprawdzono jeszcze."}
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">
@@ -2684,7 +2905,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
               </div>
             </div>
           )}
-          {sessions.length === 0 ? (
+          {sessions.length === 0 || isOnlyPlaceholders ? (
             <div className="space-y-4">
               {/* Year navigation */}
               <div className="flex items-center gap-3">
