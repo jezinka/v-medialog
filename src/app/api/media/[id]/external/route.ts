@@ -92,26 +92,42 @@ export async function POST(
     // Only update track_list if explicitly provided in the request body
     const trackListProvided = "track_list" in body;
     const track_list = trackListProvided ? (body.track_list as Array<unknown> | null) : undefined;
-    // Only overwrite description if explicitly provided
+    // Only overwrite these fields if explicitly provided in the request body
     const descriptionProvided = "description" in body;
+    const tmdbIdProvided = "tmdb_id" in body;
+    const olKeyProvided = "ol_key" in body;
+    const genresProvided = "genres" in body;
+    const voteAverageProvided = "vote_average" in body;
+    const runtimeProvided = "runtime" in body;
+    const releaseYearProvided = "release_year" in body;
+    const seriesStatusProvided = "series_status" in body;
+    const tmdbSeasonsCountProvided = "tmdb_seasons_count" in body;
 
     const doSave = sqlite.transaction(() => {
       sqlite.prepare(`
         UPDATE media SET
-          tmdb_id=?, ol_key=?,
+          ${tmdbIdProvided ? "tmdb_id=?," : ""}
+          ${olKeyProvided ? "ol_key=?," : ""}
           ${descriptionProvided ? "description=?," : ""}
-          genres=?,
-          vote_average=?, runtime=?, release_year=?,
-          series_status=?, tmdb_seasons_count=?,
+          ${genresProvided ? "genres=?," : ""}
+          ${voteAverageProvided ? "vote_average=?," : ""}
+          ${runtimeProvided ? "runtime=?," : ""}
+          ${releaseYearProvided ? "release_year=?," : ""}
+          ${seriesStatusProvided ? "series_status=?," : ""}
+          ${tmdbSeasonsCountProvided ? "tmdb_seasons_count=?," : ""}
           ${trackListProvided ? "track_list=?," : ""}
           external_synced_at=datetime('now'), updated_at=datetime('now')
         WHERE id=?
       `).run(...[
-        tmdb_id ?? null, ol_key ?? null,
+        ...(tmdbIdProvided ? [tmdb_id ?? null] : []),
+        ...(olKeyProvided ? [ol_key ?? null] : []),
         ...(descriptionProvided ? [description ?? null] : []),
-        genres ? JSON.stringify(genres) : null,
-        vote_average ?? null, runtime ?? null, release_year ?? null,
-        series_status ?? null, tmdb_seasons_count ?? null,
+        ...(genresProvided ? [genres ? JSON.stringify(genres) : null] : []),
+        ...(voteAverageProvided ? [vote_average ?? null] : []),
+        ...(runtimeProvided ? [runtime ?? null] : []),
+        ...(releaseYearProvided ? [release_year ?? null] : []),
+        ...(seriesStatusProvided ? [series_status ?? null] : []),
+        ...(tmdbSeasonsCountProvided ? [tmdb_seasons_count ?? null] : []),
         ...(trackListProvided ? [track_list ? JSON.stringify(track_list) : null] : []),
         numId,
       ]);

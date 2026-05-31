@@ -1721,23 +1721,25 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
           <div className="bg-white rounded-xl shadow-xl p-5 max-w-md w-full space-y-3 max-h-[90vh] overflow-y-auto">
             <h3 className="text-sm font-semibold text-gray-900">Edytuj medium</h3>
             {/* lubimyczytac.pl quick-fill */}
-            <div className="flex gap-2 pb-1 border-b border-gray-100">
-              <input
-                type="url"
-                value={lcEditUrl}
-                onChange={(e) => setLcEditUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLcEditFetch()}
-                placeholder="Uzupełnij z lubimyczytac.pl (URL)…"
-                className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-orange-200 focus:outline-none"
-              />
-              <button
-                onClick={handleLcEditFetch}
-                disabled={lcEditLoading || !lcEditUrl.trim()}
-                className="shrink-0 bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-orange-600 disabled:opacity-50"
-              >
-                {lcEditLoading ? "⏳" : "📚 Pobierz"}
-              </button>
-            </div>
+            {media && BOOK_TYPES.includes(media.media_type) && (
+              <div className="flex gap-2 pb-1 border-b border-gray-100">
+                <input
+                  type="url"
+                  value={lcEditUrl}
+                  onChange={(e) => setLcEditUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleLcEditFetch()}
+                  placeholder="Uzupełnij z lubimyczytac.pl (URL)…"
+                  className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-orange-200 focus:outline-none"
+                />
+                <button
+                  onClick={handleLcEditFetch}
+                  disabled={lcEditLoading || !lcEditUrl.trim()}
+                  className="shrink-0 bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-orange-600 disabled:opacity-50"
+                >
+                  {lcEditLoading ? "⏳" : "📚 Pobierz"}
+                </button>
+              </div>
+            )}
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1">Tytuł *</label>
               <input

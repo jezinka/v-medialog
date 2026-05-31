@@ -119,8 +119,6 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            tmdb_id: null, ol_key: null, genres: [],
-            vote_average: null, runtime: null, release_year: null,
             persons: [{ name: createForm.author.trim(), role, display_order: 0 }],
           }),
         });
@@ -276,7 +274,7 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-medium text-gray-700">Nowe medium</p>
                   {/* LC quick-fill also accessible from create form */}
-                  {!lcUrl && (
+                  {!lcUrl && BOOK_TYPES.includes(createForm.media_type) && (
                     <button
                       type="button"
                       onClick={() => setShowCreate(false)}
