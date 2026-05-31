@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useRef, useCallback } from "react";
-import Link from "next/link";
 
 type ImportType = "media" | "wishlist";
 type TabType = "import" | "export" | "sync";
@@ -299,6 +298,8 @@ export default function ImportPage() {
 function ExportTab() {
   const [wiping, setWiping] = React.useState(false);
   const [wiped, setWiped] = React.useState(false);
+  const [cleaningYt, setCleaningYt] = React.useState(false);
+  const [ytCleaned, setYtCleaned] = React.useState<{ deletedMedia: number; deletedHistory: number } | null>(null);
 
   const MEDIA_TYPE_OPTIONS = [
     { value: "book",    label: "Książki" },
@@ -321,6 +322,21 @@ function ExportTab() {
   const handleExportMedia = () => {
     const types = selectedTypes.length === ALL_VALUES.length ? "" : `?types=${selectedTypes.join(",")}`;
     window.location.href = `/api/export/media${types}`;
+  };
+
+  const handleCleanYt = async () => {
+    if (!confirm("Czy na pewno chcesz usunąć wszystkie filmy YouTube i kanały YT z bazy?")) return;
+    setCleaningYt(true);
+    try {
+      const res = await fetch("/api/cleanup/yt", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setYtCleaned(data);
+    } catch (e) {
+      alert("Błąd: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setCleaningYt(false);
+    }
   };
 
   const handleWipe = async () => {
@@ -401,18 +417,31 @@ function ExportTab() {
 
       <div className="mt-6 border border-red-200 rounded-lg p-4 bg-red-50">
         <p className="text-sm font-semibold text-red-700 mb-1">⚠️ Niebezpieczna strefa</p>
-        <p className="text-xs text-red-600 mb-3">Usuwa wszystkie dane z bazy oraz wszystkie pliki okładek. Operacja jest nieodwracalna.</p>
-        {wiped ? (
-          <p className="text-sm text-green-700 font-medium">✅ Baza wyczyszczona. Odśwież stronę.</p>
-        ) : (
-          <button
-            onClick={handleWipe}
-            disabled={wiping}
-            className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            {wiping ? "Czyszczę..." : "🗑️ Wyczyść całą bazę danych"}
-          </button>
-        )}
+        <p className="text-xs text-red-600 mb-3">Operacje nieodwracalne.</p>
+        <div className="space-y-2">
+          {ytCleaned ? (
+            <p className="text-sm text-green-700 font-medium">✅ Usunięto {ytCleaned.deletedMedia} filmów YT{ytCleaned.deletedHistory > 0 ? ` i ${ytCleaned.deletedHistory} wpisów historii` : ""}. Odśwież stronę.</p>
+          ) : (
+            <button
+              onClick={handleCleanYt}
+              disabled={cleaningYt}
+              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              {cleaningYt ? "Czyszczę..." : "▶️ Usuń dane YouTube z bazy"}
+            </button>
+          )}
+          {wiped ? (
+            <p className="text-sm text-green-700 font-medium">✅ Baza wyczyszczona. Odśwież stronę.</p>
+          ) : (
+            <button
+              onClick={handleWipe}
+              disabled={wiping}
+              className="flex items-center gap-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
+              {wiping ? "Czyszczę..." : "🗑️ Wyczyść całą bazę danych"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -485,16 +514,6 @@ function UploadStep({ importType, setImportType, csvText, setCsvText, fileRef, o
       >
         {loading ? "Analizuję..." : "Podgląd"}
       </button>
-
-      <div className="border-t border-gray-200 pt-4">
-        <p className="text-sm font-medium text-gray-700 mb-2">Inne importy</p>
-        <Link
-          href="/import/yt"
-          className="inline-flex items-center gap-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-        >
-          ▶️ Import historii YouTube (Google Takeout)
-        </Link>
-      </div>
     </div>
   );
 }

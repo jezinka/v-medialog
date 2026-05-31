@@ -57,8 +57,6 @@ export async function GET(request: NextRequest) {
       if (type && type !== "all") {
         clauses.push(`m.media_type = ?`);
         args.push(type);
-      } else {
-        clauses.push(`m.media_type != 'yt'`);
       }
       if (noCover) {
         clauses.push(`m.cover_url IS NULL`);

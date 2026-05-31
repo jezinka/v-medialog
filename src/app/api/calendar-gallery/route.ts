@@ -33,10 +33,9 @@ export async function GET(request: Request) {
 
   try {
     // Fetch ALL sessions overlapping the year (placeholders included)
-    // YT videos are always excluded (they clutter the calendar)
     const typeClause = typeFilter && typeFilter.length > 0
       ? `AND m.media_type IN (${typeFilter.map(() => "?").join(",")})`
-      : "AND m.media_type != 'yt'";
+      : "";
     const rows = sqlite.prepare(`
       SELECT
         sn.id                                     AS season_id,
