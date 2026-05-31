@@ -183,6 +183,21 @@ export default function Statistics({ items, year }: Props) {
             </div>
           </div>
         )}
+        {plays.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎭 Sztuki teatralne</h4>
+            <div className="space-y-1">
+              {plays.map((item) => (
+                <div
+                  key={item.seasonId ?? `${item.title}__${item.id}`}
+                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
+                >
+                  {item.title}{item.author ? ` — ${item.author}` : ""}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
