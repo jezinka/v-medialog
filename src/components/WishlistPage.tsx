@@ -1,9 +1,10 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { MEDIA_TYPES, MEDIA_TYPE_LABELS } from "@/lib/utils";
+import { useCallback, useEffect, useState } from "react";
+import { MEDIA_TYPES, MEDIA_TYPE_LABELS, MEDIA_TYPE_EMOJI } from "@/lib/utils";
 import { toast } from "./Toast";
 import WatchlistCalendar from "./WatchlistCalendar";
-import CoverImg from "./CoverImg";
+import { useMediaSearch } from "@/lib/hooks/useMediaSearch";
+import MediaCoverThumb from "./MediaCoverThumb";
 
 interface WishlistItem {
   id: number;
@@ -22,29 +23,11 @@ interface WishlistFormData {
   notes: string;
 }
 
-interface ApiMediaItem {
-  id: number;
-  title: string;
-  original_title: string | null;
-  author: string | null;
-  media_type: string;
-  cover_url: string | null;
-}
-
 const emptyEditForm: WishlistFormData = {
   title: "",
   author: "",
   media_type: "book",
   notes: "",
-};
-
-const MEDIA_TYPE_EMOJI: Record<string, string> = {
-  book: "📖",
-  comic: "📰",
-  movie: "🎬",
-  series: "📺",
-  anime: "🎌",
-  cartoon: "🎨",
 };
 
 export default function WishlistPage() {
@@ -61,11 +44,7 @@ export default function WishlistPage() {
   const [checkingAllVod, setCheckingAllVod] = useState(false);
 
   // Media search for adding to wishlist
-  const [allMedia, setAllMedia] = useState<ApiMediaItem[]>([]);
-  const [mediaSearch, setMediaSearch] = useState("");
-  const [filteredMedia, setFilteredMedia] = useState<ApiMediaItem[]>([]);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { mediaSearch, filteredMedia, handleSearchChange, dropdownRef, clearResults } = useMediaSearch();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -110,47 +89,8 @@ export default function WishlistPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  useEffect(() => {
-    fetch("/api/media?all=true")
-      .then((r) => r.json())
-      .then((data: ApiMediaItem[]) => setAllMedia(data))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setFilteredMedia([]);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const handleSearchChange = (val: string) => {
-    setMediaSearch(val);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      if (val.trim().length >= 2) {
-        const q = val.toLowerCase();
-        setFilteredMedia(
-          allMedia
-            .filter(
-              (m) =>
-                m.title.toLowerCase().includes(q) ||
-                (m.original_title?.toLowerCase().includes(q) ?? false)
-            )
-            .slice(0, 8)
-        );
-      } else {
-        setFilteredMedia([]);
-      }
-    }, 300);
-  };
-
-  const handleAddFromMedia = async (media: ApiMediaItem) => {
-    setMediaSearch("");
-    setFilteredMedia([]);
+  const handleAddFromMedia = async (media: { id: number; title: string; author: string | null; media_type: string; cover_url: string | null }) => {
+    clearResults();
     try {
       const res = await fetch("/api/wishlist", {
         method: "POST",
@@ -280,13 +220,13 @@ export default function WishlistPage() {
                       onMouseDown={() => handleAddFromMedia(m)}
                       className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 text-left"
                     >
-                      <div className="relative w-8 h-10 shrink-0 rounded overflow-hidden bg-gray-100">
-                        {m.cover_url ? (
-                          <CoverImg src={m.cover_url} alt={m.title} fill className="object-contain" sizes="32px" />
-                        ) : (
-                          <span className="absolute inset-0 flex items-center justify-center text-base">{MEDIA_TYPE_EMOJI[m.media_type] ?? "📄"}</span>
-                        )}
-                      </div>
+                      <MediaCoverThumb
+                        coverUrl={m.cover_url}
+                        title={m.title}
+                        mediaType={m.media_type}
+                        className="w-8 h-10"
+                        sizes="32px"
+                      />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">{m.title}</p>
                         {m.author && <p className="text-xs text-gray-500 truncate">{m.author}</p>}
@@ -394,13 +334,12 @@ export default function WishlistPage() {
               key={item.id}
               className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex items-start gap-3"
             >
-              <div className="relative w-10 h-14 shrink-0 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
-                {item.cover_url ? (
-                  <CoverImg src={item.cover_url} alt={item.title} fill className="object-contain" sizes="40px" />
-                ) : (
-                  <span className="text-xl">{MEDIA_TYPE_EMOJI[item.media_type] ?? "📄"}</span>
-                )}
-              </div>
+              <MediaCoverThumb
+                coverUrl={item.cover_url}
+                title={item.title}
+                mediaType={item.media_type}
+                sizes="40px"
+              />
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-semibold text-gray-900">{item.title}</span>

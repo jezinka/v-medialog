@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const BOOK_TYPES = ["book", "comic"];
-const NO_SEARCH_TYPES = ["play", "game", "podcast", "record"];
+const NO_SEARCH_TYPES = ["play", "podcast", "record"];
 
 interface SearchResult {
   title: string;
@@ -35,6 +35,33 @@ async function searchOpenLibrary(query: string): Promise<SearchResult[]> {
     sourceId: doc.key ?? "",
     pages: doc.number_of_pages_median ?? null,
     subjects: doc.subject ? doc.subject.slice(0, 5) : null,
+    overview: null,
+  }));
+}
+
+async function searchRawg(query: string): Promise<SearchResult[]> {
+  const apiKey = process.env.RAWG_API_KEY;
+  if (!apiKey) return [];
+
+  const url = `https://api.rawg.io/api/games?search=${encodeURIComponent(query)}&key=${apiKey}&page_size=8`;
+  const res = await fetch(url, { next: { revalidate: 60 } });
+  if (!res.ok) return [];
+  const data = await res.json();
+
+  return (data.results ?? []).map((item: {
+    id?: number;
+    name?: string;
+    background_image?: string | null;
+    released?: string;
+    genres?: { name: string }[];
+  }) => ({
+    title: item.name ?? "",
+    author: null,
+    coverUrl: item.background_image ?? null,
+    year: item.released ? item.released.split("-")[0] : null,
+    sourceId: `rawg:${item.id ?? ""}`,
+    pages: null,
+    subjects: item.genres ? item.genres.map((g) => g.name) : null,
     overview: null,
   }));
 }
@@ -85,6 +112,8 @@ export async function GET(request: NextRequest) {
     let results: SearchResult[];
     if (NO_SEARCH_TYPES.includes(type)) {
       results = [];
+    } else if (type === "game") {
+      results = await searchRawg(query.trim());
     } else if (BOOK_TYPES.includes(type)) {
       results = await searchOpenLibrary(query.trim());
     } else {

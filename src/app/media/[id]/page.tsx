@@ -13,7 +13,7 @@ export default function MediaDetailPage() {
   return (
     <ItemDetailPage
       mediaId={mediaId}
-      onClose={() => router.back()}
+      onClose={() => router.push("/media")}
       onOpenPerson={(personId) => router.push(`/people/${personId}`)}
       onOpenDetail={(id) => router.push(`/media/${id}`)}
     />

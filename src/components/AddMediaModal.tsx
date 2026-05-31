@@ -1,18 +1,9 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import CoverImg from "./CoverImg";
 import { MEDIA_TYPES, MEDIA_TYPE_LABELS, MEDIA_TYPE_COLORS, BOOK_TYPES } from "@/lib/utils";
 import { toast } from "./Toast";
-
-interface ApiMediaItem {
-  id: number;
-  title: string;
-  original_title: string | null;
-  author: string | null;
-  media_type: string;
-  cover_url: string | null;
-  tmdb_id: string | null;
-}
+import { useMediaSearch } from "@/lib/hooks/useMediaSearch";
 
 interface Props {
   onClose: () => void;
@@ -22,9 +13,7 @@ interface Props {
 }
 
 export default function AddMediaModal({ onClose, onSelect, initialStartDate, initialEndDate }: Props) {
-  const [allMedia, setAllMedia] = useState<ApiMediaItem[]>([]);
-  const [mediaSearch, setMediaSearch] = useState("");
-  const [filteredMedia, setFilteredMedia] = useState<ApiMediaItem[]>([]);
+  const { mediaSearch, filteredMedia, handleSearchChange, dropdownRef } = useMediaSearch();
   const [showCreate, setShowCreate] = useState(false);
   const [createForm, setCreateForm] = useState({
     title: "",
@@ -42,46 +31,6 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
   const [lcLoading, setLcLoading] = useState(false);
   const [tmdbUrl, setTmdbUrl] = useState("");
   const [tmdbLoading, setTmdbLoading] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    fetch("/api/media?all=true")
-      .then((r) => r.json())
-      .then((data: ApiMediaItem[]) => setAllMedia(data))
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setFilteredMedia([]);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  const handleSearchChange = (val: string) => {
-    setMediaSearch(val);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      if (val.trim().length >= 2) {
-        const q = val.toLowerCase();
-        setFilteredMedia(
-          allMedia
-            .filter(
-              (m) =>
-                m.title.toLowerCase().includes(q) ||
-                (m.original_title?.toLowerCase().includes(q) ?? false)
-            )
-            .slice(0, 8)
-        );
-      } else {
-        setFilteredMedia([]);
-      }
-    }, 300);
-  };
 
   const handleLcFetch = async () => {
     if (!lcUrl.trim()) return;
@@ -162,7 +111,7 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
         }),
       });
       if (!res.ok) throw new Error(await res.text());
-      const created: ApiMediaItem = await res.json();
+      const created = await res.json() as { id: number; title: string; author: string | null; media_type: string; cover_url: string | null; tmdb_id: string | null };
       // Create a linked person record for the author/director
       if (createForm.author.trim()) {
         const role = BOOK_TYPES.includes(createForm.media_type) ? "author" : "director";
@@ -170,7 +119,7 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            tmdb_id: null, ol_key: null, description: null, genres: [],
+            tmdb_id: null, ol_key: null, genres: [],
             vote_average: null, runtime: null, release_year: null,
             persons: [{ name: createForm.author.trim(), role, display_order: 0 }],
           }),

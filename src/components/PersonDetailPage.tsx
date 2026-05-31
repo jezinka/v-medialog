@@ -283,7 +283,7 @@ export default function PersonDetailPage({ personId, onBack, onOpenMedia }: Prop
   const bookEntries = person.media.filter((m) => BOOK_ROLES.includes(m.role));
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
       <button
         onClick={onBack}
         className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 transition-colors"

@@ -49,23 +49,24 @@ function CalendarInner() {
 
   const changeYear = useCallback((newYear: number) => {
     setYear(newYear);
-    router.replace(buildUrl(newYear, activeTypes));
-  }, [router, activeTypes, buildUrl]);
+  }, []);
 
   const toggleType = useCallback((type: string) => {
     setActiveTypes((prev) => {
       const next = new Set(prev);
       if (next.has(type)) next.delete(type);
       else next.add(type);
-      router.replace(buildUrl(year, next));
       return next;
     });
-  }, [year, router, buildUrl]);
+  }, []);
 
   const clearTypes = useCallback(() => {
     setActiveTypes(new Set());
-    router.replace(buildUrl(year, new Set()));
-  }, [year, router, buildUrl]);
+  }, []);
+
+  useEffect(() => {
+    router.replace(buildUrl(year, activeTypes));
+  }, [year, activeTypes, router, buildUrl]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);

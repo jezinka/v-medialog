@@ -58,7 +58,6 @@ export async function GET(request: NextRequest) {
         clauses.push(`m.media_type = ?`);
         args.push(type);
       } else {
-        // YT videos are excluded from the main media library
         clauses.push(`m.media_type != 'yt'`);
       }
       if (noCover) {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { buildTmdbUrl, fetchTmdb, isTmdbTimeout, tmdbImageUrl } from "@/lib/tmdb";
 
 interface TmdbSearchResult {
   id: number;
@@ -63,28 +64,21 @@ export async function GET(request: NextRequest) {
 
     if (tmdbIdParam) {
       tmdbId = parseInt(tmdbIdParam, 10);
-      // Fetch show details to get name
-      const showRes = await fetch(
-        `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${apiKey}&language=pl-PL`,
-        { cache: "no-store", signal: AbortSignal.timeout(10000) }
-      );
-      if (!showRes.ok) {
+      const showUrl = buildTmdbUrl(`tv/${tmdbId}`, apiKey);
+      const showResult = await fetchTmdb<{ name?: string; original_name?: string; poster_path?: string | null }>(showUrl);
+      if (!showResult.ok) {
         return NextResponse.json({ error: "Nie znaleziono serialu o podanym ID" }, { status: 404 });
       }
-      const showData = await showRes.json();
-      showName = showData.name ?? showData.original_name ?? title;
-      posterPath = showData.poster_path ?? null;
+      showName = showResult.data.name ?? showResult.data.original_name ?? title ?? "";
+      posterPath = showResult.data.poster_path ?? null;
     } else {
       // Search by title
-      const searchRes = await fetch(
-        `https://api.themoviedb.org/3/search/tv?api_key=${apiKey}&query=${encodeURIComponent(searchQuery)}&page=1&language=pl-PL`,
-        { cache: "no-store", signal: AbortSignal.timeout(10000) }
-      );
-      if (!searchRes.ok) {
+      const searchUrl = buildTmdbUrl("search/tv", apiKey, { query: searchQuery, page: "1" });
+      const searchResult = await fetchTmdb<{ results?: TmdbSearchResult[] }>(searchUrl);
+      if (!searchResult.ok) {
         return NextResponse.json({ error: "Błąd wyszukiwania TMDB" }, { status: 502 });
       }
-      const searchData = await searchRes.json();
-      searchResults = (searchData.results ?? []) as TmdbSearchResult[];
+      searchResults = searchResult.data.results ?? [];
 
       if (searchResults.length === 0) {
         return NextResponse.json({ error: `Nie znaleziono serialu "${searchQuery}" w TMDB` }, { status: 404 });
@@ -97,7 +91,7 @@ export async function GET(request: NextRequest) {
             tmdb_id: r.id,
             name: r.name ?? r.original_name ?? "",
             first_air_date: r.first_air_date ?? "",
-            poster_path: r.poster_path ? `https://image.tmdb.org/t/p/w92${r.poster_path}` : null,
+            poster_path: tmdbImageUrl(r.poster_path, "w92"),
           })),
         });
       }
@@ -108,14 +102,12 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch season details
-    const seasonRes = await fetch(
-      `https://api.themoviedb.org/3/tv/${tmdbId}/season/${seasonNum}?api_key=${apiKey}&language=pl-PL`,
-      { cache: "no-store", signal: AbortSignal.timeout(10000) }
-    );
-    if (!seasonRes.ok) {
+    const seasonUrl = buildTmdbUrl(`tv/${tmdbId}/season/${seasonNum}`, apiKey);
+    const seasonResult = await fetchTmdb<TmdbSeason>(seasonUrl);
+    if (!seasonResult.ok) {
       return NextResponse.json({ error: `Sezon ${seasonNum} nie znaleziony w TMDB` }, { status: 404 });
     }
-    const seasonData: TmdbSeason = await seasonRes.json();
+    const seasonData: TmdbSeason = seasonResult.data;
     const episodes = (seasonData.episodes ?? []).filter((e) => e.air_date);
 
     if (episodes.length === 0) {
@@ -136,16 +128,13 @@ export async function GET(request: NextRequest) {
       end_date: endDate,
       episode_count: episodes.length,
       episode_dates: uniqueDates,
-      poster_path: posterPath ? `https://image.tmdb.org/t/p/w185${posterPath}` : null,
-      season_poster_path: seasonData.poster_path
-        ? `https://image.tmdb.org/t/p/w185${seasonData.poster_path}`
-        : null,
+      poster_path: tmdbImageUrl(posterPath, "w185"),
+      season_poster_path: tmdbImageUrl(seasonData.poster_path, "w185"),
     };
 
     return NextResponse.json(result);
   } catch (err) {
     console.error("TMDB season fetch error:", err);
-    const isTimeout = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
-    return NextResponse.json({ error: isTimeout ? "Timeout — brak odpowiedzi z TMDB (>10s)" : "Błąd połączenia z TMDB" }, { status: 504 });
+    return NextResponse.json({ error: isTmdbTimeout(err) ? "Timeout — brak odpowiedzi z TMDB (>10s)" : "Błąd połączenia z TMDB" }, { status: 504 });
   }
 }

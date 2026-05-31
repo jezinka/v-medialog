@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { buildTmdbUrl, fetchTmdb, isTmdbTimeout, tmdbImageUrl } from "@/lib/tmdb";
 
 export interface TmdbInfoResult {
   tmdb_id: number;
@@ -24,22 +25,21 @@ export interface TmdbInfoResult {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildResult(d: any, tmdbId: number, isTv: boolean, apiKey: string): TmdbInfoResult {
-  void apiKey; // available for future use
+function buildResult(d: any, tmdbId: number, isTv: boolean): TmdbInfoResult {
   const cast = ((d.credits?.cast ?? []) as Array<{ name: string; character: string; profile_path?: string | null }>)
     .slice(0, 12)
     .map((c) => ({
       name: c.name,
       character: c.character,
-      profile_path: c.profile_path ? `https://image.tmdb.org/t/p/w45${c.profile_path}` : null,
+      profile_path: tmdbImageUrl(c.profile_path, "w45"),
     }));
   return {
     tmdb_id: tmdbId,
     title: isTv ? (d.name ?? "") : (d.title ?? ""),
     original_title: isTv ? (d.original_name ?? "") : (d.original_title ?? ""),
     overview: d.overview ?? "",
-    poster_url: d.poster_path ? `https://image.tmdb.org/t/p/w342${d.poster_path}` : null,
-    backdrop_url: d.backdrop_path ? `https://image.tmdb.org/t/p/w780${d.backdrop_path}` : null,
+    poster_url: tmdbImageUrl(d.poster_path, "w342"),
+    backdrop_url: tmdbImageUrl(d.backdrop_path, "w780"),
     genres: ((d.genres ?? []) as Array<{ name: string }>).map((g) => g.name),
     vote_average: d.vote_average ?? 0,
     cast,
@@ -78,35 +78,26 @@ export async function GET(request: NextRequest) {
   try {
     if (tmdbIdParam) {
       tmdbId = parseInt(tmdbIdParam, 10);
-      // Try the type-based endpoint first; if it fails (e.g. ID is for the other type), try the other
-      const firstEndpoint = isTv
-        ? `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${apiKey}&language=pl-PL&append_to_response=credits`
-        : `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${apiKey}&language=pl-PL&append_to_response=credits`;
-      const firstRes = await fetch(firstEndpoint, { cache: "no-store", signal: AbortSignal.timeout(10000) });
-      if (!firstRes.ok) {
-        // Fallback: try the other type
+      const firstUrl = buildTmdbUrl(`${isTv ? "tv" : "movie"}/${tmdbId}`, apiKey, { append_to_response: "credits" });
+      const firstResult = await fetchTmdb<unknown>(firstUrl);
+      if (!firstResult.ok) {
         resolvedIsTv = !isTv;
-        const fallbackEndpoint = resolvedIsTv
-          ? `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${apiKey}&language=pl-PL&append_to_response=credits`
-          : `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${apiKey}&language=pl-PL&append_to_response=credits`;
-        const fallbackRes = await fetch(fallbackEndpoint, { cache: "no-store", signal: AbortSignal.timeout(10000) });
-        if (!fallbackRes.ok) return NextResponse.json({ error: "Nie znaleziono w TMDB (sprawdzono tv i movie)" }, { status: 404 });
-        const d = await fallbackRes.json();
-        return NextResponse.json(buildResult(d, tmdbId, resolvedIsTv, apiKey));
+        const fallbackUrl = buildTmdbUrl(`${resolvedIsTv ? "tv" : "movie"}/${tmdbId}`, apiKey, { append_to_response: "credits" });
+        const fallbackResult = await fetchTmdb<unknown>(fallbackUrl);
+        if (!fallbackResult.ok) return NextResponse.json({ error: "Nie znaleziono w TMDB (sprawdzono tv i movie)" }, { status: 404 });
+        return NextResponse.json(buildResult(fallbackResult.data, tmdbId, resolvedIsTv));
       }
-      const d = await firstRes.json();
-      return NextResponse.json(buildResult(d, tmdbId, resolvedIsTv, apiKey));
+      return NextResponse.json(buildResult(firstResult.data, tmdbId, resolvedIsTv));
     } else {
       if (!searchQuery) return NextResponse.json({ error: "Wymagany title lub tmdb_id" }, { status: 400 });
 
       const searchType = isTv ? "tv" : "movie";
-      let searchUrl = `https://api.themoviedb.org/3/search/${searchType}?api_key=${apiKey}&query=${encodeURIComponent(searchQuery)}&language=pl-PL`;
-      if (yearParam) {
-        searchUrl += isTv ? `&first_air_date_year=${yearParam}` : `&year=${yearParam}`;
-      }
-      const searchRes = await fetch(searchUrl, { cache: "no-store", signal: AbortSignal.timeout(10000) });
-      const searchData = await searchRes.json();
-      const results = (searchData.results ?? []) as Array<{ id: number; name?: string; title?: string; first_air_date?: string; release_date?: string; poster_path?: string | null }>;
+      const searchExtra: Record<string, string> = { query: searchQuery };
+      if (yearParam) searchExtra[isTv ? "first_air_date_year" : "year"] = yearParam;
+      const searchUrl = buildTmdbUrl(`search/${searchType}`, apiKey, searchExtra);
+      const searchResult = await fetchTmdb<{ results?: unknown[] }>(searchUrl);
+      if (!searchResult.ok) return NextResponse.json({ error: `Nie znaleziono "${searchQuery}"` }, { status: 404 });
+      const results = (searchResult.data.results ?? []) as Array<{ id: number; name?: string; title?: string; first_air_date?: string; release_date?: string; poster_path?: string | null }>;
 
       if (results.length === 0) return NextResponse.json({ error: `Nie znaleziono "${searchQuery}"` }, { status: 404 });
 
@@ -116,7 +107,7 @@ export async function GET(request: NextRequest) {
             tmdb_id: r.id,
             name: r.name ?? r.title ?? "",
             first_air_date: r.first_air_date ?? r.release_date ?? "",
-            poster_path: r.poster_path ? `https://image.tmdb.org/t/p/w92${r.poster_path}` : null,
+            poster_path: tmdbImageUrl(r.poster_path, "w92"),
           })),
         });
       }
@@ -124,19 +115,13 @@ export async function GET(request: NextRequest) {
       tmdbId = results[0].id;
     }
 
-    const endpoint = resolvedIsTv
-      ? `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${apiKey}&language=pl-PL&append_to_response=credits`
-      : `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${apiKey}&language=pl-PL&append_to_response=credits`;
-
-    const detailRes = await fetch(endpoint, { cache: "no-store", signal: AbortSignal.timeout(10000) });
-    if (!detailRes.ok) return NextResponse.json({ error: "Błąd pobierania szczegółów z TMDB" }, { status: 502 });
-
-    const d = await detailRes.json();
-    return NextResponse.json(buildResult(d, tmdbId, resolvedIsTv, apiKey));
+    const detailUrl = buildTmdbUrl(`${resolvedIsTv ? "tv" : "movie"}/${tmdbId}`, apiKey, { append_to_response: "credits" });
+    const detailResult = await fetchTmdb<unknown>(detailUrl);
+    if (!detailResult.ok) return NextResponse.json({ error: "Błąd pobierania szczegółów z TMDB" }, { status: 502 });
+    return NextResponse.json(buildResult(detailResult.data, tmdbId, resolvedIsTv));
   } catch (err) {
-    const isTimeout = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
     return NextResponse.json(
-      { error: isTimeout ? "Timeout — brak odpowiedzi z TMDB (>10s)" : "Błąd połączenia z TMDB" },
+      { error: isTmdbTimeout(err) ? "Timeout — brak odpowiedzi z TMDB (>10s)" : "Błąd połączenia z TMDB" },
       { status: 504 }
     );
   }

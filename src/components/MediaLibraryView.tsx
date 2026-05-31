@@ -38,7 +38,7 @@ interface Props {
   onOpenDetail: (mediaId: number) => void;
 }
 
-const TYPE_FILTERS = ["all", "series", "anime", "cartoon", "movie", "book", "comic"] as const;
+const TYPE_FILTERS = ["all", "series", "anime", "cartoon", "movie", "book", "comic", "play"] as const;
 type TypeFilter = (typeof TYPE_FILTERS)[number];
 
 export default function MediaLibraryView({ onOpenDetail }: Props) {

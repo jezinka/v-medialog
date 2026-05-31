@@ -13,18 +13,13 @@ export interface CalendarEntry {
 }
 
 /**
- * GET /api/calendar-gallery?year=YYYY&types=yt,book
+ * GET /api/calendar-gallery?year=YYYY&types=book,movie
  *
  * Returns at most one cover per season for the whole year.
  * Seasons with real (non-placeholder) sessions are placed in their canonical month.
  * Seasons that only have year-placeholder sessions (duration ≥ 364 days) are placed
  * on any remaining empty slot across the year and marked is_placeholder=true.
  * Optional `types` param (comma-separated) filters by media_type.
- *
- * YT-specific rules:
- *   - Max 1 video per channel per month
- *   - Channels with fewer total YT entries in the year have higher priority
- *   - If no free slot in canonical month → drop (no year-wide fallback)
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -48,7 +43,6 @@ export async function GET(request: Request) {
         m.id                                      AS media_id,
         m.title,
         m.media_type,
-        m.author                                  AS channel_name,
         COALESCE(sn.cover_url, m.cover_url)       AS cover_url,
         se.start_date,
         se.end_date,
@@ -69,7 +63,6 @@ export async function GET(request: Request) {
       media_id: number;
       title: string;
       media_type: string;
-      channel_name: string | null;
       cover_url: string;
       start_date: string;
       end_date: string | null;
@@ -82,7 +75,6 @@ export async function GET(request: Request) {
       media_id: number;
       title: string;
       media_type: string;
-      channel_name: string | null;
       cover_url: string;
       is_movie: boolean;
       is_placeholder: boolean;
@@ -103,7 +95,6 @@ export async function GET(request: Request) {
           media_id: row.media_id,
           title: row.title,
           media_type: row.media_type,
-          channel_name: row.channel_name,
           cover_url: row.cover_url,
           is_movie: row.media_type === "movie",
           is_placeholder: true,
@@ -154,50 +145,6 @@ export async function GET(request: Request) {
     const placeholderEntries = Array.from(seasonMap.values()).filter((e) => e.is_placeholder)
       .sort((a, b) => a.title.localeCompare(b.title));
 
-    // --- YT-specific processing ---
-    // Count total YT entries per channel across the year (to determine priority)
-    const ytEntries = allReal.filter((e) => e.media_type === "yt");
-    const channelCount = new Map<string, number>();
-    for (const e of ytEntries) {
-      const ch = e.channel_name ?? "__unknown__";
-      channelCount.set(ch, (channelCount.get(ch) ?? 0) + 1);
-    }
-
-    // For YT: keep max 1 entry per channel per month.
-    // Among entries from the same channel+month, keep the one with earliest valid_days[0].
-    // Then sort all selected YT entries by channel count ASC (rarer channels first).
-    const ytSelectedKeys = new Set<string>(); // "month:channel"
-    const ytFiltered: typeof allReal = [];
-    // First pass: deduplicate same-channel entries within a month (keep first by valid_days[0])
-    const ytSorted = ytEntries.slice().sort((a, b) => {
-      if (a.canonical_month !== b.canonical_month) return a.canonical_month - b.canonical_month;
-      return (a.valid_days[0] ?? 0) - (b.valid_days[0] ?? 0);
-    });
-    for (const e of ytSorted) {
-      const ch = e.channel_name ?? "__unknown__";
-      const key = `${e.canonical_month}:${ch}`;
-      if (!ytSelectedKeys.has(key)) {
-        ytSelectedKeys.add(key);
-        ytFiltered.push(e);
-      }
-    }
-    // Sort by channel count ASC (fewer total = higher priority), then by canonical_month
-    ytFiltered.sort((a, b) => {
-      const ca = channelCount.get(a.channel_name ?? "__unknown__") ?? 0;
-      const cb = channelCount.get(b.channel_name ?? "__unknown__") ?? 0;
-      if (ca !== cb) return ca - cb;
-      return a.canonical_month - b.canonical_month;
-    });
-
-    // Non-YT real entries sorted as before
-    const nonYtEntries = allReal
-      .filter((e) => e.media_type !== "yt")
-      .sort((a, b) => {
-        if (a.is_movie !== b.is_movie) return a.is_movie ? -1 : 1;
-        if (a.canonical_month !== b.canonical_month) return a.canonical_month - b.canonical_month;
-        return (a.valid_days[0] ?? 0) - (b.valid_days[0] ?? 0);
-      });
-
     // Precompute days-in-month
     const daysInMonth = Array.from({ length: 12 }, (_, i) =>
       new Date(year, i + 1, 0).getDate()
@@ -213,7 +160,6 @@ export async function GET(request: Request) {
     function findSlot(
       canonicalMonth: number,
       validDays: number[],
-      monthOnly = false
     ): { month: number; day: number } | null {
       const occupied = getOccupied(canonicalMonth);
 
@@ -233,8 +179,6 @@ export async function GET(request: Request) {
         }
       }
 
-      if (monthOnly) return null;
-
       for (let m = 1; m <= 12; m++) {
         if (m === canonicalMonth) continue;
         const occ = getOccupied(m);
@@ -246,12 +190,23 @@ export async function GET(request: Request) {
       return null;
     }
 
+    // Sort: cinema first, then single-day entries (no flexibility), then movies, then by month/day
+    const sortedEntries = allReal
+      .sort((a, b) => {
+        if (a.cinema !== b.cinema) return a.cinema ? -1 : 1;
+        const aSingle = a.valid_days.length === 1 ? 0 : 1;
+        const bSingle = b.valid_days.length === 1 ? 0 : 1;
+        if (aSingle !== bSingle) return aSingle - bSingle;
+        if (a.is_movie !== b.is_movie) return a.is_movie ? -1 : 1;
+        if (a.canonical_month !== b.canonical_month) return a.canonical_month - b.canonical_month;
+        return (a.valid_days[0] ?? 0) - (b.valid_days[0] ?? 0);
+      });
+
     const result: CalendarEntry[] = [];
 
-    // Assign non-YT entries (with year-wide fallback)
-    for (const entry of nonYtEntries) {
+    for (const entry of sortedEntries) {
       if (entry.valid_days.length === 0) continue;
-      const slot = findSlot(entry.canonical_month, entry.valid_days, false);
+      const slot = findSlot(entry.canonical_month, entry.valid_days);
       if (slot !== null) {
         getOccupied(slot.month).add(slot.day);
         result.push({
@@ -265,26 +220,6 @@ export async function GET(request: Request) {
           cinema: entry.cinema,
         });
       }
-    }
-
-    // Assign YT entries (month-only, no fallback)
-    for (const entry of ytFiltered) {
-      if (entry.valid_days.length === 0) continue;
-      const slot = findSlot(entry.canonical_month, entry.valid_days, true);
-      if (slot !== null) {
-        getOccupied(slot.month).add(slot.day);
-        result.push({
-          media_id: entry.media_id,
-          title: entry.title,
-          media_type: entry.media_type,
-          cover_url: entry.cover_url,
-          month: slot.month,
-          assigned_day: slot.day,
-          is_placeholder: false,
-          cinema: entry.cinema,
-        });
-      }
-      // If no slot in canonical month → silently drop
     }
 
     // Greedy assignment for placeholder-only entries — any empty slot in the year

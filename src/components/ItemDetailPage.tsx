@@ -2094,17 +2094,6 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
             {description && (
               <p className="text-sm text-gray-600 leading-relaxed line-clamp-5">{description}</p>
             )}
-            {/* Watch button for YouTube videos */}
-            {media.media_type === "yt" && media.source_url && (
-              <a
-                href={media.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                ▶ Oglądaj na YouTube
-              </a>
-            )}
             {genres.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {genres.map((g) => (

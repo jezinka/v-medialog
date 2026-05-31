@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
+import { parseRouteId, jsonError, safeJsonParse } from "@/lib/api-helpers";
 
 type MediaRow = {
   id: number;
@@ -21,11 +22,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const numId = parseInt(id);
+    const numId = await parseRouteId(params);
 
     const item = sqlite.prepare(`SELECT * FROM media WHERE id=?`).get(numId) as MediaRow | undefined;
-    if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!item) return jsonError("Not found", 404);
 
     const rows = sqlite.prepare(
       `SELECT mp.role, mp.character_name, mp.display_order,
@@ -50,7 +50,7 @@ export async function GET(
       releaseYear: item.release_year ?? null,
       seriesStatus: item.series_status ?? null,
       tmdbSeasonsCount: item.tmdb_seasons_count ?? null,
-      trackList: item.track_list ? (() => { try { return JSON.parse(item.track_list!); } catch { return null; } })() : null,
+      trackList: safeJsonParse(item.track_list),
       persons: rows.map((r) => ({
         personId: r.person_id, name: r.name, photoUrl: r.photo_url,
         role: r.role, characterName: r.character_name, displayOrder: r.display_order,
@@ -58,7 +58,7 @@ export async function GET(
     });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to fetch external data" }, { status: 500 });
+    return jsonError("Failed to fetch external data", 500);
   }
 }
 
@@ -77,11 +77,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
-    const numId = parseInt(id);
+    const numId = await parseRouteId(params);
 
     const existing = sqlite.prepare(`SELECT id FROM media WHERE id=?`).get(numId);
-    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!existing) return jsonError("Not found", 404);
 
     const body = await request.json() as Record<string, unknown>;
     const { tmdb_id, ol_key, description, genres, vote_average, runtime, release_year, series_status, tmdb_seasons_count, persons: personsInput } = body as {
@@ -159,21 +158,18 @@ export async function POST(
        WHERE mp.media_id=? ORDER BY mp.display_order`
     ).all(numId) as Array<{ role: string; character_name: string | null; display_order: number; person_id: number; name: string; photo_url: string | null; }>;
 
-    let parsedGenres: string[] = [];
-    try { parsedGenres = updated?.genres ? JSON.parse(updated.genres) : []; } catch { parsedGenres = []; }
-
     return NextResponse.json({
       tmdbId: updated?.tmdb_id ?? null,
       olKey: updated?.ol_key ?? null,
       externalSyncedAt: updated?.external_synced_at ?? null,
       description: updated?.description ?? null,
-      genres: parsedGenres,
+      genres: safeJsonParse<string[]>(updated?.genres) ?? [],
       voteAverage: updated?.vote_average ?? null,
       runtime: updated?.runtime ?? null,
       releaseYear: updated?.release_year ?? null,
       seriesStatus: updated?.series_status ?? null,
       tmdbSeasonsCount: updated?.tmdb_seasons_count ?? null,
-      trackList: updated?.track_list ? (() => { try { return JSON.parse(updated.track_list!); } catch { return null; } })() : null,
+      trackList: safeJsonParse(updated?.track_list),
       persons: rows.map((r) => ({
         personId: r.person_id, name: r.name, photoUrl: r.photo_url,
         role: r.role, characterName: r.character_name, displayOrder: r.display_order,
@@ -181,6 +177,6 @@ export async function POST(
     });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to save external data" }, { status: 500 });
+    return jsonError("Failed to save external data", 500);
   }
 }

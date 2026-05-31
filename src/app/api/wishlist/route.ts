@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
-
-const VALID_MEDIA_TYPES = ["book", "comic", "movie", "series", "anime", "cartoon"];
+import { VALID_WISHLIST_MEDIA_TYPES, jsonError } from "@/lib/api-helpers";
 
 export async function GET() {
   try {
@@ -11,7 +10,7 @@ export async function GET() {
     return NextResponse.json(items);
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to fetch wishlist" }, { status: 500 });
+    return jsonError("Failed to fetch wishlist", 500);
   }
 }
 
@@ -20,12 +19,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { title, author, media_type, notes, cover_url } = body;
 
-    if (!title) {
-      return NextResponse.json({ error: "title is required" }, { status: 400 });
-    }
-    if (!VALID_MEDIA_TYPES.includes(media_type)) {
-      return NextResponse.json({ error: "Invalid media_type" }, { status: 400 });
-    }
+    if (!title) return jsonError("title is required", 400);
+    if (!VALID_WISHLIST_MEDIA_TYPES.includes(media_type)) return jsonError("Invalid media_type", 400);
 
     const result = sqlite.prepare(`
       INSERT INTO wishlist (title, author, media_type, notes, priority, cover_url)
@@ -35,6 +30,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ id: result.lastInsertRowid, message: "Dodano do listy" }, { status: 201 });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to add to wishlist" }, { status: 500 });
+    return jsonError("Failed to add to wishlist", 500);
   }
 }
