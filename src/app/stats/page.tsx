@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Statistics from "@/components/Statistics";
-import { BOOK_TYPES, SCREEN_TYPES } from "@/lib/utils";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapToCalendarItem(raw: any) {
@@ -45,11 +44,15 @@ function StatsContent() {
     }
   }, [year]);
 
-  useEffect(() => { void fetchData(); }, [fetchData]);
+  useEffect(() => {
+    void fetchData();
 
-  const calendarItems = items.filter((i) =>
-    BOOK_TYPES.includes(i.mediaType) || SCREEN_TYPES.includes(i.mediaType)
-  );
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) void fetchData();
+    };
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, [fetchData]);
 
   return (
     <main className="max-w-7xl mx-auto px-4 py-6">
@@ -58,7 +61,7 @@ function StatsContent() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
         </div>
       ) : (
-        <Statistics items={calendarItems} year={year} />
+        <Statistics items={items} year={year} />
       )}
     </main>
   );

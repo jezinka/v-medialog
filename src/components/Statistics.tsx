@@ -92,52 +92,52 @@ export default function Statistics({ items, year }: Props) {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <div className="bg-gray-50 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-gray-900">{books.length}</div>
-          <div className="text-xs text-gray-500">Książek / Komiksów</div>
+      <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
+          <div className="text-xl font-bold text-gray-900">{books.length}</div>
+          <div className="text-xs text-gray-500">Książek</div>
         </div>
-        <div className="bg-gray-50 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-gray-900">{movies.length}</div>
+        <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
+          <div className="text-xl font-bold text-gray-900">{movies.length}</div>
           <div className="text-xs text-gray-500">Filmów</div>
         </div>
-        <div className="bg-gray-50 rounded-xl p-3 text-center">
-          <div className="text-2xl font-bold text-gray-900">{series.length}</div>
+        <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
+          <div className="text-xl font-bold text-gray-900">{series.length}</div>
           <div className="text-xs text-gray-500">Seriali</div>
         </div>
         {cinemaMovies.length > 0 && (
-          <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <div className="text-2xl font-bold text-gray-900">{cinemaMovies.length}</div>
-            <div className="text-xs text-gray-500">🎟️ W kinie</div>
+          <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
+            <div className="text-xl font-bold text-gray-900">{cinemaMovies.length}</div>
+            <div className="text-xs text-gray-500">🎟️ Kino</div>
           </div>
         )}
         {plays.length > 0 && (
-          <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <div className="text-2xl font-bold text-gray-900">{plays.length}</div>
-            <div className="text-xs text-gray-500">🎭 Sztuk teatralnych</div>
+          <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
+            <div className="text-xl font-bold text-gray-900">{plays.length}</div>
+            <div className="text-xs text-gray-500">🎭 Teatr</div>
           </div>
         )}
         {games.length > 0 && (
-          <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <div className="text-2xl font-bold text-gray-900">{games.length}</div>
+          <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
+            <div className="text-xl font-bold text-gray-900">{games.length}</div>
             <div className="text-xs text-gray-500">🎮 Gier</div>
           </div>
         )}
         {podcasts.length > 0 && (
-          <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <div className="text-2xl font-bold text-gray-900">{podcasts.length}</div>
+          <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
+            <div className="text-xl font-bold text-gray-900">{podcasts.length}</div>
             <div className="text-xs text-gray-500">🎙️ Podcastów</div>
           </div>
         )}
         {records.length > 0 && (
-          <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <div className="text-2xl font-bold text-gray-900">{records.length}</div>
+          <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
+            <div className="text-xl font-bold text-gray-900">{records.length}</div>
             <div className="text-xs text-gray-500">🎵 Płyt</div>
           </div>
         )}
       </div>
 
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
         {books.length > 0 && (
           <div>
             <h4 className="text-sm font-semibold text-gray-700 mb-2">📚 Przeczytane</h4>
@@ -188,6 +188,36 @@ export default function Statistics({ items, year }: Props) {
             <h4 className="text-sm font-semibold text-gray-700 mb-2">🎭 Sztuki teatralne</h4>
             <div className="space-y-1">
               {plays.map((item) => (
+                <div
+                  key={item.seasonId ?? `${item.title}__${item.id}`}
+                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
+                >
+                  {item.title}{item.author ? ` — ${item.author}` : ""}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {podcasts.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎙️ Podcasty</h4>
+            <div className="space-y-1">
+              {podcasts.map((item) => (
+                <div
+                  key={item.seasonId ?? `${item.title}__${item.id}`}
+                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
+                >
+                  {item.title}{item.author ? ` — ${item.author}` : ""}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {records.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎵 Płyty</h4>
+            <div className="space-y-1">
+              {records.map((item) => (
                 <div
                   key={item.seasonId ?? `${item.title}__${item.id}`}
                   className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
