@@ -2,8 +2,9 @@
 import { useMemo, useState } from "react";
 import { BOOK_TYPES, MONTH_NAMES } from "@/lib/utils";
 
-const MOVIE_TYPES = ["movie"];
-const SERIES_TYPES = ["series", "anime", "cartoon"];
+const MOVIE_TYPES = ["movie", "cartoon"];
+const SERIES_TYPES = ["series"];
+const ANIME_TYPES = ["anime"]
 
 interface MediaItem {
   id: number;
@@ -32,12 +33,10 @@ function mediaOverlapsMonth(item: MediaItem, year: number, month: number): boole
   return item.startDate <= monthEnd && end >= monthStart;
 }
 
-function groupBySeason(items: MediaItem[]): MediaItem[] {
+function groupByTitle(items: MediaItem[]): MediaItem[] {
   const map = new Map<string, MediaItem[]>();
   for (const item of items) {
-    const key = item.seasonId != null
-      ? `s${item.seasonId}`
-      : `${item.title}__${item.mediaType}__${item.volumeEpisode ?? ""}`;
+    const key = `${item.title}__${item.mediaType}`;
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(item);
   }
@@ -60,16 +59,17 @@ export default function Statistics({ items, year }: Props) {
     return items.filter((item) => mediaOverlapsMonth(item, year, selectedMonth));
   }, [items, year, selectedMonth]);
 
-  const grouped = useMemo(() => groupBySeason(filtered), [filtered]);
+  const grouped = useMemo(() => groupByTitle(filtered), [filtered]);
 
-  const books = grouped.filter((i) => BOOK_TYPES.includes(i.mediaType));
-  const movies = grouped.filter((i) => MOVIE_TYPES.includes(i.mediaType));
-  const series = grouped.filter((i) => SERIES_TYPES.includes(i.mediaType));
-  const plays = grouped.filter((i) => i.mediaType === "play");
-  const games = grouped.filter((i) => i.mediaType === "game");
-  const podcasts = grouped.filter((i) => i.mediaType === "podcast");
-  const records = grouped.filter((i) => i.mediaType === "record");
-  const cinemaMovies = movies.filter((i) => i.cinema);
+  const books = [... new Set(grouped.filter((i) => BOOK_TYPES.includes(i.mediaType)))];
+  const movies = [... new Set(grouped.filter((i) => MOVIE_TYPES.includes(i.mediaType)))];
+  const series = [... new Set(grouped.filter((i) => SERIES_TYPES.includes(i.mediaType)))];
+  const anime = [... new Set(grouped.filter((i) => ANIME_TYPES.includes(i.mediaType)))];
+  const plays = [... new Set(grouped.filter((i) => i.mediaType === "play"))];
+  const games = [... new Set(grouped.filter((i) => i.mediaType === "game"))];
+  const podcasts = [... new Set(grouped.filter((i) => i.mediaType === "podcast"))];
+  const records = [... new Set(grouped.filter((i) => i.mediaType === "record"))];
+  const cinemaMovies = [... new Set(movies.filter((i) => i.cinema))];
 
   return (
     <div className="bg-white rounded-2xl shadow border border-gray-100 p-4">
@@ -173,6 +173,21 @@ export default function Statistics({ items, year }: Props) {
             <h4 className="text-sm font-semibold text-gray-700 mb-2">📺 Seriale</h4>
             <div className="space-y-1">
               {series.map((item) => (
+                <div
+                  key={item.seasonId ?? `${item.title}__${item.volumeEpisode}__${item.id}`}
+                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
+                >
+                  {item.title}{item.volumeEpisode ? ` (sezon ${item.volumeEpisode})` : ""}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {anime.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold text-gray-700 mb-2"> Anime</h4>
+            <div className="space-y-1">
+              {anime.map((item) => (
                 <div
                   key={item.seasonId ?? `${item.title}__${item.volumeEpisode}__${item.id}`}
                   className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
