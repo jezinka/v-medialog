@@ -14,14 +14,17 @@ function sleep(ms: number) {
 }
 
 type MediaRow = { id: number; title: string; release_year: number | null; tmdb_id: number | null; media_type: string };
-type WishlistRow = { id: number; title: string; media_type: string };
 
 export async function POST() {
   try {
-    // Collect items to refresh
+    // ponytail: batch VOD refresh is only for "Do obejrzenia" (seasons.want_to_watch=1)
     const mediaItems = sqlite.prepare(`
       SELECT id, title, release_year, tmdb_id, media_type FROM media
       WHERE media_type IN (${VOD_MEDIA_TYPES.map(() => "?").join(",")})
+        AND EXISTS (
+          SELECT 1 FROM seasons
+          WHERE seasons.media_id = media.id AND seasons.want_to_watch = 1
+        )
         AND (
           NOT EXISTS (SELECT 1 FROM vod_offers WHERE item_type='media' AND item_id=media.id)
           OR EXISTS (
@@ -31,19 +34,6 @@ export async function POST() {
           )
         )
     `).all(...VOD_MEDIA_TYPES) as MediaRow[];
-
-    const wishlistItems = sqlite.prepare(`
-      SELECT id, title, media_type FROM wishlist
-      WHERE media_type IN (${VOD_MEDIA_TYPES.map(() => "?").join(",")})
-        AND (
-          NOT EXISTS (SELECT 1 FROM vod_offers WHERE item_type='wishlist' AND item_id=wishlist.id)
-          OR EXISTS (
-            SELECT 1 FROM vod_offers
-            WHERE item_type='wishlist' AND item_id=wishlist.id
-              AND last_checked_at < datetime('now', '-${STALE_HOURS} hours')
-          )
-        )
-    `).all(...VOD_MEDIA_TYPES) as WishlistRow[];
 
     let refreshed = 0;
     let errors = 0;
@@ -139,16 +129,11 @@ export async function POST() {
     }
 
     // Process all items with 1s throttle between requests
-    const allItems: (() => Promise<void>)[] = [
-      ...mediaItems.map((m) => () => processItem("media", m.id, m.title, {
-        year: m.release_year,
-        tmdbId: m.tmdb_id,
-        mediaType: m.media_type,
-      })),
-      ...wishlistItems.map((w) => () => processItem("wishlist", w.id, w.title, {
-        mediaType: w.media_type,
-      })),
-    ];
+    const allItems: (() => Promise<void>)[] = mediaItems.map((m) => () => processItem("media", m.id, m.title, {
+      year: m.release_year,
+      tmdbId: m.tmdb_id,
+      mediaType: m.media_type,
+    }));
 
     for (const task of allItems) {
       try {
