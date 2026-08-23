@@ -78,7 +78,10 @@ export async function GET(request: NextRequest) {
       SELECT m.*,
         (SELECT COUNT(*) FROM seasons s WHERE s.media_id = m.id) as season_count,
         (SELECT MIN(se.start_date) FROM sessions se JOIN seasons s ON se.season_id = s.id WHERE s.media_id = m.id) as first_session_date,
-        (SELECT MAX(COALESCE(se.end_date, se.start_date)) FROM sessions se JOIN seasons s ON se.season_id = s.id WHERE s.media_id = m.id) as last_session_date
+        (SELECT MAX(COALESCE(se.end_date, se.start_date)) FROM sessions se JOIN seasons s ON se.season_id = s.id WHERE s.media_id = m.id) as last_session_date,
+        (SELECT CASE WHEN EXISTS (
+          SELECT 1 FROM sessions se JOIN seasons s2 ON se.season_id = s2.id WHERE s2.media_id = m.id AND se.with_child = 1
+        ) THEN 1 ELSE 0 END) as has_child_session
       FROM media m
       ${whereSql}
     `;

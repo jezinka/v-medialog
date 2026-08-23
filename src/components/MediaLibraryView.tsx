@@ -18,6 +18,7 @@ interface MediaItem {
   season_count: number;
   first_session_date: string | null;
   last_session_date: string | null;
+  has_child_session?: boolean;
   tmdb_id: string | null;
   series_status: string | null;
   tmdb_seasons_count: number | null;
@@ -32,6 +33,7 @@ interface SeasonRow {
   session_count: number;
   first_session_date: string | null;
   last_session_date: string | null;
+  has_child_session?: boolean;
 }
 
 interface Props {
@@ -465,6 +467,11 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
                       {medium.last_session_date && (
                         <span>· ostatnio {formatDate(medium.last_session_date)}</span>
                       )}
+                      {medium.has_child_session && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 px-1.5 py-0.5 font-medium">
+                          👶 z dzieckiem
+                        </span>
+                      )}
                       {medium.series_status && (
                         <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                           medium.series_status === "Ended" || medium.series_status === "Canceled"
@@ -523,10 +530,15 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
                             </div>
                             <div className="flex-1 min-w-0">
                               <span className="text-sm font-medium text-gray-800">{seasonLabel(s)}</span>
-                              <div className="text-xs text-gray-400 mt-0.5 flex gap-2">
+                              <div className="text-xs text-gray-400 mt-0.5 flex flex-wrap gap-2">
                                 <span>{s.session_count} sesji</span>
                                 {s.first_session_date && (
                                   <span>{formatDate(s.first_session_date)}{s.last_session_date && s.last_session_date !== s.first_session_date ? ` – ${formatDate(s.last_session_date)}` : ""}</span>
+                                )}
+                                {s.has_child_session && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 px-1.5 py-0.5 font-medium">
+                                    👶 z dzieckiem
+                                  </span>
                                 )}
                               </div>
                             </div>
