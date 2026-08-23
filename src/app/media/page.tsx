@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import PageContainer from "@/components/PageContainer";
 import MediaLibraryView from "@/components/MediaLibraryView";
 import MergeMediaModal from "@/components/MergeMediaModal";
 
@@ -10,7 +11,7 @@ export default function MediaPage() {
   const [showMerge, setShowMerge] = useState(false);
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <PageContainer className="space-y-6">
       <div className="flex justify-end">
         <button
           onClick={() => setShowMerge(true)}
@@ -23,6 +24,6 @@ export default function MediaPage() {
       {showMerge && (
         <MergeMediaModal onClose={() => setShowMerge(false)} onSuccess={() => {}} />
       )}
-    </main>
+    </PageContainer>
   );
 }

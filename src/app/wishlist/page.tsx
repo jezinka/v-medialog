@@ -1,9 +1,10 @@
 import WishlistPage from "@/components/WishlistPage";
+import PageContainer from "@/components/PageContainer";
 
 export default function WishlistRoute() {
   return (
-    <main className="max-w-7xl mx-auto px-4 py-6">
+    <PageContainer>
       <WishlistPage />
-    </main>
+    </PageContainer>
   );
 }

@@ -1,9 +1,10 @@
 import ImportPage from "@/components/ImportPage";
+import PageContainer from "@/components/PageContainer";
 
 export default function ImportRoute() {
   return (
-    <main className="max-w-7xl mx-auto px-4 py-6">
+    <PageContainer>
       <ImportPage />
-    </main>
+    </PageContainer>
   );
 }

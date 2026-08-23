@@ -4,9 +4,12 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Calendar from "@/components/Calendar";
 import AddMediaModal from "@/components/AddMediaModal";
+import PageContainer from "@/components/PageContainer";
 import { BOOK_TYPES, SCREEN_TYPES } from "@/lib/utils";
 import { type SessionRow, mapSession } from "@/lib/types";
 import { toast } from "@/components/Toast";
+import { createSessionForMedia } from "@/lib/session-actions";
+import { sessionToCalendarItem } from "@/lib/session-items";
 
 function LogContent() {
   const router = useRouter();
@@ -37,53 +40,14 @@ function LogContent() {
 
   useEffect(() => { void fetchData(); }, [fetchData]);
 
-  const calendarItems = items.map((s) => ({
-    id: s.id,
-    title: s.mediaTitle,
-    author: s.author,
-    mediaType: s.mediaType,
-    startDate: s.startDate,
-    endDate: s.endDate,
-    volumeEpisode: s.seasonNumber != null ? String(s.seasonNumber) : null,
-    discontinued: s.discontinued ? true : null,
-    cinema: s.cinema,
-    tagList: s.tagList,
-    additionalSessions: null,
-  }));
+  const calendarItems = items.map(sessionToCalendarItem);
 
   const bookItems = calendarItems.filter((i) => BOOK_TYPES.includes(i.mediaType));
   const screenItems = calendarItems.filter((i) => SCREEN_TYPES.includes(i.mediaType));
 
   const createSessionAndOpen = useCallback(async (mediaId: number, startDate: string, endDate: string) => {
     try {
-      const seasonsRes = await fetch(`/api/seasons?media_id=${mediaId}`);
-      if (!seasonsRes.ok) throw new Error("Nie udało się pobrać sezonów");
-      const seasons: { id: number }[] = await seasonsRes.json();
-      let seasonId: number;
-      if (seasons.length === 0) {
-        const r = await fetch("/api/seasons", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ media_id: mediaId, season_number: 1, title: null }),
-        });
-        const s = await r.json() as { id?: number; error?: string };
-        if (!r.ok) throw new Error(s.error ?? "Nie udało się utworzyć sezonu");
-        if (!s.id) throw new Error("Nieprawidłowa odpowiedź serwera (brak id sezonu)");
-        seasonId = s.id;
-      } else {
-        seasonId = seasons[0].id;
-      }
-      // Remove year-placeholder before adding a real session
-      await fetch(`/api/seasons/${seasonId}/placeholders`, { method: "DELETE" });
-      const sessRes = await fetch("/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ season_id: seasonId, start_date: startDate, end_date: endDate !== startDate ? endDate : null }),
-      });
-      if (!sessRes.ok) {
-        const e = await sessRes.json() as { error?: string };
-        throw new Error(e.error ?? "Nie udało się utworzyć sesji");
-      }
+      await createSessionForMedia(mediaId, startDate, endDate, { removePlaceholder: true });
       toast("Sesja dodana ✓", "success");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Błąd tworzenia sesji", "error");
@@ -106,7 +70,7 @@ function LogContent() {
   }, [items, openMedia]);
 
   return (
-    <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
+    <PageContainer className="space-y-6">
       {loading ? (
         <div className="flex items-center justify-center py-16">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400"></div>
@@ -164,7 +128,7 @@ function LogContent() {
           }}
         />
       )}
-    </main>
+    </PageContainer>
   );
 }
 

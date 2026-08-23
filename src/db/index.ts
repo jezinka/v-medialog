@@ -1,7 +1,5 @@
 import Database from "better-sqlite3";
-import { drizzle } from "drizzle-orm/better-sqlite3";
 import path from "path";
-import * as schema from "./schema";
 
 const DB_PATH = process.env.DATABASE_URL ?? path.join(process.cwd(), "medialog.db");
 
@@ -290,5 +288,4 @@ if (typeof g.__vodRefreshScheduled === "undefined") {
   }, 5000); // 5s delay to let the server fully start
 }
 
-export const db = drizzle(sqlite, { schema });
 export { sqlite };

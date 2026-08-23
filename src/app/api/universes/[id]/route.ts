@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
+import { badRequest, notFound, parseRouteId, serverError } from "@/lib/api-helpers";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const universe = sqlite.prepare(`SELECT * FROM universes WHERE id=?`).get(parseInt(id));
-    if (!universe) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const id = await parseRouteId(params);
+    const universe = sqlite.prepare(`SELECT * FROM universes WHERE id=?`).get(id);
+    if (!universe) return notFound();
 
     const media = sqlite.prepare(
       `SELECT m.id, m.title, m.original_title, m.media_type, m.cover_url, m.release_year, m.discontinued,
@@ -16,41 +17,41 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
        WHERE m.universe_id=?
        GROUP BY m.id, m.title, m.original_title, m.media_type, m.cover_url, m.release_year, m.discontinued
        ORDER BY COALESCE(m.release_year, CAST(strftime('%Y', MIN(s.start_date)) AS INTEGER), 9999), m.title`
-    ).all(parseInt(id));
+    ).all(id);
 
     return NextResponse.json({ ...universe as object, media });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to fetch universe" }, { status: 500 });
+    return serverError("Failed to fetch universe");
   }
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
+    const id = await parseRouteId(params);
     const { name, description, cover_url } = await request.json();
-    if (!name) return NextResponse.json({ error: "name is required" }, { status: 400 });
+    if (!name) return badRequest("name is required");
 
     sqlite.prepare(
       `UPDATE universes SET name=?, description=?, cover_url=?, updated_at=datetime('now') WHERE id=?`
-    ).run(name, description ?? null, cover_url ?? null, parseInt(id));
+    ).run(name, description ?? null, cover_url ?? null, id);
 
-    return NextResponse.json(sqlite.prepare(`SELECT * FROM universes WHERE id=?`).get(parseInt(id)));
+    return NextResponse.json(sqlite.prepare(`SELECT * FROM universes WHERE id=?`).get(id));
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to update universe" }, { status: 500 });
+    return serverError("Failed to update universe");
   }
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
+    const id = await parseRouteId(params);
     // Unlink media before deleting
-    sqlite.prepare(`UPDATE media SET universe_id=NULL WHERE universe_id=?`).run(parseInt(id));
-    sqlite.prepare(`DELETE FROM universes WHERE id=?`).run(parseInt(id));
+    sqlite.prepare(`UPDATE media SET universe_id=NULL WHERE universe_id=?`).run(id);
+    sqlite.prepare(`DELETE FROM universes WHERE id=?`).run(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to delete universe" }, { status: 500 });
+    return serverError("Failed to delete universe");
   }
 }

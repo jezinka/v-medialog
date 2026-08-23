@@ -1,41 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
+import { CALENDAR_TYPES } from "@/lib/utils";
+import { badRequest, notFound, parseRouteId, serverError } from "@/lib/api-helpers";
 
-const VALID_MEDIA_TYPES = ["book", "comic", "movie", "series", "anime", "cartoon"];
+const VALID_MEDIA_TYPES = CALENDAR_TYPES;
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
+    const id = await parseRouteId(params);
     const items = sqlite.prepare(`
       SELECT i.*, CASE WHEN i.media_id IS NOT NULL THEN 1 ELSE 0 END as completed
       FROM reading_list_items i
       WHERE i.list_id = ?
       ORDER BY i.created_at ASC
-    `).all(parseInt(id));
+    `).all(id);
     return NextResponse.json(items);
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to fetch list items" }, { status: 500 });
+    return serverError("Failed to fetch list items");
   }
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const listId = parseInt(id);
+    const listId = await parseRouteId(params);
     const body = await request.json();
     const { title, author, media_type, cover_url } = body;
 
     if (!title || !title.trim()) {
-      return NextResponse.json({ error: "title is required" }, { status: 400 });
+      return badRequest("title is required");
     }
     if (!VALID_MEDIA_TYPES.includes(media_type)) {
-      return NextResponse.json({ error: "Invalid media_type" }, { status: 400 });
+      return badRequest("Invalid media_type");
     }
 
     const list = sqlite.prepare("SELECT id FROM reading_lists WHERE id=?").get(listId);
     if (!list) {
-      return NextResponse.json({ error: "List not found" }, { status: 404 });
+      return notFound("List not found");
     }
 
     const result = sqlite.prepare(`
@@ -46,6 +47,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ id: result.lastInsertRowid }, { status: 201 });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to add item" }, { status: 500 });
+    return serverError("Failed to add item");
   }
 }

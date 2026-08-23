@@ -1,18 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
+import { badRequest, notFound, parseId, serverError } from "@/lib/api-helpers";
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string; itemId: string }> }) {
+export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string; itemId: string }> }) {
   try {
     const { itemId } = await params;
-    const numItemId = parseInt(itemId);
+    const numItemId = parseId(itemId);
+    if (numItemId == null) return badRequest("Invalid itemId");
 
     const item = sqlite.prepare(`SELECT * FROM reading_list_items WHERE id=?`).get(numItemId) as {
       id: number; list_id: number; title: string; author: string | null;
       media_type: string; cover_url: string | null; media_id: number | null;
     } | undefined;
 
-    if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
-    if (item.media_id) return NextResponse.json({ error: "Już rozpoczęto" }, { status: 400 });
+    if (!item) return notFound("Item not found");
+    if (item.media_id) return badRequest("Już rozpoczęto");
 
     const today = new Date().toISOString().split("T")[0];
 
@@ -32,6 +34,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ mediaId, message: "Przeniesiono do dziennika" });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to start item" }, { status: 500 });
+    return serverError("Failed to start item");
   }
 }

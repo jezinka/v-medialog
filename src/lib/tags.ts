@@ -1,5 +1,4 @@
-import { db, sqlite } from "@/db";
-import { tags, mediaTags } from "@/db/schema";
+import { sqlite } from "@/db";
 
 export function parseTagsInput(input: string | string[] | null | undefined): string[] {
   if (!input) return [];

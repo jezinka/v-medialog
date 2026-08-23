@@ -1,31 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
 import { parseTagsInput, setMediaTags, getMediaTags } from "@/lib/tags";
+import { notFound, parseRouteId, serverError } from "@/lib/api-helpers";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
+    const id = await parseRouteId(params);
     const item = sqlite.prepare(
       `SELECT m.*, u.name as universe_name FROM media m LEFT JOIN universes u ON u.id = m.universe_id WHERE m.id=?`
-    ).get(parseInt(id));
-    if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    ).get(id);
+    if (!item) return notFound();
 
     const seasons = sqlite.prepare(
       `SELECT s.*, (SELECT COUNT(*) FROM sessions se WHERE se.season_id = s.id) as session_count
        FROM seasons s WHERE s.media_id=? ORDER BY s.season_number, s.id`
-    ).all(parseInt(id));
+    ).all(id);
 
-    return NextResponse.json({ ...item as object, seasons, tagList: getMediaTags(parseInt(id)) });
+    return NextResponse.json({ ...item as object, seasons, tagList: getMediaTags(id) });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to fetch media" }, { status: 500 });
+    return serverError("Failed to fetch media");
   }
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const numId = parseInt(id);
+    const numId = await parseRouteId(params);
     const body = await request.json();
     const {
       title, original_title, author, media_type, universe_id,
@@ -85,19 +85,18 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ ...updated as object, tagList: getMediaTags(numId) });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to update media" }, { status: 500 });
+    return serverError("Failed to update media");
   }
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
-    const numId = parseInt(id);
+    const numId = await parseRouteId(params);
 
     sqlite.prepare(`DELETE FROM media WHERE id=?`).run(numId);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to delete media" }, { status: 500 });
+    return serverError("Failed to delete media");
   }
 }

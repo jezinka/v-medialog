@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { MEDIA_TYPES } from "@/lib/utils";
 
-const VALID_MEDIA_TYPES = ["book", "comic", "movie", "series", "anime", "cartoon", "play", "game", "podcast", "record"];
+const VALID_MEDIA_TYPES = new Set<string>(MEDIA_TYPES);
 const VALID_PRIORITIES = ["high", "normal", "low"];
 
 function parseCSV(text: string): string[][] {
@@ -132,7 +133,7 @@ export async function POST(request: NextRequest) {
           invalid.push({ row: rowNum, error: "Brak wymaganego pola: title", raw });
           continue;
         }
-        if (!media_type || !VALID_MEDIA_TYPES.includes(media_type)) {
+        if (!media_type || !VALID_MEDIA_TYPES.has(media_type)) {
           invalid.push({ row: rowNum, error: `Nieprawidłowy media_type: "${media_type}"`, raw });
           continue;
         }
@@ -167,7 +168,7 @@ export async function POST(request: NextRequest) {
           invalid.push({ row: rowNum, error: "Brak wymaganego pola: title", raw });
           continue;
         }
-        if (!media_type || !VALID_MEDIA_TYPES.includes(media_type)) {
+        if (!media_type || !VALID_MEDIA_TYPES.has(media_type)) {
           invalid.push({ row: rowNum, error: `Nieprawidłowy media_type: "${media_type}"`, raw });
           continue;
         }

@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import AddMediaModal from "./AddMediaModal";
 import { toast } from "./Toast";
+import { createSessionForMedia } from "@/lib/session-actions";
 
 type VodNotification = {
   id: number;
@@ -51,7 +52,7 @@ export default function NavHeader() {
   }, []);
 
   useEffect(() => {
-    void fetchNotifications();
+    queueMicrotask(() => { void fetchNotifications(); });
     const id = setInterval(() => void fetchNotifications(), 60_000);
     return () => clearInterval(id);
   }, [fetchNotifications]);
@@ -94,38 +95,7 @@ export default function NavHeader() {
 
   const createSessionAndOpen = useCallback(async (mediaId: number, startDate: string, endDate: string) => {
     try {
-      const seasonsRes = await fetch(`/api/seasons?media_id=${mediaId}`);
-      if (!seasonsRes.ok) throw new Error("Nie udało się pobrać sezonów");
-      const seasons: { id: number }[] = await seasonsRes.json();
-
-      let seasonId: number;
-      if (seasons.length === 0) {
-        const r = await fetch("/api/seasons", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ media_id: mediaId, season_number: 1, title: null }),
-        });
-        const s = await r.json() as { id?: number; error?: string };
-        if (!r.ok) throw new Error(s.error ?? "Nie udało się utworzyć sezonu");
-        if (!s.id) throw new Error("Nieprawidłowa odpowiedź serwera (brak id sezonu)");
-        seasonId = s.id;
-      } else {
-        seasonId = seasons[0].id;
-      }
-
-      const sessRes = await fetch("/api/sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          season_id: seasonId,
-          start_date: startDate,
-          end_date: endDate !== startDate ? endDate : null,
-        }),
-      });
-      if (!sessRes.ok) {
-        const e = await sessRes.json() as { error?: string };
-        throw new Error(e.error ?? "Nie udało się utworzyć sesji");
-      }
+      await createSessionForMedia(mediaId, startDate, endDate);
       toast("Sesja dodana ✓", "success");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Błąd tworzenia sesji", "error");
