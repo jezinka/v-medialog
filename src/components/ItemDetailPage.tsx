@@ -1589,26 +1589,26 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
             <p className="text-xs text-gray-500">{seasonPickerDate}</p>
             {/* Cinema toggle — only for movies */}
             {media.media_type === "movie" && (
-              <>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={pendingCinema}
-                    onChange={(e) => setPendingCinema(e.target.checked)}
-                    className="w-4 h-4 accent-yellow-500"
-                  />
-                  <span className="text-sm text-gray-700">🎟️ Oglądane w kinie</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={pendingWithChild}
-                    onChange={(e) => setPendingWithChild(e.target.checked)}
-                    className="w-4 h-4 accent-emerald-500"
-                  />
-                  <span className="text-sm text-gray-700">👶 Z dzieckiem</span>
-                </label>
-              </>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={pendingCinema}
+                  onChange={(e) => setPendingCinema(e.target.checked)}
+                  className="w-4 h-4 accent-yellow-500"
+                />
+                <span className="text-sm text-gray-700">🎟️ Oglądane w kinie</span>
+              </label>
+            )}
+            {SCREEN_TYPES.includes(media.media_type) && (
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={pendingWithChild}
+                  onChange={(e) => setPendingWithChild(e.target.checked)}
+                  className="w-4 h-4 accent-emerald-500"
+                />
+                <span className="text-sm text-gray-700">👶 Z dzieckiem</span>
+              </label>
             )}
             {seasons.length > 1 && (
               <p className="text-xs font-medium text-gray-500 pt-1">Wybierz sezon:</p>
@@ -1714,7 +1714,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                 />
                 Kino
               </label>
-              {media.media_type === "movie" && (
+              {SCREEN_TYPES.includes(media.media_type) && (
                 <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                   <input
                     type="checkbox"
@@ -2960,7 +2960,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                     <span className="text-xs text-gray-700">🎟️ kino</span>
                   </label>
                 )}
-                {yearSelectedDates.size > 0 && media?.media_type === "movie" && (
+                {yearSelectedDates.size > 0 && media && SCREEN_TYPES.includes(media.media_type) && (
                   <label className="flex items-center gap-1.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
