@@ -16,14 +16,22 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const { start_date, end_date, cinema, season_id } = await request.json();
+    const { start_date, end_date, cinema, with_child, season_id } = await request.json();
     if (!start_date) return NextResponse.json({ error: "start_date is required" }, { status: 400 });
     if (end_date && end_date < start_date) {
       return NextResponse.json({ error: "Data końca nie może być wcześniej niż data początku" }, { status: 400 });
     }
 
-    const fields: string[] = ["start_date=?", "end_date=?", "cinema=?"];
-    const values: unknown[] = [start_date, end_date ?? null, cinema ? 1 : 0];
+    const fields: string[] = ["start_date=?", "end_date=?"];
+    const values: unknown[] = [start_date, end_date ?? null];
+    if (cinema !== undefined) {
+      fields.push("cinema=?");
+      values.push(cinema ? 1 : 0);
+    }
+    if (with_child !== undefined) {
+      fields.push("with_child=?");
+      values.push(with_child ? 1 : 0);
+    }
     if (season_id !== undefined) {
       fields.push("season_id=?");
       values.push(season_id);

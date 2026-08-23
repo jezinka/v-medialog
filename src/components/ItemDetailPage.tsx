@@ -47,6 +47,7 @@ interface SessionApiRow {
   start_date: string;
   end_date: string | null;
   cinema: boolean | number;
+  with_child: boolean | number | null;
   season_number: number | null;
   season_title: string | null;
   media_id: number;
@@ -297,12 +298,14 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
   const [loading, setLoading] = useState(true);
   const [seasonPickerDate, setSeasonPickerDate] = useState<string | null>(null);
   const [pendingCinema, setPendingCinema] = useState(false);
+  const [pendingWithChild, setPendingWithChild] = useState(false);
   const [addingSession, setAddingSession] = useState(false);
   const [extraMonths, setExtraMonths] = useState<Set<string>>(new Set());
   const [yearViewYear, setYearViewYear] = useState(() => new Date().getFullYear());
   const [yearSelectedDates, setYearSelectedDates] = useState<Set<string>>(new Set());
   const [yearBatchSaving, setYearBatchSaving] = useState(false);
   const [yearBatchCinema, setYearBatchCinema] = useState(false);
+  const [yearBatchWithChild, setYearBatchWithChild] = useState(false);
 
   // ── Split-into-seasons mode ─────────────────────────────────────────────────
   const [splitMode, setSplitMode] = useState(false);
@@ -572,6 +575,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
   const [editStartDate, setEditStartDate] = useState("");
   const [editEndDate, setEditEndDate] = useState("");
   const [editCinema, setEditCinema] = useState(false);
+  const [editWithChild, setEditWithChild] = useState(false);
   const [editSeasonId, setEditSeasonId] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [editEpisodeCount, setEditEpisodeCount] = useState("");
@@ -702,6 +706,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     setEditStartDate(session.start_date);
     setEditEndDate(session.end_date ?? session.start_date);
     setEditCinema(Boolean(session.cinema));
+    setEditWithChild(Boolean(session.with_child));
     setEditSeasonId(String(session.season_id));
   }, []);
 
@@ -720,6 +725,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
           start_date: editStartDate,
           end_date: editEndDate || null,
           cinema: editCinema,
+          with_child: editWithChild,
           season_id: parseInt(editSeasonId),
         }),
       });
@@ -1173,6 +1179,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
             start_date: date,
             end_date: date,
             cinema: pendingCinema,
+            with_child: pendingWithChild,
           }),
         });
         if (!res.ok) throw new Error();
@@ -1185,9 +1192,10 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
         setAddingSession(false);
         setSeasonPickerDate(null);
         setPendingCinema(false);
+        setPendingWithChild(false);
       }
     },
-    [loadData, onRefresh, pendingCinema]
+    [loadData, onRefresh, pendingCinema, pendingWithChild]
   );
 
   const sessionDaysMap = useMemo(
@@ -1283,7 +1291,13 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
         const res = await fetch("/api/sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ season_id: seasonId, start_date: date, end_date: date, cinema: yearBatchCinema }),
+          body: JSON.stringify({
+            season_id: seasonId,
+            start_date: date,
+            end_date: date,
+            cinema: yearBatchCinema,
+            with_child: yearBatchWithChild,
+          }),
         });
         if (res.ok) added++;
       }
@@ -1296,7 +1310,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     } finally {
       setYearBatchSaving(false);
     }
-  }, [yearSelectedDates, seasons, mediaId, loadData, onRefresh, yearBatchCinema]);
+  }, [yearSelectedDates, seasons, mediaId, loadData, onRefresh, yearBatchCinema, yearBatchWithChild]);
 
   // Map each calendar date to the session it belongs to (for click-to-edit)
   const dateToSessionMap = useMemo(() => {
@@ -1575,15 +1589,26 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
             <p className="text-xs text-gray-500">{seasonPickerDate}</p>
             {/* Cinema toggle — only for movies */}
             {media.media_type === "movie" && (
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={pendingCinema}
-                onChange={(e) => setPendingCinema(e.target.checked)}
-                className="w-4 h-4 accent-yellow-500"
-              />
-              <span className="text-sm text-gray-700">🎟️ Oglądane w kinie</span>
-            </label>
+              <>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={pendingCinema}
+                    onChange={(e) => setPendingCinema(e.target.checked)}
+                    className="w-4 h-4 accent-yellow-500"
+                  />
+                  <span className="text-sm text-gray-700">🎟️ Oglądane w kinie</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={pendingWithChild}
+                    onChange={(e) => setPendingWithChild(e.target.checked)}
+                    className="w-4 h-4 accent-emerald-500"
+                  />
+                  <span className="text-sm text-gray-700">👶 Z dzieckiem</span>
+                </label>
+              </>
             )}
             {seasons.length > 1 && (
               <p className="text-xs font-medium text-gray-500 pt-1">Wybierz sezon:</p>
@@ -1609,7 +1634,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
               ))}
             </div>
             <button
-              onClick={() => { setSeasonPickerDate(null); setPendingCinema(false); }}
+              onClick={() => { setSeasonPickerDate(null); setPendingCinema(false); setPendingWithChild(false); }}
               className="text-xs text-gray-400 hover:text-gray-600 w-full text-center pt-1"
             >
               Anuluj
@@ -1689,6 +1714,17 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                 />
                 Kino
               </label>
+              {media.media_type === "movie" && (
+                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editWithChild}
+                    onChange={(e) => setEditWithChild(e.target.checked)}
+                    className="w-4 h-4"
+                  />
+                  👶 Z dzieckiem
+                </label>
+              )}
             </div>
             <div className="flex gap-2 pt-1">
               <button
@@ -2922,6 +2958,17 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                       className="w-4 h-4 accent-yellow-500"
                     />
                     <span className="text-xs text-gray-700">🎟️ kino</span>
+                  </label>
+                )}
+                {yearSelectedDates.size > 0 && media?.media_type === "movie" && (
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={yearBatchWithChild}
+                      onChange={(e) => setYearBatchWithChild(e.target.checked)}
+                      className="w-4 h-4 accent-emerald-500"
+                    />
+                    <span className="text-xs text-gray-700">👶 z dzieckiem</span>
                   </label>
                 )}
                 {yearSelectedDates.size > 0 && (

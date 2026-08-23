@@ -57,6 +57,7 @@ export const sessions = sqliteTable("sessions", {
   startDate: text("start_date").notNull(),
   endDate: text("end_date"),
   cinema: integer("cinema", { mode: "boolean" }).default(false),
+  withChild: integer("with_child", { mode: "boolean" }).default(false),
   createdAt: text("created_at").default(sql`(datetime('now'))`),
 });
 

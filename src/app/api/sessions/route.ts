@@ -5,7 +5,7 @@ import { sqlite } from "@/db";
  * GET /api/sessions?year=2025
  * GET /api/sessions?season_id=3
  * GET /api/sessions?media_id=7   (sessions across all seasons of a medium)
- * POST /api/sessions { season_id, start_date, end_date?, cinema? }
+ * POST /api/sessions { season_id, start_date, end_date?, cinema?, with_child? }
  */
 export async function GET(request: NextRequest) {
   try {
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { season_id, start_date, end_date, cinema } = await request.json();
+    const { season_id, start_date, end_date, cinema, with_child } = await request.json();
     if (!season_id || !start_date) {
       return NextResponse.json({ error: "season_id and start_date are required" }, { status: 400 });
     }
@@ -66,8 +66,8 @@ export async function POST(request: NextRequest) {
     if (!seasonExists) return NextResponse.json({ error: `Season ${season_id} not found` }, { status: 404 });
 
     const r = sqlite.prepare(
-      `INSERT INTO sessions (season_id, start_date, end_date, cinema) VALUES (?, ?, ?, ?)`
-    ).run(Number(season_id), start_date, end_date ?? null, cinema ? 1 : 0);
+      `INSERT INTO sessions (season_id, start_date, end_date, cinema, with_child) VALUES (?, ?, ?, ?, ?)`
+    ).run(Number(season_id), start_date, end_date ?? null, cinema ? 1 : 0, with_child ? 1 : 0);
 
     const newId = Number(r.lastInsertRowid);
     const created = sqlite.prepare(`SELECT * FROM sessions WHERE id=?`).get(newId) as Record<string, unknown> | undefined;
@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
       start_date: created.start_date,
       end_date: created.end_date ?? null,
       cinema: Number(created.cinema),
+      with_child: Number(created.with_child),
       created_at: created.created_at ?? null,
     }, { status: 201 });
   } catch (error) {

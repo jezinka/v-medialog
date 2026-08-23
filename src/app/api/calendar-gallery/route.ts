@@ -10,10 +10,11 @@ export interface CalendarEntry {
   assigned_day: number;
   is_placeholder: boolean;
   cinema: boolean;
+  with_child: boolean;
 }
 
 /**
- * GET /api/calendar-gallery?year=YYYY&types=book,movie
+ * GET /api/calendar-gallery?year=YYYY&types=book,movie&with_child=1
  *
  * Returns at most one cover per season for the whole year.
  * Seasons with real (non-placeholder) sessions are placed in their canonical month.
@@ -26,6 +27,7 @@ export async function GET(request: Request) {
   const now = new Date();
   const year = parseInt(searchParams.get("year") ?? String(now.getFullYear()));
   const typesParam = searchParams.get("types");
+  const withChildOnly = searchParams.get("with_child") === "1";
   const typeFilter = typesParam ? typesParam.split(",").map((t) => t.trim()).filter(Boolean) : null;
 
   const yearStart = `${year}-01-01`;
@@ -36,6 +38,7 @@ export async function GET(request: Request) {
     const typeClause = typeFilter && typeFilter.length > 0
       ? `AND m.media_type IN (${typeFilter.map(() => "?").join(",")})`
       : "";
+    const withChildClause = withChildOnly ? "AND se.with_child = 1" : "";
     const rows = sqlite.prepare(`
       SELECT
         sn.id                                     AS season_id,
@@ -46,6 +49,7 @@ export async function GET(request: Request) {
         se.start_date,
         se.end_date,
         se.cinema,
+        se.with_child,
         CAST(julianday(COALESCE(se.end_date, se.start_date))
              - julianday(se.start_date) AS INTEGER) AS duration_days
       FROM sessions se
@@ -56,6 +60,7 @@ export async function GET(request: Request) {
         AND COALESCE(sn.cover_url, m.cover_url) IS NOT NULL
         AND sn.want_to_watch = 0
         ${typeClause}
+        ${withChildClause}
       ORDER BY se.start_date ASC
     `).all(yearEnd, yearStart, ...(typeFilter ?? [])) as {
       season_id: number;
@@ -67,6 +72,7 @@ export async function GET(request: Request) {
       end_date: string | null;
       cinema: number;
       duration_days: number;
+      with_child: number;
     }[];
 
     type SeasonEntry = {
@@ -80,6 +86,7 @@ export async function GET(request: Request) {
       canonical_month: number;
       valid_days: number[];
       cinema: boolean;
+      with_child: boolean;
     };
 
     const seasonMap = new Map<number, SeasonEntry>();
@@ -100,6 +107,7 @@ export async function GET(request: Request) {
           canonical_month: 0,
           valid_days: [],
           cinema: false,
+          with_child: false,
         });
       }
 
@@ -108,6 +116,7 @@ export async function GET(request: Request) {
       if (isPlaceholderSession) continue;
 
       if (row.cinema) entry.cinema = true;
+      if (row.with_child) entry.with_child = true;
 
       if (entry.is_placeholder) {
         entry.is_placeholder = false;
@@ -217,6 +226,7 @@ export async function GET(request: Request) {
           assigned_day: slot.day,
           is_placeholder: false,
           cinema: entry.cinema,
+          with_child: entry.with_child,
         });
       }
     }
@@ -238,6 +248,7 @@ export async function GET(request: Request) {
               assigned_day: d,
               is_placeholder: true,
               cinema: false,
+              with_child: false,
             });
             placed = true;
           }

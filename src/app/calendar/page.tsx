@@ -14,6 +14,7 @@ interface CalendarEntry {
   assigned_day: number;
   is_placeholder: boolean;
   cinema: boolean;
+  with_child: boolean;
 }
 
 function getDaysInMonth(year: number, month: number) {
@@ -38,12 +39,14 @@ function CalendarInner() {
     const t = searchParams.get("types");
     return t ? new Set(t.split(",").filter(Boolean)) : new Set<string>();
   });
+  const [withChildOnly, setWithChildOnly] = useState(() => searchParams.get("with_child") === "1");
   const [entries, setEntries] = useState<CalendarEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const buildUrl = useCallback((y: number, types: Set<string>) => {
+  const buildUrl = useCallback((y: number, types: Set<string>, childOnly: boolean) => {
     const params = new URLSearchParams({ year: String(y) });
     if (types.size > 0) params.set("types", Array.from(types).join(","));
+    if (childOnly) params.set("with_child", "1");
     return `/calendar?${params.toString()}`;
   }, []);
 
@@ -64,15 +67,20 @@ function CalendarInner() {
     setActiveTypes(new Set());
   }, []);
 
+  const toggleWithChildOnly = useCallback(() => {
+    setWithChildOnly((prev) => !prev);
+  }, []);
+
   useEffect(() => {
-    router.replace(buildUrl(year, activeTypes));
-  }, [year, activeTypes, router, buildUrl]);
+    router.replace(buildUrl(year, activeTypes, withChildOnly));
+  }, [year, activeTypes, withChildOnly, router, buildUrl]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ year: String(year) });
       if (activeTypes.size > 0) params.set("types", Array.from(activeTypes).join(","));
+      if (withChildOnly) params.set("with_child", "1");
       const res = await fetch(`/api/calendar-gallery?${params.toString()}`);
       const data = await res.json();
       setEntries(Array.isArray(data) ? data : []);
@@ -82,7 +90,7 @@ function CalendarInner() {
     } finally {
       setLoading(false);
     }
-  }, [year, activeTypes]);
+  }, [year, activeTypes, withChildOnly]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -139,6 +147,16 @@ function CalendarInner() {
             {MEDIA_TYPE_EMOJI[t]} {MEDIA_TYPE_LABELS[t]}
           </button>
         ))}
+        <button
+          onClick={toggleWithChildOnly}
+          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+            withChildOnly
+              ? "bg-emerald-700 text-white"
+              : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+          }`}
+        >
+          👶 Z dzieckiem
+        </button>
       </div>
 
       {loading ? (
@@ -200,6 +218,9 @@ function CalendarInner() {
                         {/* Cinema star */}
                         {entry?.cinema && (
                           <span className="absolute top-0.5 right-0.5 text-[10px] leading-none z-20 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">⭐</span>
+                        )}
+                        {entry?.with_child && (
+                          <span className="absolute bottom-0.5 right-0.5 text-[10px] leading-none z-20 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">👶</span>
                         )}
                         <span
                           className={[
