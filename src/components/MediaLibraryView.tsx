@@ -19,6 +19,7 @@ interface MediaItem {
   first_session_date: string | null;
   last_session_date: string | null;
   has_child_session?: boolean;
+  has_cinema_session?: boolean;
   tmdb_id: string | null;
   series_status: string | null;
   tmdb_seasons_count: number | null;
@@ -34,6 +35,7 @@ interface SeasonRow {
   first_session_date: string | null;
   last_session_date: string | null;
   has_child_session?: boolean;
+  has_cinema_session?: boolean;
 }
 
 interface Props {
@@ -53,6 +55,8 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
   const [noCoverOnly, setNoCoverOnly] = useState(false);
   const [ongoingOnly, setOngoingOnly] = useState(false);
   const [behindOnly, setBehindOnly] = useState(false);
+  const [withChildOnly, setWithChildOnly] = useState(false);
+  const [cinemaOnly, setCinemaOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"title" | "recently_added">("title");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [seasons, setSeasons] = useState<Record<number, SeasonRow[]>>({});
@@ -87,17 +91,23 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
       if (noCoverOnly) params.set("noCover", "1");
       if (ongoingOnly) params.set("ongoing", "1");
       if (behindOnly) params.set("behind", "1");
+      if (withChildOnly) params.set("with_child", "1");
+      if (cinemaOnly) params.set("cinema", "1");
       if (sortBy === "recently_added") params.set("sortBy", "recently_added");
       const res = await fetch(`/api/media?${params.toString()}`);
       const data = await res.json() as { items: MediaItem[]; total: number; page: number };
-      setItems(data.items);
+      setItems(data.items.map((item) => ({
+        ...item,
+        has_child_session: Boolean(Number(item.has_child_session ?? 0)),
+        has_cinema_session: Boolean(Number(item.has_cinema_session ?? 0)),
+      })));
       setTotal(data.total);
     } catch {
       toast("Błąd ładowania mediów", "error");
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, typeFilter, noCoverOnly, ongoingOnly, behindOnly, sortBy]);
+  }, [page, debouncedSearch, typeFilter, noCoverOnly, ongoingOnly, behindOnly, withChildOnly, cinemaOnly, sortBy]);
 
   const fetchSuggestions = useCallback(async () => {
     setLoadingSuggestions(true);
@@ -161,7 +171,7 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
   useEffect(() => { void load(); }, [load]);
 
   // Reset to page 1 when filters change
-  useEffect(() => { setPage(1); }, [debouncedSearch, typeFilter, noCoverOnly, ongoingOnly, behindOnly, sortBy]);
+  useEffect(() => { setPage(1); }, [debouncedSearch, typeFilter, noCoverOnly, ongoingOnly, behindOnly, withChildOnly, cinemaOnly, sortBy]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -171,7 +181,14 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
     try {
       const res = await fetch(`/api/seasons?media_id=${mediaId}`);
       const data = await res.json() as SeasonRow[];
-      setSeasons((prev) => ({ ...prev, [mediaId]: data }));
+      setSeasons((prev) => ({
+        ...prev,
+        [mediaId]: data.map((season) => ({
+          ...season,
+          has_child_session: Boolean(Number(season.has_child_session ?? 0)),
+          has_cinema_session: Boolean(Number(season.has_cinema_session ?? 0)),
+        })),
+      }));
     } catch {
       toast("Błąd ładowania sezonów", "error");
     } finally {
@@ -307,6 +324,26 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
             }`}
           >
             ⏳ Niedokończone
+          </button>
+          <button
+            onClick={() => setWithChildOnly((v) => !v)}
+            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+              withChildOnly
+                ? "bg-emerald-700 text-white border-emerald-700"
+                : "border-emerald-300 text-emerald-700 hover:border-emerald-400"
+            }`}
+          >
+            👶 Z dzieckiem
+          </button>
+          <button
+            onClick={() => setCinemaOnly((v) => !v)}
+            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+              cinemaOnly
+                ? "bg-amber-600 text-white border-amber-600"
+                : "border-amber-300 text-amber-700 hover:border-amber-400"
+            }`}
+          >
+            🎟️ W kinie
           </button>
         </div>
         <span className="text-sm text-gray-500 ml-auto">{total} mediów</span>
@@ -467,6 +504,11 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
                       {medium.last_session_date && (
                         <span>· ostatnio {formatDate(medium.last_session_date)}</span>
                       )}
+                      {medium.has_cinema_session && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-1.5 py-0.5 font-medium">
+                          🎟️ w kinie
+                        </span>
+                      )}
                       {medium.has_child_session && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 px-1.5 py-0.5 font-medium">
                           👶 z dzieckiem
@@ -534,6 +576,11 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
                                 <span>{s.session_count} sesji</span>
                                 {s.first_session_date && (
                                   <span>{formatDate(s.first_session_date)}{s.last_session_date && s.last_session_date !== s.first_session_date ? ` – ${formatDate(s.last_session_date)}` : ""}</span>
+                                )}
+                                {s.has_cinema_session && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-1.5 py-0.5 font-medium">
+                                    🎟️ w kinie
+                                  </span>
                                 )}
                                 {s.has_child_session && (
                                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 px-1.5 py-0.5 font-medium">

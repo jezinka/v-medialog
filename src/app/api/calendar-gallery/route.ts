@@ -28,6 +28,7 @@ export async function GET(request: Request) {
   const year = parseInt(searchParams.get("year") ?? String(now.getFullYear()));
   const typesParam = searchParams.get("types");
   const withChildOnly = searchParams.get("with_child") === "1";
+  const cinemaOnly = searchParams.get("cinema") === "1";
   const typeFilter = typesParam ? typesParam.split(",").map((t) => t.trim()).filter(Boolean) : null;
 
   const yearStart = `${year}-01-01`;
@@ -39,6 +40,7 @@ export async function GET(request: Request) {
       ? `AND m.media_type IN (${typeFilter.map(() => "?").join(",")})`
       : "";
     const withChildClause = withChildOnly ? "AND se.with_child = 1" : "";
+    const cinemaClause = cinemaOnly ? "AND se.cinema = 1" : "";
     const rows = sqlite.prepare(`
       SELECT
         sn.id                                     AS season_id,
@@ -61,6 +63,7 @@ export async function GET(request: Request) {
         AND sn.want_to_watch = 0
         ${typeClause}
         ${withChildClause}
+        ${cinemaClause}
       ORDER BY se.start_date ASC
     `).all(yearEnd, yearStart, ...(typeFilter ?? [])) as {
       season_id: number;

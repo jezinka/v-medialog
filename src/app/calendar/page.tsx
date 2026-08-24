@@ -40,13 +40,15 @@ function CalendarInner() {
     return t ? new Set(t.split(",").filter(Boolean)) : new Set<string>();
   });
   const [withChildOnly, setWithChildOnly] = useState(() => searchParams.get("with_child") === "1");
+  const [cinemaOnly, setCinemaOnly] = useState(() => searchParams.get("cinema") === "1");
   const [entries, setEntries] = useState<CalendarEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const buildUrl = useCallback((y: number, types: Set<string>, childOnly: boolean) => {
+  const buildUrl = useCallback((y: number, types: Set<string>, childOnly: boolean, cinemaOnlyFilter: boolean) => {
     const params = new URLSearchParams({ year: String(y) });
     if (types.size > 0) params.set("types", Array.from(types).join(","));
     if (childOnly) params.set("with_child", "1");
+    if (cinemaOnlyFilter) params.set("cinema", "1");
     return `/calendar?${params.toString()}`;
   }, []);
 
@@ -71,9 +73,13 @@ function CalendarInner() {
     setWithChildOnly((prev) => !prev);
   }, []);
 
+  const toggleCinemaOnly = useCallback(() => {
+    setCinemaOnly((prev) => !prev);
+  }, []);
+
   useEffect(() => {
-    router.replace(buildUrl(year, activeTypes, withChildOnly));
-  }, [year, activeTypes, withChildOnly, router, buildUrl]);
+    router.replace(buildUrl(year, activeTypes, withChildOnly, cinemaOnly));
+  }, [year, activeTypes, withChildOnly, cinemaOnly, router, buildUrl]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -81,6 +87,7 @@ function CalendarInner() {
       const params = new URLSearchParams({ year: String(year) });
       if (activeTypes.size > 0) params.set("types", Array.from(activeTypes).join(","));
       if (withChildOnly) params.set("with_child", "1");
+      if (cinemaOnly) params.set("cinema", "1");
       const res = await fetch(`/api/calendar-gallery?${params.toString()}`);
       const data = await res.json();
       setEntries(Array.isArray(data) ? data : []);
@@ -90,7 +97,7 @@ function CalendarInner() {
     } finally {
       setLoading(false);
     }
-  }, [year, activeTypes, withChildOnly]);
+  }, [year, activeTypes, withChildOnly, cinemaOnly]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -156,6 +163,16 @@ function CalendarInner() {
           }`}
         >
           👶 Z dzieckiem
+        </button>
+        <button
+          onClick={toggleCinemaOnly}
+          className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+            cinemaOnly
+              ? "bg-amber-600 text-white"
+              : "bg-amber-100 text-amber-700 hover:bg-amber-200"
+          }`}
+        >
+          🎟️ W kinie
         </button>
       </div>
 

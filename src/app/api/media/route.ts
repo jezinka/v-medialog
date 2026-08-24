@@ -26,6 +26,8 @@ export async function GET(request: NextRequest) {
     const noCover = searchParams.get("noCover") === "1";
     const ongoing = searchParams.get("ongoing") === "1";
     const behind = searchParams.get("behind") === "1";
+    const withChildOnly = searchParams.get("with_child") === "1";
+    const cinemaOnly = searchParams.get("cinema") === "1";
     const sortBy = searchParams.get("sortBy") === "recently_added" ? "recently_added" : "title";
     const paginate = !all && !universeId && !noUniverse && !year;
 
@@ -70,6 +72,18 @@ export async function GET(request: NextRequest) {
         clauses.push(`m.tmdb_seasons_count IS NOT NULL`);
         clauses.push(`(SELECT COUNT(*) FROM seasons s WHERE s.media_id = m.id) < m.tmdb_seasons_count`);
       }
+      if (withChildOnly) {
+        clauses.push(`EXISTS (
+          SELECT 1 FROM sessions se JOIN seasons s ON se.season_id = s.id
+          WHERE s.media_id = m.id AND se.with_child = 1
+        )`);
+      }
+      if (cinemaOnly) {
+        clauses.push(`EXISTS (
+          SELECT 1 FROM sessions se JOIN seasons s ON se.season_id = s.id
+          WHERE s.media_id = m.id AND se.cinema = 1
+        )`);
+      }
     }
 
     const whereSql = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
@@ -81,7 +95,10 @@ export async function GET(request: NextRequest) {
         (SELECT MAX(COALESCE(se.end_date, se.start_date)) FROM sessions se JOIN seasons s ON se.season_id = s.id WHERE s.media_id = m.id) as last_session_date,
         (SELECT CASE WHEN EXISTS (
           SELECT 1 FROM sessions se JOIN seasons s2 ON se.season_id = s2.id WHERE s2.media_id = m.id AND se.with_child = 1
-        ) THEN 1 ELSE 0 END) as has_child_session
+        ) THEN 1 ELSE 0 END) as has_child_session,
+        (SELECT CASE WHEN EXISTS (
+          SELECT 1 FROM sessions se JOIN seasons s2 ON se.season_id = s2.id WHERE s2.media_id = m.id AND se.cinema = 1
+        ) THEN 1 ELSE 0 END) as has_cinema_session
       FROM media m
       ${whereSql}
     `;

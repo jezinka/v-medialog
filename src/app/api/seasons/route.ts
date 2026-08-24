@@ -18,7 +18,10 @@ export async function GET(request: NextRequest) {
         (SELECT MAX(COALESCE(se.end_date, se.start_date)) FROM sessions se WHERE se.season_id = s.id) as last_session_date,
         (SELECT CASE WHEN EXISTS (
           SELECT 1 FROM sessions se WHERE se.season_id = s.id AND se.with_child = 1
-        ) THEN 1 ELSE 0 END) as has_child_session
+        ) THEN 1 ELSE 0 END) as has_child_session,
+        (SELECT CASE WHEN EXISTS (
+          SELECT 1 FROM sessions se WHERE se.season_id = s.id AND se.cinema = 1
+        ) THEN 1 ELSE 0 END) as has_cinema_session
       FROM seasons s
       WHERE s.media_id = ?
       ORDER BY first_session_date ASC NULLS LAST, s.season_number, s.id
