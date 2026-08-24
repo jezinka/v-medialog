@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
             if (item.tags) setMediaTags(mediaId, parseTagsInput(item.tags));
 
             const seasonRes = sqlite.prepare(
-              `INSERT INTO seasons (media_id, season_number) VALUES (?, ?)`
+              `INSERT INTO seasons (media_id, season_number, want_to_watch) VALUES (?, ?, 1)`
             ).run(mediaId, !sn || isNaN(sn) ? null : sn);
             const seasonId = seasonRes.lastInsertRowid as number;
 

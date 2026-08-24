@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!mediaExists) return NextResponse.json({ error: "Media not found" }, { status: 404 });
 
     const r = sqlite.prepare(
-      `INSERT INTO seasons (media_id, season_number, title, cover_url) VALUES (?, ?, ?, ?)`
+      `INSERT INTO seasons (media_id, season_number, title, cover_url, want_to_watch) VALUES (?, ?, ?, ?, 1)`
     ).run(media_id, season_number ?? null, title ?? null, cover_url ?? null);
 
     const newId = Number(r.lastInsertRowid);
@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
       season_number: created.season_number != null ? Number(created.season_number) : null,
       title: created.title ?? null,
       cover_url: created.cover_url ?? null,
+      want_to_watch: Boolean(created.want_to_watch ?? true),
       created_at: created.created_at ?? null,
     }, { status: 201 });
   } catch (error) {

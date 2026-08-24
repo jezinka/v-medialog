@@ -158,10 +158,12 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
     setCheckingUpcoming(true);
     try {
       const res = await fetch("/api/jobs/check-upcoming-seasons", { method: "POST" });
-      const data = await res.json() as { added?: number; error?: string };
+      const data = await res.json() as { added?: number; error?: string; items?: Array<{ title: string; season: number }> };
       if (!res.ok) { toast(data.error ?? "Błąd", "error"); return; }
       if ((data.added ?? 0) > 0) {
-        toast(`Dodano ${data.added} nadchodzących sezon${data.added === 1 ? "" : "ów"} do listy!`, "success");
+        const titles = (data.items ?? []).map((i) => `${i.title} S${i.season}`);
+        const summary = titles.length > 0 ? `: ${titles.slice(0, 5).join(", ")}${titles.length > 5 ? ` +${titles.length - 5}` : ""}` : "";
+        toast(`Dodano ${data.added} nadchodzących sezon${data.added === 1 ? "" : "ów"} do listy${summary}!`, "success");
       } else {
         toast("Brak nowych sezonów do dodania", "info");
       }

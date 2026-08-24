@@ -47,6 +47,7 @@ sqlite.exec(`
     season_number INTEGER,
     title TEXT,
     cover_url TEXT,
+    want_to_watch INTEGER DEFAULT 1,
     created_at TEXT DEFAULT (datetime('now'))
   );
 

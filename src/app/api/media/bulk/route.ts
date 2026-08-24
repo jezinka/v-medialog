@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
           const sn = season_number != null ? parseInt(String(season_number), 10) : null;
           const seasonRes = sqlite.prepare(
-            `INSERT INTO seasons (media_id, season_number) VALUES (?, ?)`
+            `INSERT INTO seasons (media_id, season_number, want_to_watch) VALUES (?, ?, 1)`
           ).run(mediaId, isNaN(sn as number) ? null : sn);
           const seasonId = seasonRes.lastInsertRowid as number;
 

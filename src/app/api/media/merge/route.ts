@@ -44,8 +44,8 @@ export async function POST(request: NextRequest) {
           // Okładka sezonu lub fallback na okładkę medium
           const seasonCover = srcSeason.cover_url ?? sourceMedia.cover_url;
           const newSeason = sqlite.prepare(`
-            INSERT INTO seasons (media_id, season_number, title, cover_url)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO seasons (media_id, season_number, title, cover_url, want_to_watch)
+            VALUES (?, ?, ?, ?, 1)
           `).run(target_media_id, srcSeason.season_number, seasonTitle, seasonCover);
 
           const newSeasonId = newSeason.lastInsertRowid;

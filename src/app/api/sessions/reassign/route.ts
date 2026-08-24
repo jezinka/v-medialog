@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         seasonId = target_season_id;
       } else {
         const res = sqlite.prepare(
-          `INSERT INTO seasons (media_id, season_number, title, cover_url) VALUES (?, ?, ?, ?)`
+          `INSERT INTO seasons (media_id, season_number, title, cover_url, want_to_watch) VALUES (?, ?, ?, ?, 1)`
         ).run(
           new_season!.media_id,
           new_season!.season_number ?? null,

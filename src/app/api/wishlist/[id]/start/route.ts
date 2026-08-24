@@ -21,7 +21,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     const mediaId = mediaRes.lastInsertRowid as number;
 
     const seasonRes = sqlite.prepare(
-      `INSERT INTO seasons (media_id, season_number) VALUES (?, NULL)`
+      `INSERT INTO seasons (media_id, season_number, want_to_watch) VALUES (?, NULL, 1)`
     ).run(mediaId);
     const seasonId = seasonRes.lastInsertRowid as number;
 
