@@ -28,7 +28,8 @@ export async function GET(request: NextRequest) {
     const behind = searchParams.get("behind") === "1";
     const withChildOnly = searchParams.get("with_child") === "1";
     const cinemaOnly = searchParams.get("cinema") === "1";
-    const sortBy = searchParams.get("sortBy") === "recently_added" ? "recently_added" : "title";
+    const sortByParam = searchParams.get("sortBy");
+    const sortBy = sortByParam === "recently_added" ? "recently_added" : sortByParam === "last_session" ? "last_session" : "title";
     const paginate = !all && !universeId && !noUniverse && !year;
 
     const clauses: string[] = [];
@@ -105,13 +106,17 @@ export async function GET(request: NextRequest) {
 
     if (paginate) {
       const totalRow = sqlite.prepare(`SELECT COUNT(*) as count FROM media m ${whereSql}`).get(...args) as { count: number };
-      const orderSql = sortBy === "recently_added" ? "m.created_at DESC, m.id DESC" : "m.title";
+      const orderSql = sortBy === "recently_added"
+        ? "m.created_at DESC, m.id DESC"
+        : sortBy === "last_session"
+          ? "last_session_date IS NULL, last_session_date DESC, m.title ASC"
+          : "m.title ASC";
       const items = sqlite.prepare(`${baseSelect} ORDER BY ${orderSql} LIMIT ? OFFSET ?`).all(...args, limit, offset) as Record<string, unknown>[];
       const withTags = items.map((item) => ({ ...item, tagList: getMediaTags(item.id as number) }));
       return NextResponse.json({ items: withTags, total: totalRow.count, page, limit });
     }
 
-    const items = sqlite.prepare(`${baseSelect} ORDER BY m.title`).all(...args) as Record<string, unknown>[];
+    const items = sqlite.prepare(`${baseSelect} ORDER BY ${sortBy === "last_session" ? "last_session_date IS NULL, last_session_date DESC, m.title ASC" : "m.title ASC"}`).all(...args) as Record<string, unknown>[];
     const withTags = items.map((item) => ({ ...item, tagList: getMediaTags(item.id as number) }));
     (withTags as unknown as { title?: string }[]).sort((a, b) =>
       (a.title ?? "").localeCompare(b.title ?? "", "pl", { sensitivity: "base" })

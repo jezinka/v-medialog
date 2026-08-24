@@ -57,7 +57,7 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
   const [behindOnly, setBehindOnly] = useState(false);
   const [withChildOnly, setWithChildOnly] = useState(false);
   const [cinemaOnly, setCinemaOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<"title" | "recently_added">("title");
+  const [sortBy, setSortBy] = useState<"title" | "recently_added" | "last_session">("title");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [seasons, setSeasons] = useState<Record<number, SeasonRow[]>>({});
   const [seasonsLoading, setSeasonsLoading] = useState<Set<number>>(new Set());
@@ -94,6 +94,7 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
       if (withChildOnly) params.set("with_child", "1");
       if (cinemaOnly) params.set("cinema", "1");
       if (sortBy === "recently_added") params.set("sortBy", "recently_added");
+      if (sortBy === "last_session") params.set("sortBy", "last_session");
       const res = await fetch(`/api/media?${params.toString()}`);
       const data = await res.json() as { items: MediaItem[]; total: number; page: number };
       setItems(data.items.map((item) => ({
@@ -370,6 +371,16 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
             }`}
           >
             🆕 Ostatnio dodane
+          </button>
+          <button
+            onClick={() => setSortBy("last_session")}
+            className={`px-2 py-1 rounded-full border transition-colors ${
+              sortBy === "last_session"
+                ? "bg-gray-700 text-white border-gray-700"
+                : "border-gray-300 text-gray-600 hover:border-gray-400"
+            }`}
+          >
+            📅 Ostatnio oglądane/czytane
           </button>
         </div>
         <button
