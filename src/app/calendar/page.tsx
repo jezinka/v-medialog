@@ -9,7 +9,9 @@ interface CalendarEntry {
   media_id: number;
   title: string;
   media_type: string;
-  cover_url: string;
+  cover_url: string | null;
+  source_url: string | null;
+  author_person_id: number | null;
   month: number;
   assigned_day: number;
   is_placeholder: boolean;
@@ -207,10 +209,16 @@ function CalendarInner() {
                   {Array.from({ length: daysCount }, (_, i) => {
                     const day = i + 1;
                     const entry = dayMap.get(day);
+                    const isYt = entry?.media_type === "yt";
+                    const href = entry
+                      ? (isYt && entry.author_person_id ? `/people/${entry.author_person_id}` : `/media/${entry.media_id}`)
+                      : undefined;
                     return (
                       <a
                         key={day}
-                        href={entry ? `/media/${entry.media_id}` : undefined}
+                        href={href}
+                        target={undefined}
+                        rel={undefined}
                         title={entry ? (entry.is_placeholder ? `${entry.title} (brak daty)` : entry.title) : undefined}
                         className={[
                           "relative aspect-square rounded overflow-hidden block",
@@ -227,6 +235,16 @@ function CalendarInner() {
                             className="object-contain"
                             sizes="(max-width: 640px) 14vw, (max-width: 1024px) 9vw, 6vw"
                           />
+                        )}
+                        {/* YouTube placeholder when no cover */}
+                        {isYt && !entry?.cover_url && (
+                          <div className="absolute inset-0 bg-red-100 flex items-center justify-center">
+                            <span className="text-[14px]">▶️</span>
+                          </div>
+                        )}
+                        {/* YouTube badge */}
+                        {isYt && (
+                          <span className="absolute bottom-0.5 left-0.5 text-[8px] leading-none z-20 bg-red-600 text-white rounded px-0.5">YT</span>
                         )}
                         {/* Gray wash for placeholder entries */}
                         {entry?.is_placeholder && (

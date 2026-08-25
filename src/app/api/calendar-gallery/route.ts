@@ -5,7 +5,9 @@ export interface CalendarEntry {
   media_id: number;
   title: string;
   media_type: string;
-  cover_url: string;
+  cover_url: string | null;
+  source_url: string | null;
+  author_person_id: number | null;
   month: number;
   assigned_day: number;
   is_placeholder: boolean;
@@ -48,6 +50,8 @@ export async function GET(request: Request) {
         m.title,
         m.media_type,
         COALESCE(sn.cover_url, m.cover_url)       AS cover_url,
+        m.source_url,
+        (SELECT mp.person_id FROM media_persons mp WHERE mp.media_id = m.id LIMIT 1) AS author_person_id,
         se.start_date,
         se.end_date,
         se.cinema,
@@ -59,7 +63,7 @@ export async function GET(request: Request) {
       JOIN media m    ON sn.media_id  = m.id
       WHERE se.start_date <= ?
         AND COALESCE(se.end_date, se.start_date) >= ?
-        AND COALESCE(sn.cover_url, m.cover_url) IS NOT NULL
+        AND (COALESCE(sn.cover_url, m.cover_url) IS NOT NULL OR m.media_type = 'yt')
         AND sn.want_to_watch = 0
         ${typeClause}
         ${withChildClause}
@@ -70,7 +74,9 @@ export async function GET(request: Request) {
       media_id: number;
       title: string;
       media_type: string;
-      cover_url: string;
+      cover_url: string | null;
+      source_url: string | null;
+      author_person_id: number | null;
       start_date: string;
       end_date: string | null;
       cinema: number;
@@ -83,7 +89,9 @@ export async function GET(request: Request) {
       media_id: number;
       title: string;
       media_type: string;
-      cover_url: string;
+      cover_url: string | null;
+      source_url: string | null;
+      author_person_id: number | null;
       is_movie: boolean;
       is_placeholder: boolean;
       canonical_month: number;
@@ -105,7 +113,9 @@ export async function GET(request: Request) {
           title: row.title,
           media_type: row.media_type,
           cover_url: row.cover_url,
-          is_movie: row.media_type === "movie",
+          source_url: row.source_url,
+          author_person_id: row.author_person_id,
+          is_movie: row.media_type === "movie" || row.media_type === "yt",
           is_placeholder: true,
           canonical_month: 0,
           valid_days: [],
@@ -225,6 +235,8 @@ export async function GET(request: Request) {
           title: entry.title,
           media_type: entry.media_type,
           cover_url: entry.cover_url,
+          source_url: entry.source_url,
+          author_person_id: entry.author_person_id,
           month: slot.month,
           assigned_day: slot.day,
           is_placeholder: false,
@@ -247,6 +259,8 @@ export async function GET(request: Request) {
               title: entry.title,
               media_type: entry.media_type,
               cover_url: entry.cover_url,
+              source_url: entry.source_url,
+              author_person_id: entry.author_person_id,
               month: m,
               assigned_day: d,
               is_placeholder: true,

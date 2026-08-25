@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const { media_id, season_number, title, cover_url } = await request.json();
+    const { media_id, season_number, title, cover_url, want_to_watch } = await request.json();
     if (!media_id) return NextResponse.json({ error: "media_id is required" }, { status: 400 });
 
     // Verify media exists
@@ -44,8 +44,8 @@ export async function POST(request: NextRequest) {
     if (!mediaExists) return NextResponse.json({ error: "Media not found" }, { status: 404 });
 
     const r = sqlite.prepare(
-      `INSERT INTO seasons (media_id, season_number, title, cover_url, want_to_watch) VALUES (?, ?, ?, ?, 1)`
-    ).run(media_id, season_number ?? null, title ?? null, cover_url ?? null);
+      `INSERT INTO seasons (media_id, season_number, title, cover_url, want_to_watch) VALUES (?, ?, ?, ?, ?)`
+    ).run(media_id, season_number ?? null, title ?? null, cover_url ?? null, want_to_watch !== undefined ? (want_to_watch ? 1 : 0) : 1);
 
     const newId = Number(r.lastInsertRowid);
     const created = sqlite.prepare(`SELECT * FROM seasons WHERE id=?`).get(newId) as Record<string, unknown> | undefined;

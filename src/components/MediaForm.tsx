@@ -33,6 +33,7 @@ interface MediaFormData {
   tmdb_id: string;
   ol_key: string;
   source_url: string;
+  youtube_id: string;
 }
 
 interface PlaceholderItem {
@@ -73,6 +74,7 @@ const emptyForm: MediaFormData = {
   tmdb_id: "",
   ol_key: "",
   source_url: "",
+  youtube_id: "",
 };
 
 export default function MediaForm({ initialData, onSuccess, onCancel, mode = "add", placeholderItems }: Props) {
@@ -82,6 +84,7 @@ export default function MediaForm({ initialData, onSuccess, onCancel, mode = "ad
   const [showDropdown, setShowDropdown] = useState(false);
   const [searching, setSearching] = useState(false);
   const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
+  const [youtubeLoading, setYoutubeLoading] = useState(false);
   // When a placeholder item is selected, we switch to PUT mode for that item's id
   const [selectedPlaceholderId, setSelectedPlaceholderId] = useState<number | null>(null);
   // Additional watch sessions (breaks)
@@ -102,6 +105,65 @@ export default function MediaForm({ initialData, onSuccess, onCancel, mode = "ad
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  const parseYoutubeId = (value: string): string | null => {
+    if (!value) return null;
+    const trimmed = value.trim();
+    const patterns = [
+      /(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/shorts\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/i,
+      /youtube\.com\/v\/([A-Za-z0-9_-]{11})/i,
+      /youtube\.com\/live\/([A-Za-z0-9_-]{11})/i,
+      /(?:v=|vi=)([A-Za-z0-9_-]{11})/i,
+    ];
+    for (const pattern of patterns) {
+      const match = trimmed.match(pattern);
+      if (match?.[1]) return match[1];
+    }
+    return null;
+  };
+
+  const handleYoutubeFetch = async () => {
+    const url = form.source_url.trim();
+    const videoId = parseYoutubeId(url);
+    if (!url || !videoId) {
+      toast("Wklej poprawny link do filmu YouTube", "error");
+      return;
+    }
+
+    setYoutubeLoading(true);
+    try {
+      const endpoint = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+      const res = await fetch(endpoint);
+      if (!res.ok) throw new Error("oEmbed failed");
+      const data = await res.json() as { title?: string; author_name?: string; thumbnail_url?: string };
+
+      let localCover = data.thumbnail_url || "";
+      if (data.thumbnail_url) {
+        const dlRes = await fetch("/api/cover/download", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: data.thumbnail_url }),
+        });
+        if (dlRes.ok) {
+          const dlData = await dlRes.json() as { path?: string };
+          if (dlData.path) localCover = dlData.path;
+        }
+      }
+
+      setForm((f) => ({
+        ...f,
+        title: data.title || f.title || "YouTube video",
+        author: data.author_name || f.author || "YouTube",
+        cover_url: localCover || f.cover_url || "",
+        youtube_id: videoId,
+      }));
+      toast("Dane z YouTube pobrane ✓", "success");
+    } catch {
+      toast("Nie udało się pobrać danych z YouTube", "error");
+    } finally {
+      setYoutubeLoading(false);
+    }
+  };
 
   const handleOriginalTitleChange = (value: string) => {
     setForm((f) => ({ ...f, original_title: value }));
@@ -157,8 +219,8 @@ export default function MediaForm({ initialData, onSuccess, onCancel, mode = "ad
           ol_key: form.ol_key || null,
           source_url: form.source_url || null,
           additional_sessions: extraSessions.length > 0 ? JSON.stringify(extraSessions) : null,
-        }),
-      });
+          youtube_id: form.youtube_id || null,
+        }),      });
       if (!res.ok) throw new Error(await res.text());
       toast(mode === "edit" || isPlaceholderUpdate ? "Zaktualizowano!" : "Dodano!", "success");
       onSuccess();
@@ -229,7 +291,9 @@ export default function MediaForm({ initialData, onSuccess, onCancel, mode = "ad
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Autor</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {form.media_type === "yt" ? "Kanał / twórca" : "Autor"}
+              </label>
               <input
                 type="text"
                 value={form.author}
@@ -237,6 +301,40 @@ export default function MediaForm({ initialData, onSuccess, onCancel, mode = "ad
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gray-400 focus:border-transparent"
               />
             </div>
+
+            {form.media_type === "yt" && (
+              <>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">URL filmu YouTube</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={form.source_url}
+                      onChange={(e) => set("source_url", e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleYoutubeFetch()}
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleYoutubeFetch}
+                      disabled={youtubeLoading || !form.source_url.trim()}
+                      className="shrink-0 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+                    >
+                      {youtubeLoading ? "⏳" : "Pobierz"}
+                    </button>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">YouTube ID</label>
+                  <input
+                    type="text"
+                    value={form.youtube_id}
+                    onChange={(e) => set("youtube_id", e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-gray-400 focus:border-transparent"
+                  />
+                </div>
+              </>
+            )}
 
             {/* Original title with search autocomplete */}
             <div ref={dropdownRef} className="relative">

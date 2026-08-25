@@ -24,6 +24,8 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
     cover_url: "",
     description: "",
     tmdb_id: "",
+    source_url: "",
+    youtube_id: "",
   });
   const [createLoading, setCreateLoading] = useState(false);
   const [addToWishlist, setAddToWishlist] = useState(false);
@@ -31,6 +33,66 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
   const [lcLoading, setLcLoading] = useState(false);
   const [tmdbUrl, setTmdbUrl] = useState("");
   const [tmdbLoading, setTmdbLoading] = useState(false);
+  const [ytLoading, setYtLoading] = useState(false);
+
+  const parseYoutubeId = (value: string): string | null => {
+    if (!value) return null;
+    const trimmed = value.trim();
+    const patterns = [
+      /(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/shorts\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/i,
+      /youtube\.com\/v\/([A-Za-z0-9_-]{11})/i,
+      /youtube\.com\/live\/([A-Za-z0-9_-]{11})/i,
+      /(?:v=|vi=)([A-Za-z0-9_-]{11})/i,
+    ];
+    for (const pattern of patterns) {
+      const match = trimmed.match(pattern);
+      if (match?.[1]) return match[1];
+    }
+    return null;
+  };
+
+  const handleYoutubeFetch = async () => {
+    const url = createForm.source_url.trim();
+    const videoId = parseYoutubeId(url);
+    if (!url || !videoId) {
+      toast("Wklej poprawny link do filmu YouTube", "error");
+      return;
+    }
+
+    setYtLoading(true);
+    try {
+      const endpoint = `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+      const res = await fetch(endpoint);
+      if (!res.ok) throw new Error("oEmbed failed");
+      const data = await res.json() as { title?: string; author_name?: string; thumbnail_url?: string };
+
+      let localCover = data.thumbnail_url || "";
+      if (data.thumbnail_url) {
+        const dlRes = await fetch("/api/cover/download", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: data.thumbnail_url }),
+        });
+        if (dlRes.ok) {
+          const dlData = await dlRes.json() as { path?: string };
+          if (dlData.path) localCover = dlData.path;
+        }
+      }
+
+      setCreateForm((f) => ({
+        ...f,
+        title: data.title || f.title || "YouTube video",
+        author: data.author_name || f.author || "YouTube",
+        cover_url: localCover || f.cover_url || "",
+        youtube_id: videoId,
+      }));
+      toast("Dane z YouTube pobrane ✓", "success");
+    } catch {
+      toast("Nie udało się pobrać danych z YouTube", "error");
+    } finally {
+      setYtLoading(false);
+    }
+  };
 
   const handleLcFetch = async () => {
     if (!lcUrl.trim()) return;
@@ -139,6 +201,8 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
           cover_url: createForm.cover_url || null,
           description: createForm.description || null,
           tmdb_id: createForm.tmdb_id || null,
+          source_url: createForm.source_url || null,
+          youtube_id: createForm.youtube_id || null,
         }),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -339,7 +403,7 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
                   type="text"
                   value={createForm.author}
                   onChange={(e) => setCreateForm((f) => ({ ...f, author: e.target.value }))}
-                  placeholder="Autor"
+                  placeholder={createForm.media_type === "yt" ? "Kanał / twórca" : "Autor"}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
                 />
                 <select
@@ -351,11 +415,40 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
                     <option key={t} value={t}>{MEDIA_TYPE_LABELS[t] ?? t}</option>
                   ))}
                 </select>
+                {createForm.media_type === "yt" && (
+                  <>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        value={createForm.source_url}
+                        onChange={(e) => setCreateForm((f) => ({ ...f, source_url: e.target.value }))}
+                        onKeyDown={(e) => e.key === "Enter" && handleYoutubeFetch()}
+                        placeholder="URL filmu YouTube"
+                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleYoutubeFetch}
+                        disabled={ytLoading || !createForm.source_url.trim()}
+                        className="shrink-0 bg-red-600 text-white px-3 py-2 rounded-lg text-xs hover:bg-red-700 disabled:opacity-50"
+                      >
+                        {ytLoading ? "⏳" : "Pobierz"}
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={createForm.youtube_id}
+                      onChange={(e) => setCreateForm((f) => ({ ...f, youtube_id: e.target.value }))}
+                      placeholder="YouTube ID (opcjonalnie)"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                    />
+                  </>
+                )}
                 <input
                   type="url"
                   value={createForm.cover_url}
                   onChange={(e) => setCreateForm((f) => ({ ...f, cover_url: e.target.value }))}
-                  placeholder="URL okładki"
+                  placeholder="URL okładki / miniatury"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
                 />
                 <textarea

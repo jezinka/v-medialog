@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
       title, original_title, author, media_type, universe_id,
       cover_url, tmdb_id, ol_key, description, genres, vote_average,
       runtime, release_year, external_synced_at,
-      tags: tagsInput, notes, discontinued, source_url,
+      tags: tagsInput, notes, discontinued, source_url, youtube_id,
     } = body;
 
     if (!title || !media_type) {
@@ -145,14 +145,14 @@ export async function POST(request: NextRequest) {
     const r = sqlite.prepare(`
       INSERT INTO media (universe_id, title, original_title, author, media_type, cover_url,
         tmdb_id, ol_key, description, genres, vote_average, runtime, release_year,
-        external_synced_at, tags, notes, discontinued, source_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        external_synced_at, tags, notes, discontinued, source_url, youtube_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       universe_id ?? null, title, original_title ?? null, author ?? null, media_type,
       cover_url ?? null, tmdb_id ?? null, ol_key ?? null, description ?? null,
       genres ?? null, vote_average ?? null, runtime ?? null, release_year ?? null,
       external_synced_at ?? null, tagsInput ?? null, notes ?? null,
-      discontinued ? 1 : 0, source_url ?? null,
+      discontinued ? 1 : 0, source_url ?? null, youtube_id ?? null,
     );
 
     const newId = r.lastInsertRowid as number;

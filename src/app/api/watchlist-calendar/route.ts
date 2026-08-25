@@ -37,6 +37,7 @@ export async function GET() {
       LEFT JOIN sessions se ON se.season_id = sn.id
         AND CAST(julianday(COALESCE(se.end_date, se.start_date)) - julianday(se.start_date) AS INTEGER) < 364
       WHERE sn.want_to_watch = 1
+        AND m.media_type != 'yt'
       GROUP BY sn.id
       ORDER BY m.title ASC
     `).all() as {

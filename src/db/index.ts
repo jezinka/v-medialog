@@ -133,6 +133,7 @@ try { sqlite.exec("ALTER TABLE media ADD COLUMN track_list TEXT"); } catch { /* 
 try { sqlite.exec("ALTER TABLE media ADD COLUMN source_url TEXT"); } catch { /* already exists */ }
 try { sqlite.exec("ALTER TABLE seasons ADD COLUMN want_to_watch INTEGER DEFAULT 0"); } catch { /* already exists */ }
 try { sqlite.exec("ALTER TABLE sessions ADD COLUMN with_child INTEGER DEFAULT 0"); } catch { /* already exists */ }
+try { sqlite.exec("ALTER TABLE media ADD COLUMN youtube_id TEXT"); } catch { /* already exists */ }
 
 // Fix seasons table if it incorrectly references "media_old" instead of "media"
 try {
