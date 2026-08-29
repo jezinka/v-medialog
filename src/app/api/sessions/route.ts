@@ -69,6 +69,10 @@ export async function POST(request: NextRequest) {
       `INSERT INTO sessions (season_id, start_date, end_date, cinema, with_child) VALUES (?, ?, ?, ?, ?)`
     ).run(Number(season_id), start_date, end_date ?? null, cinema ? 1 : 0, with_child ? 1 : 0);
 
+    // If a real session exists, the season is no longer just "want to watch"
+    sqlite.prepare(`UPDATE seasons SET want_to_watch = 0 WHERE id = ? AND want_to_watch = 1`)
+      .run(Number(season_id));
+
     const newId = Number(r.lastInsertRowid);
     const created = sqlite.prepare(`SELECT * FROM sessions WHERE id=?`).get(newId) as Record<string, unknown> | undefined;
     if (!created) return NextResponse.json({ error: "Session not found after creation" }, { status: 500 });
