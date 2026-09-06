@@ -55,6 +55,7 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
   const [noCoverOnly, setNoCoverOnly] = useState(false);
   const [ongoingOnly, setOngoingOnly] = useState(false);
   const [behindOnly, setBehindOnly] = useState(false);
+  const [hideDiscontinued, setHideDiscontinued] = useState(false);
   const [withChildOnly, setWithChildOnly] = useState(false);
   const [cinemaOnly, setCinemaOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"title" | "recently_added" | "last_session">("title");
@@ -91,6 +92,7 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
       if (noCoverOnly) params.set("noCover", "1");
       if (ongoingOnly) params.set("ongoing", "1");
       if (behindOnly) params.set("behind", "1");
+      if (hideDiscontinued) params.set("hide_discontinued", "1");
       if (withChildOnly) params.set("with_child", "1");
       if (cinemaOnly) params.set("cinema", "1");
       if (sortBy === "recently_added") params.set("sortBy", "recently_added");
@@ -108,7 +110,7 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [page, debouncedSearch, typeFilter, noCoverOnly, ongoingOnly, behindOnly, withChildOnly, cinemaOnly, sortBy]);
+  }, [page, debouncedSearch, typeFilter, noCoverOnly, ongoingOnly, behindOnly, hideDiscontinued, withChildOnly, cinemaOnly, sortBy]);
 
   const fetchSuggestions = useCallback(async () => {
     setLoadingSuggestions(true);
@@ -174,7 +176,7 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
   useEffect(() => { void load(); }, [load]);
 
   // Reset to page 1 when filters change
-  useEffect(() => { setPage(1); }, [debouncedSearch, typeFilter, noCoverOnly, ongoingOnly, behindOnly, withChildOnly, cinemaOnly, sortBy]);
+  useEffect(() => { setPage(1); }, [debouncedSearch, typeFilter, noCoverOnly, ongoingOnly, behindOnly, hideDiscontinued, withChildOnly, cinemaOnly, sortBy]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -327,6 +329,16 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
             }`}
           >
             ⏳ Niedokończone
+          </button>
+          <button
+            onClick={() => setHideDiscontinued((v) => !v)}
+            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+              hideDiscontinued
+                ? "bg-red-600 text-white border-red-600"
+                : "border-red-300 text-red-700 hover:border-red-400"
+            }`}
+          >
+            🚫 Ukryj porzucone
           </button>
           <button
             onClick={() => setWithChildOnly((v) => !v)}

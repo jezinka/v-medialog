@@ -7,7 +7,7 @@ import { parseTagsInput, setMediaTags, getMediaTags } from "@/lib/tags";
  * GET /api/media?universe_id=3
  * GET /api/media?all=true
  * GET /api/media?no_universe=true
- * GET /api/media?page=1&limit=50&search=...&type=...&noCover=1&ongoing=1&behind=1
+ * GET /api/media?page=1&limit=50&search=...&type=...&noCover=1&ongoing=1&behind=1&hide_discontinued=1
  */
 export async function GET(request: NextRequest) {
   try {
@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
     const noCover = searchParams.get("noCover") === "1";
     const ongoing = searchParams.get("ongoing") === "1";
     const behind = searchParams.get("behind") === "1";
+    const hideDiscontinued = searchParams.get("hide_discontinued") === "1";
     const withChildOnly = searchParams.get("with_child") === "1";
     const cinemaOnly = searchParams.get("cinema") === "1";
     const sortByParam = searchParams.get("sortBy");
@@ -72,6 +73,9 @@ export async function GET(request: NextRequest) {
         clauses.push(`m.media_type IN ('series','anime','cartoon')`);
         clauses.push(`m.tmdb_seasons_count IS NOT NULL`);
         clauses.push(`(SELECT COUNT(*) FROM seasons s WHERE s.media_id = m.id) < m.tmdb_seasons_count`);
+      }
+      if (hideDiscontinued) {
+        clauses.push(`(m.discontinued IS NULL OR m.discontinued = 0)`);
       }
       if (withChildOnly) {
         clauses.push(`EXISTS (
