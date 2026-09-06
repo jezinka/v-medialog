@@ -4,6 +4,7 @@ import { sqlite } from "@/db";
 export interface WatchlistEntry {
   media_id: number;
   season_id: number;
+  season_number: number | null;
   title: string;
   media_type: string;
   cover_url: string | null;
@@ -28,6 +29,7 @@ export async function GET() {
       SELECT
         m.id            AS media_id,
         sn.id           AS season_id,
+        sn.season_number,
         m.title,
         m.media_type,
         COALESCE(sn.cover_url, m.cover_url) AS cover_url,
@@ -39,10 +41,11 @@ export async function GET() {
       WHERE sn.want_to_watch = 1
         AND m.media_type != 'yt'
       GROUP BY sn.id
-      ORDER BY m.title ASC
+      ORDER BY m.title ASC, sn.season_number ASC NULLS LAST, sn.id ASC
     `).all() as {
       media_id: number;
       season_id: number;
+      season_number: number | null;
       title: string;
       media_type: string;
       cover_url: string | null;

@@ -7,6 +7,7 @@ import { MONTH_NAMES, DAY_LABELS } from "@/lib/utils";
 interface WatchlistEntry {
   media_id: number;
   season_id: number;
+  season_number: number | null;
   title: string;
   media_type: string;
   cover_url: string | null;
@@ -110,7 +111,7 @@ export default function WatchlistCalendar() {
               <a
                 key={entry.season_id}
                 href={`/media/${entry.media_id}`}
-                title={`${entry.title}${entry.last_session_date ? ` (${entry.last_session_date})` : " (brak daty)"}`}
+                title={`${entry.title}${entry.season_number != null ? ` — sezon ${entry.season_number}` : ""}${entry.last_session_date ? ` (${entry.last_session_date})` : " (brak daty)"}`}
                 className={[
                   "relative rounded-lg overflow-hidden cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.05] transition-all duration-150 border aspect-[2/3] block",
                   entry.category === "past"
@@ -182,7 +183,7 @@ export default function WatchlistCalendar() {
                         <a
                           key={day}
                           href={entry ? `/media/${entry.media_id}` : undefined}
-                          title={entry ? entry.title : undefined}
+                          title={entry ? `${entry.title}${entry.season_number != null ? ` — sezon ${entry.season_number}` : ""}` : undefined}
                           className={[
                             "relative aspect-square rounded overflow-hidden block",
                             entry
