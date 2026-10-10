@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sqlite } from "@/db";
 
 export interface CalendarEntry {
+  season_id: number;
   media_id: number;
   title: string;
   media_type: string;
@@ -231,6 +232,7 @@ export async function GET(request: Request) {
       if (slot !== null) {
         getOccupied(slot.month).add(slot.day);
         result.push({
+          season_id: entry.season_id,
           media_id: entry.media_id,
           title: entry.title,
           media_type: entry.media_type,
@@ -255,6 +257,7 @@ export async function GET(request: Request) {
           if (!occupied.has(d)) {
             occupied.add(d);
             result.push({
+              season_id: entry.season_id,
               media_id: entry.media_id,
               title: entry.title,
               media_type: entry.media_type,

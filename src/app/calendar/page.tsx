@@ -3,9 +3,11 @@
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import CoverImg from "@/components/CoverImg";
+import { toast } from "@/components/Toast";
 import { CALENDAR_TYPES, MONTH_NAMES, DAY_LABELS, MEDIA_TYPES, MEDIA_TYPE_LABELS, MEDIA_TYPE_EMOJI } from "@/lib/utils";
 
 interface CalendarEntry {
+  season_id: number;
   media_id: number;
   title: string;
   media_type: string;
@@ -45,6 +47,7 @@ function CalendarInner() {
   const [cinemaOnly, setCinemaOnly] = useState(() => searchParams.get("cinema") === "1");
   const [entries, setEntries] = useState<CalendarEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingMonth, setDownloadingMonth] = useState<number | null>(null);
 
   const buildUrl = useCallback((y: number, types: Set<string>, childOnly: boolean, cinemaOnlyFilter: boolean) => {
     const params = new URLSearchParams({ year: String(y) });
@@ -102,6 +105,30 @@ function CalendarInner() {
   }, [year, activeTypes, withChildOnly, cinemaOnly]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const downloadCovers = useCallback(async (month: number, monthEntries: CalendarEntry[]) => {
+    const seasonIds = [...new Set(monthEntries.map((entry) => entry.season_id))];
+    if (seasonIds.length === 0) return;
+    setDownloadingMonth(month);
+    try {
+      const res = await fetch(`/api/calendar-covers?year=${year}&month=${month}&season_ids=${seasonIds.join(",")}`);
+      if (!res.ok) {
+        const data = await res.json() as { error?: string };
+        throw new Error(data.error ?? "Nie udało się pobrać okładek");
+      }
+      const url = URL.createObjectURL(await res.blob());
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `okladki-${year}-${String(month).padStart(2, "0")}.zip`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error(error);
+      toast(error instanceof Error ? error.message : "Nie udało się pobrać okładek", "error");
+    } finally {
+      setDownloadingMonth(null);
+    }
+  }, [year]);
 
   // Build lookup: month → Map<day, entry>
   const monthDayMap = new Map<number, Map<number, CalendarEntry>>();
@@ -188,12 +215,23 @@ function CalendarInner() {
             const daysCount = getDaysInMonth(year, month);
             const firstDay = getFirstDayOfMonth(year, month);
             const dayMap = monthDayMap.get(month) ?? new Map<number, CalendarEntry>();
+            const monthEntries = [...dayMap.values()];
 
             return (
               <div key={month} className="bg-white rounded-xl border border-gray-200 shadow-sm p-3">
-                <h3 className="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                  {MONTH_NAMES[month - 1]}
-                </h3>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                    {MONTH_NAMES[month - 1]}
+                  </h3>
+                  <button
+                    onClick={() => void downloadCovers(month, monthEntries)}
+                    disabled={monthEntries.length === 0 || downloadingMonth !== null}
+                    className="text-[10px] text-gray-500 hover:text-gray-800 disabled:opacity-30"
+                    title="Pobierz okładki z tego miesiąca"
+                  >
+                    {downloadingMonth === month ? "Pobieram…" : "⬇ Okładki"}
+                  </button>
+                </div>
 
                 <div className="grid grid-cols-7 gap-px">
                   {DAY_LABELS.map((label) => (
