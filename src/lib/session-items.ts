@@ -12,6 +12,7 @@ export interface SessionCalendarItem {
   volumeEpisode: string | null;
   discontinued: boolean | null;
   cinema: boolean | number;
+  withChild: boolean | number;
   tagList?: { id: number; name: string }[];
   additionalSessions: null;
 }
@@ -29,6 +30,7 @@ export function sessionToCalendarItem(session: SessionRow): SessionCalendarItem 
     volumeEpisode: session.seasonNumber != null ? String(session.seasonNumber) : null,
     discontinued: session.discontinued ? true : null,
     cinema: session.cinema,
+    withChild: session.withChild,
     tagList: session.tagList,
     additionalSessions: null,
   };

@@ -1,13 +1,15 @@
 "use client";
+
 import { useMemo, useState } from "react";
-import { BOOK_TYPES, MONTH_NAMES } from "@/lib/utils";
+import { BOOK_TYPES, formatDate, MEDIA_TYPE_EMOJI, MONTH_NAMES } from "@/lib/utils";
 
 const MOVIE_TYPES = ["movie", "cartoon"];
 const SERIES_TYPES = ["series"];
-const ANIME_TYPES = ["anime"]
+const ANIME_TYPES = ["anime"];
 
 interface MediaItem {
   id: number;
+  mediaId: number;
   seasonId?: number | null;
   title: string;
   author: string | null;
@@ -17,6 +19,7 @@ interface MediaItem {
   volumeEpisode: string | null;
   discontinued: boolean | null;
   cinema?: boolean | number | null;
+  withChild?: boolean | number | null;
   tagList?: { id: number; name: string }[];
 }
 
@@ -42,13 +45,38 @@ function groupByTitle(items: MediaItem[]): MediaItem[] {
   }
   return Array.from(map.values()).map((group) => {
     const first = group[0];
-    const startDate = group.reduce((min, i) => i.startDate < min ? i.startDate : min, first.startDate);
-    const allHaveEnd = group.every((i) => i.endDate != null);
+    const startDate = group.reduce((min, item) => item.startDate < min ? item.startDate : min, first.startDate);
+    const allHaveEnd = group.every((item) => item.endDate != null);
     const endDate = allHaveEnd
-      ? group.reduce((max, i) => i.endDate! > max ? i.endDate! : max, first.endDate!)
+      ? group.reduce((max, item) => item.endDate! > max ? item.endDate! : max, first.endDate!)
       : null;
     return { ...first, startDate, endDate };
   });
+}
+
+function StatisticsItem({ item }: { item: MediaItem }) {
+  const date = item.endDate && item.endDate !== item.startDate
+    ? `${formatDate(item.startDate)}–${formatDate(item.endDate)}`
+    : formatDate(item.startDate);
+  const details = [
+    item.author,
+    item.volumeEpisode && !BOOK_TYPES.includes(item.mediaType) ? `Sezon ${item.volumeEpisode}` : null,
+    date,
+  ].filter(Boolean);
+
+  return (
+    <a href={`/media/${item.mediaId}`} className={`block rounded-lg border border-gray-100 bg-gray-50 px-2 py-1.5 hover:bg-gray-100 transition-colors ${item.discontinued ? "opacity-60" : ""}`}>
+      <p className={`truncate text-xs font-medium text-gray-800 ${item.discontinued ? "line-through" : ""}`}>
+        {MEDIA_TYPE_EMOJI[item.mediaType] ?? "📄"} {item.title}
+      </p>
+      <p className="truncate text-[11px] text-gray-500">
+        {details.join(" · ")}{item.cinema ? " · 🎟️ Kino" : ""}{item.withChild ? " · 👶 Z dzieckiem" : ""}
+      </p>
+      {item.tagList && item.tagList.length > 0 && (
+        <p className="truncate text-[10px] text-gray-400">{item.tagList.map((tag) => `#${tag.name}`).join(" ")}</p>
+      )}
+    </a>
+  );
 }
 
 export default function Statistics({ items, year }: Props) {
@@ -60,16 +88,35 @@ export default function Statistics({ items, year }: Props) {
   }, [items, year, selectedMonth]);
 
   const grouped = useMemo(() => groupByTitle(filtered), [filtered]);
-
-  const books = [... new Set(grouped.filter((i) => BOOK_TYPES.includes(i.mediaType)))];
-  const movies = [... new Set(grouped.filter((i) => MOVIE_TYPES.includes(i.mediaType)))];
-  const series = [... new Set(grouped.filter((i) => SERIES_TYPES.includes(i.mediaType)))];
-  const anime = [... new Set(grouped.filter((i) => ANIME_TYPES.includes(i.mediaType)))];
-  const plays = [... new Set(grouped.filter((i) => i.mediaType === "play"))];
-  const games = [... new Set(grouped.filter((i) => i.mediaType === "game"))];
-  const podcasts = [... new Set(grouped.filter((i) => i.mediaType === "podcast"))];
-  const records = [... new Set(grouped.filter((i) => i.mediaType === "record"))];
-  const cinemaMovies = [... new Set(movies.filter((i) => i.cinema))];
+  const books = grouped.filter((item) => BOOK_TYPES.includes(item.mediaType));
+  const movies = grouped.filter((item) => MOVIE_TYPES.includes(item.mediaType));
+  const series = grouped.filter((item) => SERIES_TYPES.includes(item.mediaType));
+  const anime = grouped.filter((item) => ANIME_TYPES.includes(item.mediaType));
+  const plays = grouped.filter((item) => item.mediaType === "play");
+  const games = grouped.filter((item) => item.mediaType === "game");
+  const podcasts = grouped.filter((item) => item.mediaType === "podcast");
+  const records = grouped.filter((item) => item.mediaType === "record");
+  const cinemaMovies = movies.filter((item) => item.cinema);
+  const sections = [
+    ["📚 Przeczytane", books],
+    ["🎬 Filmy", movies],
+    ["📺 Seriale", series],
+    ["🎌 Anime", anime],
+    ["🎭 Sztuki teatralne", plays],
+    ["🎮 Gry", games],
+    ["🎙️ Podcasty", podcasts],
+    ["🎵 Płyty", records],
+  ] as const;
+  const counters = [
+    { label: "Książek", count: books.length, always: true },
+    { label: "Filmów", count: movies.length, always: true },
+    { label: "Seriali", count: series.length, always: true },
+    { label: "🎟️ Kino", count: cinemaMovies.length },
+    { label: "🎭 Teatr", count: plays.length },
+    { label: "🎮 Gier", count: games.length },
+    { label: "🎙️ Podcastów", count: podcasts.length },
+    { label: "🎵 Płyt", count: records.length },
+  ];
 
   return (
     <div className="bg-white rounded-2xl shadow border border-gray-100 p-4">
@@ -81,11 +128,11 @@ export default function Statistics({ items, year }: Props) {
         >
           Cały rok
         </button>
-        {MONTH_NAMES.map((name, idx) => (
+        {MONTH_NAMES.map((name, index) => (
           <button
-            key={idx}
-            onClick={() => setSelectedMonth(idx === selectedMonth ? null : idx)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${selectedMonth === idx ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+            key={name}
+            onClick={() => setSelectedMonth(index === selectedMonth ? null : index)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${selectedMonth === index ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
           >
             {name.slice(0, 3)}
           </button>
@@ -93,156 +140,23 @@ export default function Statistics({ items, year }: Props) {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
-          <div className="text-xl font-bold text-gray-900">{books.length}</div>
-          <div className="text-xs text-gray-500">Książek</div>
-        </div>
-        <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
-          <div className="text-xl font-bold text-gray-900">{movies.length}</div>
-          <div className="text-xs text-gray-500">Filmów</div>
-        </div>
-        <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
-          <div className="text-xl font-bold text-gray-900">{series.length}</div>
-          <div className="text-xs text-gray-500">Seriali</div>
-        </div>
-        {cinemaMovies.length > 0 && (
-          <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
-            <div className="text-xl font-bold text-gray-900">{cinemaMovies.length}</div>
-            <div className="text-xs text-gray-500">🎟️ Kino</div>
+        {counters.filter(({ count, always }) => always || count > 0).map(({ label, count }) => (
+          <div key={label} className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
+            <div className="text-xl font-bold text-gray-900">{count}</div>
+            <div className="text-xs text-gray-500">{label}</div>
           </div>
-        )}
-        {plays.length > 0 && (
-          <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
-            <div className="text-xl font-bold text-gray-900">{plays.length}</div>
-            <div className="text-xs text-gray-500">🎭 Teatr</div>
-          </div>
-        )}
-        {games.length > 0 && (
-          <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
-            <div className="text-xl font-bold text-gray-900">{games.length}</div>
-            <div className="text-xs text-gray-500">🎮 Gier</div>
-          </div>
-        )}
-        {podcasts.length > 0 && (
-          <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
-            <div className="text-xl font-bold text-gray-900">{podcasts.length}</div>
-            <div className="text-xs text-gray-500">🎙️ Podcastów</div>
-          </div>
-        )}
-        {records.length > 0 && (
-          <div className="flex-1 min-w-[70px] bg-gray-50 rounded-xl px-2 py-2 text-center">
-            <div className="text-xl font-bold text-gray-900">{records.length}</div>
-            <div className="text-xs text-gray-500">🎵 Płyt</div>
-          </div>
-        )}
+        ))}
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {books.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">📚 Przeczytane</h4>
-            <div className="space-y-1">
-              {books.map((item) => (
-                <div
-                  key={item.seasonId ?? `${item.title}__${item.id}`}
-                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
-                >
-                  {item.title}{item.author ? ` — ${item.author}` : ""}
-                </div>
-              ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {sections.filter(([, sectionItems]) => sectionItems.length > 0).map(([title, sectionItems]) => (
+          <section key={title}>
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">{title}</h4>
+            <div className="space-y-1.5">
+              {sectionItems.map((item) => <StatisticsItem key={`${item.mediaType}-${item.id}`} item={item} />)}
             </div>
-          </div>
-        )}
-        {movies.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎬 Filmy</h4>
-            <div className="space-y-1">
-              {movies.map((item) => (
-                <div
-                  key={item.seasonId ?? `${item.title}__${item.id}`}
-                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
-                >
-                  {item.title}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {series.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">📺 Seriale</h4>
-            <div className="space-y-1">
-              {series.map((item) => (
-                <div
-                  key={item.seasonId ?? `${item.title}__${item.volumeEpisode}__${item.id}`}
-                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
-                >
-                  {item.title}{item.volumeEpisode ? ` (sezon ${item.volumeEpisode})` : ""}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {anime.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2"> Anime</h4>
-            <div className="space-y-1">
-              {anime.map((item) => (
-                <div
-                  key={item.seasonId ?? `${item.title}__${item.volumeEpisode}__${item.id}`}
-                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
-                >
-                  {item.title}{item.volumeEpisode ? ` (sezon ${item.volumeEpisode})` : ""}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {plays.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎭 Sztuki teatralne</h4>
-            <div className="space-y-1">
-              {plays.map((item) => (
-                <div
-                  key={item.seasonId ?? `${item.title}__${item.id}`}
-                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
-                >
-                  {item.title}{item.author ? ` — ${item.author}` : ""}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {podcasts.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎙️ Podcasty</h4>
-            <div className="space-y-1">
-              {podcasts.map((item) => (
-                <div
-                  key={item.seasonId ?? `${item.title}__${item.id}`}
-                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
-                >
-                  {item.title}{item.author ? ` — ${item.author}` : ""}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {records.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎵 Płyty</h4>
-            <div className="space-y-1">
-              {records.map((item) => (
-                <div
-                  key={item.seasonId ?? `${item.title}__${item.id}`}
-                  className={`text-xs text-gray-600 ${item.discontinued ? "line-through opacity-60" : ""}`}
-                >
-                  {item.title}{item.author ? ` — ${item.author}` : ""}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+          </section>
+        ))}
       </div>
     </div>
   );

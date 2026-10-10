@@ -4,6 +4,7 @@ export interface SessionRow {
   startDate: string;
   endDate: string | null;
   cinema: boolean | number;
+  withChild: boolean | number;
   seasonNumber: number | null;
   seasonTitle: string | null;
   seasonCoverUrl: string | null;
@@ -29,6 +30,7 @@ export function mapSession(raw: any): SessionRow {
     startDate: raw.start_date,
     endDate: raw.end_date ?? null,
     cinema: raw.cinema,
+    withChild: raw.with_child,
     seasonNumber: raw.season_number ?? null,
     seasonTitle: raw.season_title ?? null,
     seasonCoverUrl: raw.season_cover_url ?? null,
