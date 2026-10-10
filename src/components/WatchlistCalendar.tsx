@@ -76,27 +76,31 @@ export default function WatchlistCalendar() {
     )
   );
 
-  // Build calendar: map `${year}-${month}` → Map<day, entry>
+  // Build calendar: move colliding entries to the next free calendar day.
   const monthDayMap = new Map<string, Map<number, WatchlistEntry>>();
-  const occupiedKeys = new Set<string>();
+  const occupiedDates = new Set<string>();
 
   for (const entry of calendarEntries) {
     if (!entry.last_session_date) continue;
-    const entryYear = parseInt(entry.last_session_date.slice(0, 4));
-    const month = parseInt(entry.last_session_date.slice(5, 7));
-    const day = parseInt(entry.last_session_date.slice(8, 10));
-    const mapKey = `${entryYear}-${month}`;
-    const dayKey = `${mapKey}-${day}`;
-    if (!monthDayMap.has(mapKey)) monthDayMap.set(mapKey, new Map());
-    if (!occupiedKeys.has(dayKey)) {
-      occupiedKeys.add(dayKey);
-      monthDayMap.get(mapKey)!.set(day, entry);
+    const date = new Date(`${entry.last_session_date}T00:00:00`);
+    let dateKey = entry.last_session_date;
+    while (occupiedDates.has(dateKey)) {
+      date.setDate(date.getDate() + 1);
+      dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
     }
+
+    const entryYear = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const mapKey = `${entryYear}-${month}`;
+    if (!monthDayMap.has(mapKey)) monthDayMap.set(mapKey, new Map());
+    occupiedDates.add(dateKey);
+    monthDayMap.get(mapKey)!.set(day, entry);
   }
 
-  const calendarYears = [year, year + 1].filter(
-    (y) => calendarEntries.some((e) => e.last_session_date?.startsWith(String(y)))
-  );
+  const calendarYears = [...new Set(
+    [...monthDayMap.keys()].map((key) => Number(key.split("-")[0]))
+  )].sort((a, b) => a - b);
 
   return (
     <div className="space-y-6">
