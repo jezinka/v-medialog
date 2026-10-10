@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import CoverImg from "./CoverImg";
-import { MONTH_NAMES, DAY_LABELS } from "@/lib/utils";
+import MediaCoverThumb from "./MediaCoverThumb";
 
 interface WatchlistEntry {
   media_id: number;
@@ -15,22 +14,44 @@ interface WatchlistEntry {
   category: "future" | "past" | "no_date";
 }
 
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month, 0).getDate();
+interface WishlistItem {
+  id: number;
+  title: string;
+  author: string | null;
+  media_type: string;
+  notes: string | null;
+  added_at: string;
+  cover_url: string | null;
 }
 
-function getFirstDayOfMonth(year: number, month: number) {
-  const d = new Date(year, month - 1, 1).getDay();
-  return d === 0 ? 6 : d - 1;
+interface VodOffer {
+  id: number;
+  provider_name: string;
+  provider_logo: string | null;
+  url: string | null;
 }
 
-export default function WatchlistCalendar() {
+interface Props {
+  items: WishlistItem[];
+  loading: boolean;
+  vodMap: Record<number, VodOffer[]>;
+  onStart: (item: WishlistItem) => void;
+  onEdit: (item: WishlistItem) => void;
+  onDelete: (id: number) => void;
+}
+
+const groups = [
+  { title: "Seriale", types: ["series", "anime", "cartoon"] },
+  { title: "Filmy", types: ["movie"] },
+  { title: "Książki i komiksy", types: ["book", "comic"] },
+];
+
+export default function WatchlistCalendar({ items, loading, vodMap, onStart, onEdit, onDelete }: Props) {
   const [entries, setEntries] = useState<WatchlistEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const year = new Date().getFullYear();
+  const [loadingEntries, setLoadingEntries] = useState(true);
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
+    setLoadingEntries(true);
     try {
       const res = await fetch("/api/watchlist-calendar");
       const data = await res.json();
@@ -38,13 +59,13 @@ export default function WatchlistCalendar() {
     } catch {
       setEntries([]);
     } finally {
-      setLoading(false);
+      setLoadingEntries(false);
     }
   }, []);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { void fetchData(); }, [fetchData]);
 
-  if (loading) {
+  if (loading || loadingEntries) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-400" />
@@ -52,184 +73,65 @@ export default function WatchlistCalendar() {
     );
   }
 
-  if (entries.length === 0) {
-    return (
-      <div className="text-center py-16 text-gray-400">
-        <p className="text-4xl mb-3">👁</p>
-        <p className="text-sm">Brak oznaczonych sezonów.</p>
-        <p className="text-xs mt-1">Otwórz medium i zaznacz „👁 Chcę obejrzeć" przy sezonie.</p>
-      </div>
-    );
-  }
-
-  // Entries with a date in the current year go into the calendar; everything else goes to the list
-  const calendarEntries = entries.filter(
-    (e) => e.last_session_date && (
-      e.last_session_date.startsWith(String(year)) ||
-      e.last_session_date.startsWith(String(year + 1))
-    )
-  );
-  const listEntries = entries.filter(
-    (e) => !e.last_session_date || (
-      !e.last_session_date.startsWith(String(year)) &&
-      !e.last_session_date.startsWith(String(year + 1))
-    )
-  );
-
-  // Build calendar: move colliding entries to the next free calendar day.
-  const monthDayMap = new Map<string, Map<number, WatchlistEntry>>();
-  const occupiedDates = new Set<string>();
-
-  for (const entry of calendarEntries) {
-    if (!entry.last_session_date) continue;
-    const date = new Date(`${entry.last_session_date}T00:00:00`);
-    let dateKey = entry.last_session_date;
-    while (occupiedDates.has(dateKey)) {
-      date.setDate(date.getDate() + 1);
-      dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-    }
-
-    const entryYear = date.getFullYear();
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
-    const mapKey = `${entryYear}-${month}`;
-    if (!monthDayMap.has(mapKey)) monthDayMap.set(mapKey, new Map());
-    occupiedDates.add(dateKey);
-    monthDayMap.get(mapKey)!.set(day, entry);
-  }
-
-  const calendarYears = [...new Set(
-    [...monthDayMap.keys()].map((key) => Number(key.split("-")[0]))
-  )].sort((a, b) => a - b);
-
   return (
-    <div className="space-y-6">
-      {/* List: no-date and other-year entries */}
-      {listEntries.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            Dostępne / bez daty premiery
-          </h3>
-          <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2">
-            {listEntries.map((entry) => (
-              <a
-                key={entry.season_id}
-                href={`/media/${entry.media_id}`}
-                title={`${entry.title}${entry.season_number != null ? ` — sezon ${entry.season_number}` : ""}${entry.last_session_date ? ` (${entry.last_session_date})` : " (brak daty)"}`}
-                className={[
-                  "relative rounded-lg overflow-hidden cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.05] transition-all duration-150 border aspect-[2/3] block",
-                  entry.category === "past"
-                    ? "border-blue-300"
-                    : "border-gray-200",
-                ].join(" ")}
-              >
-                {entry.cover_url ? (
-                  <CoverImg
-                    src={entry.cover_url}
-                    alt={entry.title}
-                    fill
-                    className="object-contain"
-                    sizes="(max-width: 640px) 25vw, (max-width: 1024px) 16vw, 12vw"
-                  />
-                ) : (
-                  <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-                    <span className="text-base">📺</span>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {groups.map(({ title, types }) => {
+        const seasons = entries.filter((entry) => types.includes(entry.media_type));
+        const wishlistItems = items.filter((item) => types.includes(item.media_type));
+
+        return (
+          <section key={title} className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 min-w-0">
+            <h2 className="text-base font-semibold text-gray-800 mb-3">{title}</h2>
+            {seasons.length === 0 && wishlistItems.length === 0 ? (
+              <p className="text-sm text-gray-400 py-4">Brak pozycji.</p>
+            ) : (
+              <div className="space-y-2">
+                {seasons.map((entry) => (
+                  <a
+                    key={`season-${entry.season_id}`}
+                    href={`/media/${entry.media_id}`}
+                    className="flex gap-3 rounded-lg border border-gray-100 p-2 hover:bg-gray-50 transition-colors"
+                  >
+                    <MediaCoverThumb coverUrl={entry.cover_url} title={entry.title} mediaType={entry.media_type} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{entry.title}</p>
+                      <p className="text-xs text-gray-500">
+                        {entry.season_number != null ? `Sezon ${entry.season_number}` : "Sezon"}
+                        {entry.last_session_date ? ` · ${entry.last_session_date}` : " · bez daty premiery"}
+                      </p>
+                    </div>
+                  </a>
+                ))}
+                {wishlistItems.map((item) => (
+                  <div key={`wishlist-${item.id}`} className="flex gap-3 rounded-lg border border-gray-100 p-2">
+                    <MediaCoverThumb coverUrl={item.cover_url} title={item.title} mediaType={item.media_type} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
+                      {(item.author || item.notes) && (
+                        <p className="text-xs text-gray-500 truncate">{item.author ?? item.notes}</p>
+                      )}
+                      {vodMap[item.id]?.length > 0 && (
+                        <p className="text-xs text-green-700 truncate">{vodMap[item.id].map((offer) => offer.provider_name).join(", ")}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-1 self-start">
+                      <button onClick={() => onStart(item)} className="text-xs text-green-700 hover:text-green-900" title="Zaczynam">
+                        ▶
+                      </button>
+                      <button onClick={() => onEdit(item)} className="text-xs text-purple-600 hover:text-purple-800" title="Edytuj">
+                        ✎
+                      </button>
+                      <button onClick={() => onDelete(item.id)} className="text-xs text-red-500 hover:text-red-700" title="Usuń">
+                        ×
+                      </button>
+                    </div>
                   </div>
-                )}
-                {entry.category === "past" && (
-                  <div className="absolute inset-0 bg-blue-500/20" />
-                )}
-                {entry.category === "no_date" && (
-                  <div className="absolute inset-0 bg-gray-400/40" />
-                )}
-                <span className="absolute top-0.5 left-0.5 text-[8px] font-bold text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)] leading-none z-10">
-                  {entry.last_session_date ? entry.last_session_date.slice(5) : "?"}
-                </span>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Calendar: current and next year entries */}
-      {calendarYears.map((calYear) => (
-        <div key={calYear}>
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            Premiery {calYear}
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => {
-              const daysCount = getDaysInMonth(calYear, month);
-              const firstDay = getFirstDayOfMonth(calYear, month);
-              const dayMap = monthDayMap.get(`${calYear}-${month}`) ?? new Map<number, WatchlistEntry>();
-
-              return (
-                <div key={month} className="bg-white rounded-xl border border-gray-200 shadow-sm p-3">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-2 uppercase tracking-wide">
-                    {MONTH_NAMES[month - 1]}
-                  </h4>
-
-                  <div className="grid grid-cols-7 gap-px">
-                    {DAY_LABELS.map((label) => (
-                      <div key={label} className="text-center text-[10px] font-medium text-gray-400 py-1">
-                        {label}
-                      </div>
-                    ))}
-
-                    {Array.from({ length: firstDay }, (_, i) => (
-                      <div key={`e-${i}`} className="aspect-square" />
-                    ))}
-
-                    {Array.from({ length: daysCount }, (_, i) => {
-                      const day = i + 1;
-                      const entry = dayMap.get(day);
-                      return (
-                        <a
-                          key={day}
-                          href={entry ? `/media/${entry.media_id}` : undefined}
-                          title={entry ? `${entry.title}${entry.season_number != null ? ` — sezon ${entry.season_number}` : ""}` : undefined}
-                          className={[
-                            "relative aspect-square rounded overflow-hidden block",
-                            entry
-                              ? "cursor-pointer shadow-sm hover:shadow-md hover:scale-[1.08] transition-all duration-150 border border-gray-200"
-                              : "bg-gray-50 border border-gray-100",
-                          ].join(" ")}
-                        >
-                          {entry?.cover_url && (
-                            <CoverImg
-                              src={entry.cover_url}
-                              alt={entry.title}
-                              fill
-                              className="object-contain"
-                              sizes="(max-width: 640px) 14vw, (max-width: 1024px) 9vw, 6vw"
-                            />
-                          )}
-                          {entry && !entry.cover_url && (
-                            <div className="absolute inset-0 bg-blue-100 flex items-center justify-center">
-                              <span className="text-[10px]">📺</span>
-                            </div>
-                          )}
-                          <span
-                            className={[
-                              "absolute top-0.5 left-0.5 text-[9px] font-bold leading-none z-10",
-                              entry ? "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" : "text-gray-400",
-                            ].join(" ")}
-                          >
-                            {day}
-                          </span>
-                          {entry && (
-                            <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors z-10" />
-                          )}
-                        </a>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+                ))}
+              </div>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }

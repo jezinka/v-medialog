@@ -188,8 +188,8 @@ function MiniCalendar({
   );
 }
 
-function seasonLabel(s: SeasonRow, idx: number): string {
-  if (s.season_number != null) return s.title ? `${s.title} (${s.season_number})` : `Sezon ${s.season_number}`;
+function seasonLabel(s: SeasonRow, idx: number, label = "Sezon"): string {
+  if (s.season_number != null) return s.title ? `${s.title} (${s.season_number})` : `${label} ${s.season_number}`;
   if (s.title) return `${s.title} (${idx + 1})`;
   return `${idx + 1}`;
 }
@@ -1532,6 +1532,10 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     ? (MEDIA_TYPE_COLORS[media.media_type] ?? "bg-gray-100 text-gray-700")
     : "bg-gray-100 text-gray-700";
   const label = media ? (MEDIA_TYPE_LABELS[media.media_type] ?? media.media_type) : "";
+  const isBook = media ? BOOK_TYPES.includes(media.media_type) : false;
+  const partLabel = isBook ? "Część" : "Sezon";
+  const partsLabel = isBook ? "Części" : "Sezony";
+  const historyLabel = isBook ? "Historia czytania" : "Historia oglądania";
 
   const directors =
     cachedData?.persons.filter((p) => p.role === "director" || p.role === "creator") ?? [];
@@ -1611,7 +1615,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
               </label>
             )}
             {seasons.length > 1 && (
-              <p className="text-xs font-medium text-gray-500 pt-1">Wybierz sezon:</p>
+              <p className="text-xs font-medium text-gray-500 pt-1">Wybierz {partLabel.toLowerCase()}:</p>
             )}
             <div className="space-y-2">
               {seasons.map((s, idx) => (
@@ -1625,7 +1629,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                     className={`w-2.5 h-2.5 rounded-full shrink-0 ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}
                   />
                   <span className="font-medium">
-                    {seasonLabel(s, idx)}
+                    {seasonLabel(s, idx, partLabel)}
                   </span>
                   {s.session_count > 0 && (
                     <span className="ml-auto text-xs text-gray-400">{s.session_count} sesji</span>
@@ -1692,7 +1696,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-500 mb-1">Sezon</label>
+                <label className="block text-xs text-gray-500 mb-1">{partLabel}</label>
                 <select
                   value={editSeasonId}
                   onChange={(e) => setEditSeasonId(e.target.value)}
@@ -1700,7 +1704,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                 >
                   {seasons.map((s, idx) => (
                     <option key={s.id} value={s.id}>
-                      {s.title ?? (s.season_number != null ? `Sezon ${s.season_number}` : `Sezon ${idx + 1}`)}
+                      {s.title ?? (s.season_number != null ? `${partLabel} ${s.season_number}` : `${partLabel} ${idx + 1}`)}
                     </option>
                   ))}
                 </select>
@@ -1933,10 +1937,10 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
       {editingSeason && (
         <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl p-5 max-w-sm w-full space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900">Edytuj sezon</h3>
+            <h3 className="text-sm font-semibold text-gray-900">Edytuj {partLabel.toLowerCase()}</h3>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Numer sezonu</label>
+                <label className="text-xs font-medium text-gray-600 block mb-1">Numer {partLabel.toLowerCase()}</label>
                 <input
                   type="number"
                   value={seasonEditForm.season_number}
@@ -1946,7 +1950,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Tytuł sezonu</label>
+                <label className="text-xs font-medium text-gray-600 block mb-1">Tytuł {partLabel.toLowerCase()}</label>
                 <input
                   type="text"
                   value={seasonEditForm.title}
@@ -2527,7 +2531,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
         {/* Seasons section */}
         {seasons.length > 0 && (
           <div>
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">Sezony</h3>
+            <h3 className="text-sm font-semibold text-gray-800 mb-3">{partsLabel}</h3>
             <div className="space-y-2">
               {seasons.map((s, idx) => (
                 <div
@@ -2547,7 +2551,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-800 truncate">
-                      {seasonLabel(s, idx)}
+                      {seasonLabel(s, idx, partLabel)}
                     </p>
                     {(s.first_session_date || s.last_session_date) && (
                       <p className="text-xs text-gray-400 mt-0.5">
@@ -2570,7 +2574,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                   )}
                   <button
                     onClick={() => openEditSeason(s)}
-                    title="Edytuj sezon"
+                    title={`Edytuj ${partLabel.toLowerCase()}`}
                     className="text-xs text-gray-400 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-gray-200"
                   >
                     ✏️
@@ -2600,7 +2604,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                   </button>
                   <button
                     onClick={() => handleDeleteSeason(s.id)}
-                    title="Usuń sezon"
+                    title={`Usuń ${partLabel.toLowerCase()}`}
                     className="text-xs text-red-400 hover:text-red-600 px-1.5 py-0.5 rounded hover:bg-red-50"
                   >
                     🗑️
@@ -2619,11 +2623,11 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                 }}
                 className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
               >
-                + Nowy sezon
+                + Nowa {partLabel.toLowerCase()}
               </button>
             ) : (
               <div className="mt-3 border border-gray-200 rounded-lg p-3 bg-gray-50 space-y-2">
-                <p className="text-xs font-semibold text-gray-700">Nowy sezon</p>
+                <p className="text-xs font-semibold text-gray-700">Nowa {partLabel.toLowerCase()}</p>
                 <div className="flex gap-2">
                   <div className="w-20">
                     <label className="text-xs text-gray-500 block mb-1">Numer</label>
@@ -2657,7 +2661,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                     disabled={addSeasonLoading}
                     className="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
                   >
-                    {addSeasonLoading ? "Zapisuję..." : "Dodaj sezon"}
+                    {addSeasonLoading ? "Zapisuję..." : `Dodaj ${partLabel.toLowerCase()}`}
                   </button>
                 </div>
               </div>
@@ -2765,7 +2769,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
         {/* Calendar history section */}
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-800">Historia oglądania</h3>
+            <h3 className="text-sm font-semibold text-gray-800">{historyLabel}</h3>
             <div className="flex gap-2">
               <button
                 onClick={() => {
@@ -2781,7 +2785,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                     : "border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
                 }`}
               >
-                ✂️ {splitMode ? "Anuluj podział" : "Podziel na sezony"}
+                ✂️ {splitMode ? "Anuluj podział" : `Podziel na ${partsLabel.toLowerCase()}`}
               </button>
               {media && (SCREEN_TYPES.includes(media.media_type) || ITUNES_TYPES.includes(media.media_type)) && (
                 <button
@@ -2877,22 +2881,22 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
           {splitTarget && (
             <div className="mb-4 border border-amber-300 rounded-lg p-4 bg-amber-50 space-y-3">
               <p className="text-sm font-medium text-amber-800">
-                Przypisz {splitTarget.sessionIds.length} sesji ({splitTarget.dateRange}) do sezonu:
+                Przypisz {splitTarget.sessionIds.length} sesji ({splitTarget.dateRange}) do {partLabel.toLowerCase()}:
               </p>
               <div className="flex gap-4">
                 <label className="flex items-center gap-1 text-sm text-gray-700 cursor-pointer">
                   <input type="radio" name="splitChoice" value="new" checked={splitSeasonChoice === "new"} onChange={() => setSplitSeasonChoice("new")} />
-                  Nowy sezon
+                  Nowa {partLabel.toLowerCase()}
                 </label>
                 <label className="flex items-center gap-1 text-sm text-gray-700 cursor-pointer">
                   <input type="radio" name="splitChoice" value="existing" checked={splitSeasonChoice === "existing"} onChange={() => setSplitSeasonChoice("existing")} />
-                  Istniejący sezon
+                  Istniejąca {partLabel.toLowerCase()}
                 </label>
               </div>
               {splitSeasonChoice === "new" && (
                 <div className="flex gap-2">
                   <input
-                    type="number" placeholder="Nr sezonu" value={splitNewSeasonNumber}
+                    type="number" placeholder={`Nr ${partLabel.toLowerCase()}`} value={splitNewSeasonNumber}
                     onChange={(e) => setSplitNewSeasonNumber(e.target.value)}
                     className="w-28 text-sm border border-gray-300 rounded px-2 py-1"
                   />
@@ -2908,10 +2912,10 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                   value={splitExistingSeasonId} onChange={(e) => setSplitExistingSeasonId(e.target.value)}
                   className="w-full text-sm border border-gray-300 rounded px-2 py-1"
                 >
-                  <option value="">— wybierz sezon —</option>
+                  <option value="">— wybierz {partLabel.toLowerCase()} —</option>
                   {seasons.map((s, idx) => (
                     <option key={s.id} value={s.id}>
-                      {s.title ?? (s.season_number != null ? `Sezon ${s.season_number}` : `Sezon ${idx + 1}`)}
+                      {s.title ?? (s.season_number != null ? `${partLabel} ${s.season_number}` : `${partLabel} ${idx + 1}`)}
                     </option>
                   ))}
                 </select>

@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import CoverImg from "@/components/CoverImg";
-import { MONTH_NAMES, DAY_LABELS, MEDIA_TYPES, MEDIA_TYPE_LABELS, MEDIA_TYPE_EMOJI } from "@/lib/utils";
+import { CALENDAR_TYPES, MONTH_NAMES, DAY_LABELS, MEDIA_TYPES, MEDIA_TYPE_LABELS, MEDIA_TYPE_EMOJI } from "@/lib/utils";
 
 interface CalendarEntry {
   media_id: number;
@@ -39,7 +39,7 @@ function CalendarInner() {
   });
   const [activeTypes, setActiveTypes] = useState<Set<string>>(() => {
     const t = searchParams.get("types");
-    return t ? new Set(t.split(",").filter(Boolean)) : new Set<string>();
+    return t ? new Set(t.split(",").filter(Boolean)) : new Set(CALENDAR_TYPES);
   });
   const [withChildOnly, setWithChildOnly] = useState(() => searchParams.get("with_child") === "1");
   const [cinemaOnly, setCinemaOnly] = useState(() => searchParams.get("cinema") === "1");

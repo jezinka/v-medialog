@@ -1,8 +1,12 @@
 "use client";
 import React, { useState, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import MediaLibraryView from "./MediaLibraryView";
+import PeopleView from "./PeopleView";
+import MergeMediaModal from "./MergeMediaModal";
 
 type ImportType = "media" | "wishlist";
-type TabType = "import" | "export" | "sync";
+type TabType = "media" | "people" | "import" | "export" | "sync";
 type Step = "upload" | "preview" | "result";
 
 interface MediaPreviewRow {
@@ -85,7 +89,9 @@ const MEDIA_TYPE_LABELS: Record<string, string> = {
 };
 
 export default function ImportPage() {
-  const [activeTab, setActiveTab] = useState<TabType>("import");
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<TabType>("media");
+  const [showMerge, setShowMerge] = useState(false);
   const [importType, setImportType] = useState<ImportType>("media");
   const [csvText, setCsvText] = useState("");
   const [step, setStep] = useState<Step>("upload");
@@ -236,7 +242,7 @@ export default function ImportPage() {
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       {/* Tabs */}
       <div className="flex border-b border-gray-200">
-        {(["import", "export", "sync"] as TabType[]).map((tab) => (
+        {(["media", "people", "import", "export", "sync"] as TabType[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -246,13 +252,28 @@ export default function ImportPage() {
                 : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
             }`}
           >
-            {tab === "import" ? "📥 Importuj CSV" : tab === "sync" ? "🔄 Synchronizuj" : "📤 Eksportuj"}
+            {tab === "media" ? "🎬 Media" : tab === "people" ? "👤 Ludzie" : tab === "import" ? "📥 Importuj CSV" : tab === "sync" ? "🔄 Synchronizuj" : "📤 Eksportuj"}
           </button>
         ))}
       </div>
 
       <div className="p-6">
-        {activeTab === "export" ? (
+        {activeTab === "media" ? (
+          <div className="space-y-6">
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowMerge(true)}
+                className="text-sm px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                🔗 Połącz / zgrupuj media
+              </button>
+            </div>
+            <MediaLibraryView onOpenDetail={(id) => router.push(`/media/${id}`)} />
+            {showMerge && <MergeMediaModal onClose={() => setShowMerge(false)} onSuccess={() => {}} />}
+          </div>
+        ) : activeTab === "people" ? (
+          <PeopleView onOpenPerson={(id) => router.push(`/people/${id}`)} />
+        ) : activeTab === "export" ? (
           <ExportTab />
         ) : activeTab === "sync" ? (
           <BulkSyncTab />

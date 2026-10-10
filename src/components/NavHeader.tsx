@@ -21,12 +21,10 @@ type VodNotification = {
 
 const TAB_BUTTONS = [
   { path: "/", icon: "/icons/icons8-library-96.png", tooltip: "Dziennik" },
-  { path: "/media", icon: "/icons/icons8-tv-show-96.png", tooltip: "Media" },
-  { path: "/people", icon: "/icons/icons8-person-96.png", tooltip: "Ludzie" },
   { path: "/wishlist", icon: "/icons/icons8-planner-96.png", tooltip: "Do obejrzenia" },
   { path: "/calendar", icon: "/icons/icons8-calendar-96.png", tooltip: "Kalendarz" },
   { path: "/stats", icon: "/icons/icons8-combo-chart-96.png", tooltip: "Statystyki" },
-  { path: "/import", icon: "/icons/icons8-gear-96.png", tooltip: "Import / Eksport" },
+  { path: "/import", icon: "/icons/icons8-gear-96.png", tooltip: "Admin" },
 ];
 
 const YEAR_TABS = ["/", "/stats"];
