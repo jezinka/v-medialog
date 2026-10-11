@@ -30,6 +30,37 @@ function getFirstDayOfMonth(year: number, month: number) {
   return d === 0 ? 6 : d - 1;
 }
 
+function dateKey(year: number, month: number, day: number) {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function getPolishHolidays(year: number) {
+  const a = year % 19;
+  const b = Math.floor(year / 100);
+  const c = year % 100;
+  const d = Math.floor(b / 4);
+  const e = b % 4;
+  const f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4);
+  const k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const easter = new Date(year, Math.floor((h + l - 7 * m + 114) / 31) - 1, (h + l - 7 * m + 114) % 31 + 1);
+  const movable = (offset: number) => {
+    const date = new Date(easter);
+    date.setDate(date.getDate() + offset);
+    return dateKey(date.getFullYear(), date.getMonth() + 1, date.getDate());
+  };
+
+  return new Set([
+    dateKey(year, 1, 1), dateKey(year, 1, 6), dateKey(year, 5, 1), dateKey(year, 5, 3),
+    dateKey(year, 8, 15), dateKey(year, 11, 1), dateKey(year, 11, 11),
+    dateKey(year, 12, 24), dateKey(year, 12, 25), dateKey(year, 12, 26),
+    movable(0), movable(1), movable(49), movable(60),
+  ]);
+}
 
 function CalendarInner() {
   const router = useRouter();
@@ -130,12 +161,88 @@ function CalendarInner() {
     }
   }, [year]);
 
+  const printCovers = useCallback((month: number, monthEntries: CalendarEntry[]) => {
+    if (monthEntries.every((entry) => !entry.cover_url)) return;
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast("Przeglądarka zablokowała okno druku", "error");
+      return;
+    }
+
+    printWindow.opener = null;
+    printWindow.document.write(`<!doctype html><html lang="pl"><head><title>Okładki ${MONTH_NAMES[month - 1]} ${year}</title><style>
+      @page { size: A4 landscape; margin: 10mm; }
+      body { font-family: Arial, sans-serif; margin: 0; color: #111; }
+      h1 { font-size: 16pt; margin: 0 0 4mm; }
+      .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: .75mm; }
+      .label { text-align: center; font-size: 8pt; font-weight: bold; color: #666; padding: 1mm 0; }
+      .day { position: relative; height: 27mm; border: .25mm solid #ddd; overflow: hidden; }
+      .empty { background: #fafafa; }
+      img { position: absolute; top: 5mm; width: 100%; height: calc(100% - 5mm); object-fit: contain; }
+      .number { position: absolute; top: 0; left: 0; box-sizing: border-box; width: 100%; height: 5mm; padding: 1mm; border-bottom: .25mm solid #bbb; background: #fff; color-adjust: exact; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 8pt; font-weight: bold; color: #555; }
+      .saturday .number { background: #e5e7eb; }
+      .sunday .number { background: #fee2e2; color: #b91c1c; }
+      .holiday .number { background: #fee2e2; color: #b91c1c; }
+    </style></head><body><h1>${MONTH_NAMES[month - 1]} ${year}</h1><div class="grid"></div></body></html>`);
+    printWindow.document.close();
+
+    const grid = printWindow.document.querySelector(".grid");
+    if (!grid) return;
+
+    const images: HTMLImageElement[] = [];
+    for (const label of DAY_LABELS) {
+      const header = printWindow.document.createElement("div");
+      header.className = "label";
+      header.textContent = label;
+      grid.append(header);
+    }
+
+    const firstDay = getFirstDayOfMonth(year, month);
+    for (let i = 0; i < firstDay; i++) {
+      const empty = printWindow.document.createElement("div");
+      empty.className = "day empty";
+      grid.append(empty);
+    }
+
+    const entriesByDay = new Map(monthEntries.map((entry) => [entry.assigned_day, entry]));
+    const holidays = getPolishHolidays(year);
+    for (let day = 1; day <= getDaysInMonth(year, month); day++) {
+      const cell = printWindow.document.createElement("div");
+      const weekday = (firstDay + day - 1) % 7;
+      cell.className = `day${holidays.has(dateKey(year, month, day)) ? " holiday" : weekday === 5 ? " saturday" : weekday === 6 ? " sunday" : ""}`;
+      const entry = entriesByDay.get(day);
+      if (entry?.cover_url) {
+        const image = printWindow.document.createElement("img");
+        image.src = new URL(entry.cover_url, window.location.href).href;
+        image.alt = entry.title;
+        cell.append(image);
+        images.push(image);
+      }
+      const number = printWindow.document.createElement("span");
+      number.className = "number";
+      number.textContent = String(day);
+      cell.append(number);
+      grid.append(cell);
+    }
+
+    Promise.all(images.map((image) => new Promise<void>((resolve) => {
+      image.onload = () => resolve();
+      image.onerror = () => resolve();
+      if (image.complete) resolve();
+    }))).then(() => {
+      printWindow.focus();
+      printWindow.print();
+    });
+  }, [year]);
+
   // Build lookup: month → Map<day, entry>
   const monthDayMap = new Map<number, Map<number, CalendarEntry>>();
   for (const entry of entries) {
     if (!monthDayMap.has(entry.month)) monthDayMap.set(entry.month, new Map());
     monthDayMap.get(entry.month)!.set(entry.assigned_day, entry);
   }
+  const holidays = getPolishHolidays(year);
 
   return (
     <main className="px-4 py-6">
@@ -223,14 +330,24 @@ function CalendarInner() {
                   <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
                     {MONTH_NAMES[month - 1]}
                   </h3>
-                  <button
-                    onClick={() => void downloadCovers(month, monthEntries)}
-                    disabled={monthEntries.length === 0 || downloadingMonth !== null}
-                    className="text-[10px] text-gray-500 hover:text-gray-800 disabled:opacity-30"
-                    title="Pobierz okładki z tego miesiąca"
-                  >
-                    {downloadingMonth === month ? "Pobieram…" : "⬇ Okładki"}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => void downloadCovers(month, monthEntries)}
+                      disabled={monthEntries.length === 0 || downloadingMonth !== null}
+                      className="text-[10px] text-gray-500 hover:text-gray-800 disabled:opacity-30"
+                      title="Pobierz okładki z tego miesiąca"
+                    >
+                      {downloadingMonth === month ? "Pobieram…" : "⬇ Okładki"}
+                    </button>
+                    <button
+                      onClick={() => printCovers(month, monthEntries)}
+                      disabled={monthEntries.every((entry) => !entry.cover_url)}
+                      className="text-[10px] text-gray-500 hover:text-gray-800 disabled:opacity-30"
+                      title="Drukuj okładki z tego miesiąca jako PDF"
+                    >
+                      🖨️ PDF
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-7 gap-px">
@@ -248,6 +365,8 @@ function CalendarInner() {
                     const day = i + 1;
                     const entry = dayMap.get(day);
                     const isYt = entry?.media_type === "yt";
+                    const weekday = (firstDay + day - 1) % 7;
+                    const isHoliday = holidays.has(dateKey(year, month, day));
                     const href = entry
                       ? (isYt && entry.author_person_id ? `/people/${entry.author_person_id}` : `/media/${entry.media_id}`)
                       : undefined;
@@ -265,46 +384,50 @@ function CalendarInner() {
                             : "bg-gray-50 border border-gray-100",
                         ].join(" ")}
                       >
-                        {entry?.cover_url && (
-                          <CoverImg
-                            src={entry.cover_url}
-                            alt={entry.title}
-                            fill
-                            className="object-contain"
-                            sizes="(max-width: 640px) 14vw, (max-width: 1024px) 9vw, 6vw"
-                          />
-                        )}
-                        {/* YouTube placeholder when no cover */}
-                        {isYt && !entry?.cover_url && (
-                          <div className="absolute inset-0 bg-red-100 flex items-center justify-center">
-                            <span className="text-[14px]">▶️</span>
-                          </div>
-                        )}
-                        {/* YouTube badge */}
-                        {isYt && (
-                          <span className="absolute bottom-0.5 left-0.5 text-[8px] leading-none z-20 bg-red-600 text-white rounded px-0.5">YT</span>
-                        )}
-                        {/* Gray wash for placeholder entries */}
-                        {entry?.is_placeholder && (
-                          <div className="absolute inset-0 bg-gray-400/50 z-10" />
-                        )}
-                        {/* Cinema star */}
-                        {entry?.cinema && (
-                          <span className="absolute top-0.5 right-0.5 text-[10px] leading-none z-20 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">⭐</span>
-                        )}
-                        {entry?.with_child && (
-                          <span className="absolute bottom-0.5 right-0.5 text-[10px] leading-none z-20 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">👶</span>
-                        )}
+                        <div className="absolute inset-x-0 bottom-0 top-4">
+                          {entry?.cover_url && (
+                            <CoverImg
+                              src={entry.cover_url}
+                              alt={entry.title}
+                              fill
+                              className="object-contain"
+                              sizes="(max-width: 640px) 14vw, (max-width: 1024px) 9vw, 6vw"
+                            />
+                          )}
+                          {isYt && !entry?.cover_url && (
+                            <div className="absolute inset-0 bg-red-100 flex items-center justify-center">
+                              <span className="text-[14px]">▶️</span>
+                            </div>
+                          )}
+                          {entry?.is_placeholder && (
+                            <div className="absolute inset-0 bg-gray-400/50 z-10" />
+                          )}
+                          {entry && (
+                            <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors z-10" />
+                          )}
+                        </div>
                         <span
                           className={[
-                            "absolute top-0.5 left-0.5 text-[9px] font-bold leading-none z-10",
-                            entry ? "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]" : "text-gray-400",
+                            "absolute inset-x-0 top-0 z-20 h-4 px-1 text-[9px] font-bold leading-4",
+                            isHoliday || weekday === 6
+                              ? "bg-red-100 text-red-700"
+                              : weekday === 5
+                                ? "bg-gray-200 text-gray-600"
+                                : "bg-white text-gray-600",
                           ].join(" ")}
                         >
                           {day}
                         </span>
-                        {entry && (
-                          <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors z-10" />
+                        {/* YouTube badge */}
+                        {isYt && (
+                          <span className="absolute bottom-0.5 left-0.5 text-[8px] leading-none z-20 bg-red-600 text-white rounded px-0.5">YT</span>
+                        )}
+                        {/* Cinema star */}
+                        {entry?.cinema && (
+                          <span className="absolute top-4 right-0.5 text-[10px] leading-none z-20 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">⭐</span>
+                        )}
+                        {entry?.with_child && (
+                          <span className="absolute bottom-0.5 right-0.5 text-[10px] leading-none z-20 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">👶</span>
                         )}
                       </a>
                     );
