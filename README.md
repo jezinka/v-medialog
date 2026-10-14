@@ -57,6 +57,26 @@ Script wysyła aktualny `docker-compose.yml`, buduje obraz i restartuje kontener
 ./scripts/backup-db.sh /tmp/backup  # lub podaj własny katalog
 ```
 
+### Publiczny kalendarz na GitHub Pages
+
+Na serwerze z MediaLogiem sklonuj raz repozytorium publikowane przez GitHub Pages, a potem uruchom:
+
+```bash
+PAGES_DIR=/sciezka/do/klona npm run publish:calendar
+```
+
+Polecenie generuje `medialog-calendar.html` z bieżącym miesiącem, kopiuje go do wskazanego repozytorium i wypycha commit tylko, gdy zawartość się zmieni. Do automatyzacji dodaj je do crona, np. co godzinę:
+
+```bash
+0 * * * * cd /sciezka/do/medialog && PAGES_DIR=/sciezka/do/klona npm run publish:calendar
+```
+
+Po wdrożeniu aplikacji plik można osadzić na stronie Pages przez:
+
+```html
+<iframe src="/medialog-calendar.html" width="420" height="520" style="border:0" title="Co czytam i oglądam"></iframe>
+```
+
 ---
 
 ## Architektura
@@ -80,4 +100,3 @@ Każdy projekt to osobne repozytorium z własnym `docker-compose.yml` i własną
 |---|---|
 | `TMDB_API_KEY` | Klucz API do The Movie Database |
 | `DATABASE_URL` | Ścieżka do pliku SQLite (domyślnie `/data/medialog.db`) |
-

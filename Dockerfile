@@ -32,6 +32,7 @@ ENV DATABASE_URL=/data/medialog.db
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/scripts/export-calendar.mjs ./scripts/export-calendar.mjs
 
 EXPOSE 5000
 ENV PORT=5000
