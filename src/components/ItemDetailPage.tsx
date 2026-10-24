@@ -696,6 +696,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
 
   // ── Add season state ────────────────────────────────────────────────────────
   const [showAddSeason, setShowAddSeason] = useState(false);
+  const [selectedPartId, setSelectedPartId] = useState<number | null>(null);
   const [addSeasonForm, setAddSeasonForm] = useState({ season_number: "", title: "" });
   const [addSeasonLoading, setAddSeasonLoading] = useState(false);
 
@@ -1533,6 +1534,62 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
   const partsLabel = isBook ? "Części" : "Sezony";
   const historyLabel = isBook ? "Historia czytania" : "Historia oglądania";
 
+  // Per-part controls shared by the season list and the book cover grid
+  const seasonControls = (s: SeasonRow) => (
+    <>
+      <span className="text-xs text-gray-500 shrink-0">{s.session_count} sesji</span>
+      {CALENDAR_TYPES.includes(media?.media_type ?? "") && (
+        <label className="flex items-center gap-1 cursor-pointer select-none shrink-0">
+          <input
+            type="checkbox"
+            checked={Boolean(s.want_to_watch)}
+            onChange={() => handleToggleWantToWatch(s)}
+            className="w-3.5 h-3.5 accent-blue-500"
+          />
+          <span className="text-xs text-blue-600">{isBook ? "📖 Chcę przeczytać" : "👁 Chcę obejrzeć"}</span>
+        </label>
+      )}
+      <button
+        onClick={() => openEditSeason(s)}
+        title={`Edytuj ${partLabel.toLowerCase()}`}
+        className="text-xs text-gray-400 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-gray-200"
+      >
+        ✏️
+      </button>
+      <button
+        onClick={async () => {
+          const removed = await removePlaceholders(s.id);
+          if (removed > 0) {
+            toast(`Usunięto ${removed} placeholder${removed > 1 ? "y" : ""} ✓`, "success");
+            await loadData();
+            onRefresh?.();
+          } else {
+            toast("Brak placeholderów", "info");
+          }
+        }}
+        title="Usuń sesje-placeholder (YYYY-01-01 → YYYY-12-31)"
+        className="text-xs text-amber-500 hover:text-amber-700 px-1.5 py-0.5 rounded hover:bg-amber-50"
+      >
+        🗑📅
+      </button>
+      <button
+        onClick={() => handleMergeSeason(s.id)}
+        title="Scal sąsiednie sesje w jedną"
+        className="text-xs text-blue-600 hover:text-blue-800 px-1.5 py-0.5 rounded hover:bg-blue-50"
+      >
+        🔀
+      </button>
+      <button
+        onClick={() => handleDeleteSeason(s.id)}
+        title={`Usuń ${partLabel.toLowerCase()}`}
+        className="text-xs text-red-400 hover:text-red-600 px-1.5 py-0.5 rounded hover:bg-red-50"
+      >
+        🗑️
+      </button>
+    </>
+  );
+
+
   const directors =
     cachedData?.persons.filter((p) => p.role === "director" || p.role === "creator") ?? [];
   const actors = cachedData?.persons.filter((p) => p.role === "actor") ?? [];
@@ -1613,26 +1670,51 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
             {seasons.length > 1 && (
               <p className="text-xs font-medium text-gray-500 pt-1">Wybierz {partLabel.toLowerCase()}:</p>
             )}
-            <div className="space-y-2">
-              {seasons.map((s, idx) => (
-                <button
-                  key={s.id}
-                  onClick={() => addSession(seasonPickerDate, s.id)}
-                  disabled={addingSession}
-                  className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm transition-colors disabled:opacity-50"
-                >
-                  <span
-                    className={`w-2.5 h-2.5 rounded-full shrink-0 ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}
-                  />
-                  <span className="font-medium">
-                    {seasonLabel(s, idx, partLabel)}
-                  </span>
-                  {s.session_count > 0 && (
-                    <span className="ml-auto text-xs text-gray-400">{s.session_count} sesji</span>
-                  )}
-                </button>
-              ))}
-            </div>
+            {isBook ? (
+              <div className="grid grid-cols-5 gap-2 max-h-80 overflow-y-auto p-1">
+                {seasons.map((s, idx) => (
+                  <button
+                    key={s.id}
+                    onClick={() => addSession(seasonPickerDate, s.id)}
+                    disabled={addingSession}
+                    title={seasonLabel(s, idx, partLabel)}
+                    className="rounded-md hover:ring-2 hover:ring-blue-400 disabled:opacity-50"
+                  >
+                    <div className="relative aspect-[2/3] rounded-md overflow-hidden bg-gray-100">
+                      {s.cover_url ? (
+                        <Image unoptimized src={s.cover_url} alt="" fill className="object-cover" />
+                      ) : (
+                        <div className={`absolute inset-0 flex items-center justify-center text-white text-sm font-semibold ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}>
+                          {s.season_number ?? idx + 1}
+                        </div>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-600 text-center mt-0.5">{s.season_number ?? idx + 1}</p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {seasons.map((s, idx) => (
+                  <button
+                    key={s.id}
+                    onClick={() => addSession(seasonPickerDate, s.id)}
+                    disabled={addingSession}
+                    className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm transition-colors disabled:opacity-50"
+                  >
+                    <span
+                      className={`w-2.5 h-2.5 rounded-full shrink-0 ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}
+                    />
+                    <span className="font-medium">
+                      {seasonLabel(s, idx, partLabel)}
+                    </span>
+                    {s.session_count > 0 && (
+                      <span className="ml-auto text-xs text-gray-400">{s.session_count} sesji</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
             <button
               onClick={() => { setSeasonPickerDate(null); setPendingCinema(false); setPendingWithChild(false); }}
               className="text-xs text-gray-400 hover:text-gray-600 w-full text-center pt-1"
@@ -2530,90 +2612,105 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
         {/* Seasons section */}
         {seasons.length > 0 && (
           <div>
+            {isBook && seasons.length === 1 && !seasons[0].cover_url ? (
+              // A single book needs no parts list; re-reads are just more sessions in the calendar
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                {seasonControls(seasons[0])}
+              </div>
+            ) : (
+              <>
             <h3 className="text-sm font-semibold text-gray-800 mb-3">{partsLabel}</h3>
-            <div className="space-y-2">
-              {seasons.map((s, idx) => (
-                <div
-                  key={s.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100"
-                >
-                  {s.cover_url ? (
-                    <Image
-                      unoptimized
-                      src={s.cover_url}
-                      alt=""
-                      width={32}
-                      height={48}
-                      className="w-8 h-12 object-cover rounded shrink-0"
-                    />
-                  ) : (
-                    <span
-                      className={`w-3 h-3 rounded-full shrink-0 ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-800 truncate">
-                      {seasonLabel(s, idx, partLabel)}
-                    </p>
-                    {(s.first_session_date || s.last_session_date) && (
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {s.first_session_date ? formatDate(s.first_session_date) : "?"} –{" "}
-                        {s.last_session_date ? formatDate(s.last_session_date) : "?"}
-                      </p>
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-500 shrink-0">{s.session_count} sesji</span>
-                  {CALENDAR_TYPES.includes(media.media_type) && (
-                    <label className="flex items-center gap-1 cursor-pointer select-none shrink-0">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(s.want_to_watch)}
-                        onChange={() => handleToggleWantToWatch(s)}
-                        className="w-3.5 h-3.5 accent-blue-500"
-                      />
-                      <span className="text-xs text-blue-600">{BOOK_TYPES.includes(media.media_type) ? "📖 Chcę przeczytać" : "👁 Chcę obejrzeć"}</span>
-                    </label>
-                  )}
-                  <button
-                    onClick={() => openEditSeason(s)}
-                    title={`Edytuj ${partLabel.toLowerCase()}`}
-                    className="text-xs text-gray-400 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-gray-200"
-                  >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={async () => {
-                      const removed = await removePlaceholders(s.id);
-                      if (removed > 0) {
-                        toast(`Usunięto ${removed} placeholder${removed > 1 ? "y" : ""} ✓`, "success");
-                        await loadData();
-                        onRefresh?.();
-                      } else {
-                        toast("Brak placeholderów", "info");
-                      }
-                    }}
-                    title="Usuń sesje-placeholder (YYYY-01-01 → YYYY-12-31)"
-                    className="text-xs text-amber-500 hover:text-amber-700 px-1.5 py-0.5 rounded hover:bg-amber-50"
-                  >
-                    🗑📅
-                  </button>
-                  <button
-                    onClick={() => handleMergeSeason(s.id)}
-                    title="Scal sąsiednie sesje w jedną"
-                    className="text-xs text-blue-600 hover:text-blue-800 px-1.5 py-0.5 rounded hover:bg-blue-50"
-                  >
-                    🔀
-                  </button>
-                  <button
-                    onClick={() => handleDeleteSeason(s.id)}
-                    title={`Usuń ${partLabel.toLowerCase()}`}
-                    className="text-xs text-red-400 hover:text-red-600 px-1.5 py-0.5 rounded hover:bg-red-50"
-                  >
-                    🗑️
-                  </button>
+            {isBook ? (
+              <>
+                {/* Volumes as a compact cover grid; click one for its dates and actions */}
+                <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
+                  {seasons.map((s, idx) => (
+                    <button
+                      key={s.id}
+                      onClick={() => setSelectedPartId((id) => (id === s.id ? null : s.id))}
+                      title={`${seasonLabel(s, idx, partLabel)} · ${s.session_count} sesji`}
+                      className={`group text-left rounded-md transition-shadow ${
+                        selectedPartId === s.id ? "ring-2 ring-blue-500 ring-offset-1" : "hover:ring-2 hover:ring-gray-300"
+                      }`}
+                    >
+                      <div className="relative aspect-[2/3] rounded-md overflow-hidden bg-gray-100">
+                        {s.cover_url ? (
+                          <Image unoptimized src={s.cover_url} alt="" fill className="object-cover" />
+                        ) : (
+                          <div className={`absolute inset-0 flex items-center justify-center text-white text-sm font-semibold ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}>
+                            {s.season_number ?? idx + 1}
+                          </div>
+                        )}
+                        {s.want_to_watch ? (
+                          <span className="absolute top-0.5 right-0.5 text-[10px] leading-none bg-white/90 rounded px-0.5" title="Chcę przeczytać">📖</span>
+                        ) : null}
+                        {s.session_count === 0 && (
+                          <div className="absolute inset-0 bg-white/50" title="Nieprzeczytana" />
+                        )}
+                      </div>
+                      <p className="text-[11px] text-gray-600 text-center mt-0.5 truncate">{s.season_number ?? idx + 1}</p>
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
+                {(() => {
+                  const sel = seasons.find((s) => s.id === selectedPartId);
+                  if (!sel) return null;
+                  const idx = seasons.indexOf(sel);
+                  return (
+                    <div className="mt-3 flex flex-wrap items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">{seasonLabel(sel, idx, partLabel)}</p>
+                        {(sel.first_session_date || sel.last_session_date) && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {sel.first_session_date ? formatDate(sel.first_session_date) : "?"} –{" "}
+                            {sel.last_session_date ? formatDate(sel.last_session_date) : "?"}
+                          </p>
+                        )}
+                      </div>
+                      {seasonControls(sel)}
+                    </div>
+                  );
+                })()}
+              </>
+            ) : (
+                <div className="space-y-2">
+                  {seasons.map((s, idx) => (
+                    <div
+                      key={s.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100"
+                    >
+                      {s.cover_url ? (
+                        <Image
+                          unoptimized
+                          src={s.cover_url}
+                          alt=""
+                          width={32}
+                          height={48}
+                          className="w-8 h-12 object-cover rounded shrink-0"
+                        />
+                      ) : (
+                        <span
+                          className={`w-3 h-3 rounded-full shrink-0 ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-800 truncate">
+                          {seasonLabel(s, idx, partLabel)}
+                        </p>
+                        {(s.first_session_date || s.last_session_date) && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {s.first_session_date ? formatDate(s.first_session_date) : "?"} –{" "}
+                            {s.last_session_date ? formatDate(s.last_session_date) : "?"}
+                          </p>
+                        )}
+                      </div>
+                      {seasonControls(s)}
+                    </div>
+                  ))}
+                </div>
+            )}
+              </>
+            )}
 
             {/* Add season */}
             {!showAddSeason ? (
