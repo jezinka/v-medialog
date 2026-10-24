@@ -3,7 +3,7 @@ import { sqlite } from "@/db";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const itemType = searchParams.get("itemType") as "media" | "wishlist" | null;
+  const itemType = searchParams.get("itemType") as "media" | null;
   const itemId = searchParams.get("itemId");
 
   if (!itemType || !itemId) {

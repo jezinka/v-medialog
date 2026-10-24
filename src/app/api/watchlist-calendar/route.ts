@@ -6,6 +6,7 @@ export interface WatchlistEntry {
   season_id: number;
   season_number: number | null;
   title: string;
+  author: string | null;
   media_type: string;
   cover_url: string | null;
   last_session_date: string | null;
@@ -31,6 +32,7 @@ export async function GET() {
         sn.id           AS season_id,
         sn.season_number,
         m.title,
+        m.author,
         m.media_type,
         COALESCE(sn.cover_url, m.cover_url) AS cover_url,
         MAX(se.start_date) AS last_session_date
@@ -47,6 +49,7 @@ export async function GET() {
       season_id: number;
       season_number: number | null;
       title: string;
+      author: string | null;
       media_type: string;
       cover_url: string | null;
       last_session_date: string | null;

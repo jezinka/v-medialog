@@ -62,7 +62,7 @@ export async function POST() {
     `);
 
     async function processItem(
-      itemType: "media" | "wishlist",
+      itemType: "media",
       itemId: number,
       title: string,
       opts: { year?: number | null; tmdbId?: number | null; mediaType?: string }

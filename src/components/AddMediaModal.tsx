@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import CoverImg from "./CoverImg";
-import { MEDIA_TYPES, MEDIA_TYPE_LABELS, MEDIA_TYPE_COLORS, BOOK_TYPES } from "@/lib/utils";
+import { MEDIA_TYPES, MEDIA_TYPE_LABELS, MEDIA_TYPE_COLORS, BOOK_TYPES, CALENDAR_TYPES } from "@/lib/utils";
 import { toast } from "./Toast";
 import { useMediaSearch } from "@/lib/hooks/useMediaSearch";
 
@@ -218,19 +218,9 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
           }),
         });
       }
-      if (addToWishlist) {
-        await fetch("/api/wishlist", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: created.title,
-            author: created.author,
-            media_type: created.media_type,
-            cover_url: created.cover_url,
-            priority: "normal",
-            tmdb_id: created.tmdb_id
-          }),
-        });
+      if (addToWishlist && CALENDAR_TYPES.includes(created.media_type)) {
+        const wishRes = await fetch(`/api/media/${created.id}/want-to-watch`, { method: "POST" });
+        if (!wishRes.ok) throw new Error(await wishRes.text());
         toast("Dodano do listy życzeń!", "success");
       } else {
         toast("Utworzono medium!", "success");
@@ -465,15 +455,17 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
                   placeholder="ID Uniwersum (opcjonalnie)"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
                 />
-                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none pt-1">
-                  <input
-                    type="checkbox"
-                    checked={addToWishlist}
-                    onChange={(e) => setAddToWishlist(e.target.checked)}
-                    className="w-4 h-4 accent-purple-600"
-                  />
-                  {BOOK_TYPES.includes(createForm.media_type) ? "📖 Chcę przeczytać" : "👁 Chcę obejrzeć"}
-                </label>
+                {CALENDAR_TYPES.includes(createForm.media_type) && (
+                  <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none pt-1">
+                    <input
+                      type="checkbox"
+                      checked={addToWishlist}
+                      onChange={(e) => setAddToWishlist(e.target.checked)}
+                      className="w-4 h-4 accent-purple-600"
+                    />
+                    {BOOK_TYPES.includes(createForm.media_type) ? "📖 Chcę przeczytać" : "👁 Chcę obejrzeć"}
+                  </label>
+                )}
                 <div className="flex gap-2 pt-1">
                   <button
                     type="button"

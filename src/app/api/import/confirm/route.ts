@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
 import { parseTagsInput, setMediaTags } from "@/lib/tags";
+import { markWantToWatch } from "@/db/want-to-watch";
 
 interface MediaItem {
   title: string;
@@ -26,6 +27,7 @@ interface WishlistItem {
   priority?: string;
   notes?: string;
   cover_url?: string;
+  release_year?: string | number;
 }
 
 type ParsedItem = MediaItem | WishlistItem;
@@ -63,7 +65,7 @@ export async function POST(request: NextRequest) {
             if (item.tags) setMediaTags(mediaId, parseTagsInput(item.tags));
 
             const seasonRes = sqlite.prepare(
-              `INSERT INTO seasons (media_id, season_number, want_to_watch) VALUES (?, ?, 1)`
+              `INSERT INTO seasons (media_id, season_number, want_to_watch) VALUES (?, ?, 0)`
             ).run(mediaId, !sn || isNaN(sn) ? null : sn);
             const seasonId = seasonRes.lastInsertRowid as number;
 
@@ -90,12 +92,20 @@ export async function POST(request: NextRequest) {
           }
         }
       } else {
+        const findMedia = sqlite.prepare(`SELECT id FROM media WHERE title=? AND media_type=? AND release_year IS ?`);
         const stmt = sqlite.prepare(
-          `INSERT INTO wishlist (title, author, media_type, priority, notes, cover_url) VALUES (?, ?, ?, ?, ?, ?)`
+          `INSERT INTO media (title, author, media_type, notes, cover_url, release_year, discontinued) VALUES (?, ?, ?, ?, ?, ?, 0)`
         );
         for (const item of items as WishlistItem[]) {
           try {
-            stmt.run(item.title, item.author ?? null, item.media_type, item.priority ?? "normal", item.notes ?? null, item.cover_url ?? null);
+            const year = item.release_year ? Number(item.release_year) : null;
+            const releaseYear = Number.isInteger(year) ? year : null;
+            // Reuse media only on an unambiguous title + type + year match, otherwise create new
+            const matches = findMedia.all(item.title, item.media_type, releaseYear) as { id: number }[];
+            const mediaId = matches.length === 1
+              ? matches[0].id
+              : Number(stmt.run(item.title, item.author ?? null, item.media_type, item.notes ?? null, item.cover_url ?? null, releaseYear).lastInsertRowid);
+            markWantToWatch(sqlite, mediaId);
             inserted++;
           } catch { failed++; }
         }

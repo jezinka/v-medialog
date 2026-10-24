@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { MEDIA_TYPES } from "@/lib/utils";
+import { CALENDAR_TYPES, MEDIA_TYPES } from "@/lib/utils";
 
 const VALID_MEDIA_TYPES = new Set<string>(MEDIA_TYPES);
 const VALID_PRIORITIES = ["high", "normal", "low"];
@@ -88,6 +88,7 @@ interface WishlistPreviewRow {
   priority: string;
   notes: string;
   cover_url: string;
+  release_year: string;
 }
 
 type PreviewRow = MediaPreviewRow | WishlistPreviewRow;
@@ -168,7 +169,7 @@ export async function POST(request: NextRequest) {
           invalid.push({ row: rowNum, error: "Brak wymaganego pola: title", raw });
           continue;
         }
-        if (!media_type || !VALID_MEDIA_TYPES.has(media_type)) {
+        if (!media_type || !CALENDAR_TYPES.includes(media_type)) {
           invalid.push({ row: rowNum, error: `Nieprawidłowy media_type: "${media_type}"`, raw });
           continue;
         }
@@ -180,6 +181,7 @@ export async function POST(request: NextRequest) {
           priority,
           notes: get("notes"),
           cover_url: get("cover_url"),
+          release_year: get("release_year"),
         };
         valid.push({ row: rowNum, data });
       }

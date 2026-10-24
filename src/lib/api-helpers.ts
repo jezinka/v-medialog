@@ -1,7 +1,4 @@
 import { NextResponse } from "next/server";
-import { CALENDAR_TYPES } from "@/lib/utils";
-
-export const VALID_WISHLIST_MEDIA_TYPES = CALENDAR_TYPES;
 
 /** Parse the numeric id from dynamic route params */
 export async function parseRouteId(params: Promise<{ id: string }>): Promise<number> {

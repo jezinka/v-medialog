@@ -11,7 +11,7 @@ function daysUntil(dateStr: string): number {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as {
-      itemType: "media" | "wishlist";
+      itemType: "media";
       itemId: number;
       title: string;
       year?: number | null;

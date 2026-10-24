@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sqlite } from "@/db";
+import { CALENDAR_TYPES } from "@/lib/utils";
 
 function escapeCSVField(value: string | null | undefined): string {
   const str = value == null ? "" : String(value);
@@ -13,19 +14,24 @@ export async function GET() {
   try {
     const rows = sqlite
       .prepare(
-        `SELECT title, author, media_type, priority, notes, cover_url
-         FROM wishlist ORDER BY added_at DESC`
+        // priority kept as a constant so the CSV stays importable by older versions
+        `SELECT m.title, m.author, m.media_type, 'normal' AS priority, m.notes, m.cover_url, m.release_year
+         FROM media m
+         WHERE m.media_type IN (${CALENDAR_TYPES.map(() => "?").join(",")})
+           AND EXISTS (SELECT 1 FROM seasons s WHERE s.media_id = m.id AND s.want_to_watch = 1)
+         ORDER BY m.title`
       )
-      .all() as {
+      .all(...CALENDAR_TYPES) as {
       title: string;
       author: string | null;
       media_type: string;
       priority: string;
       notes: string | null;
       cover_url: string | null;
+      release_year: number | null;
     }[];
 
-    const header = "title,author,media_type,priority,notes,cover_url\r\n";
+    const header = "title,author,media_type,priority,notes,cover_url,release_year\r\n";
     const lines = rows.map((r) =>
       [
         escapeCSVField(r.title),
@@ -34,6 +40,7 @@ export async function GET() {
         escapeCSVField(r.priority),
         escapeCSVField(r.notes),
         escapeCSVField(r.cover_url),
+        escapeCSVField(r.release_year == null ? null : String(r.release_year)),
       ].join(",")
     );
 

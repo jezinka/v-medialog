@@ -1,11 +1,13 @@
 import Database from "better-sqlite3";
 import path from "path";
+import { markWantToWatch } from "./want-to-watch";
 
 const DB_PATH = process.env.DATABASE_URL ?? path.join(process.cwd(), "medialog.db");
 
 const sqlite = new Database(DB_PATH);
 sqlite.pragma("journal_mode = WAL");
 sqlite.pragma("foreign_keys = ON");
+sqlite.pragma("busy_timeout = 5000");
 
 sqlite.exec(`
   CREATE TABLE IF NOT EXISTS universes (
@@ -72,17 +74,6 @@ sqlite.exec(`
     tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
     created_at TEXT DEFAULT (datetime('now')),
     PRIMARY KEY (media_id, tag_id)
-  );
-
-  CREATE TABLE IF NOT EXISTS wishlist (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT NOT NULL,
-    author TEXT,
-    media_type TEXT NOT NULL,
-    notes TEXT,
-    priority TEXT NOT NULL DEFAULT 'normal',
-    cover_url TEXT,
-    added_at TEXT DEFAULT (datetime('now'))
   );
 
   CREATE TABLE IF NOT EXISTS reading_lists (
@@ -263,6 +254,38 @@ sqlite.exec(`
     seen_at TEXT
   );
 `);
+
+// Replace the legacy wishlist table with seasons.want_to_watch
+const hasWishlistTable = () => Boolean(sqlite.prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name='wishlist'`).get());
+if (hasWishlistTable()) {
+  // immediate: take the write lock up front so a second starting process waits instead of migrating twice
+  sqlite.transaction(() => {
+    if (!hasWishlistTable()) return;
+    const rows = sqlite.prepare(`SELECT title, author, media_type, notes, cover_url FROM wishlist`).all() as {
+      title: string; author: string | null; media_type: string; notes: string | null; cover_url: string | null;
+    }[];
+    for (const row of rows) {
+      // Title alone can't identify media: reuse only an unambiguous match, otherwise create new media
+      const matches = sqlite.prepare(`SELECT id FROM media WHERE title=? AND media_type=?`).all(row.title, row.media_type) as { id: number }[];
+      const mediaId = matches.length === 1
+        ? matches[0].id
+        : Number(sqlite.prepare(
+          `INSERT INTO media (title, author, media_type, notes, cover_url, discontinued) VALUES (?, ?, ?, ?, ?, 0)`
+        ).run(row.title, row.author, row.media_type, row.notes, row.cover_url).lastInsertRowid);
+      if (matches.length === 1 && row.notes) {
+        sqlite.prepare(`UPDATE media SET notes = CASE WHEN notes IS NULL OR notes = '' THEN ? ELSE notes || char(10) || ? END WHERE id=?`)
+          .run(row.notes, row.notes, mediaId);
+      }
+      markWantToWatch(sqlite, mediaId);
+    }
+    sqlite.exec(`
+      DELETE FROM vod_offers WHERE item_type='wishlist';
+      DELETE FROM vod_notifications WHERE item_type='wishlist';
+      DROP TABLE wishlist;
+    `);
+    console.log(`[db] Migrated ${rows.length} wishlist rows to seasons.want_to_watch`);
+  }).immediate();
+}
 
 // ── Auto-refresh VOD data every 24h on server startup ───────────────────────
 // Uses setTimeout to run asynchronously after the module is loaded.
