@@ -7,8 +7,7 @@
     "build": "next build",
     "start": "next start --port 5000",
     "lint": "eslint",
-    "export:calendar": "node scripts/export-calendar.mjs",
-    "publish:calendar": "bash scripts/publish-calendar.sh"
+    "export:medialog": "node scripts/export-medialog.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^12.8.0",

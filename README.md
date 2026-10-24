@@ -59,22 +59,22 @@ Script wysyła aktualny `docker-compose.yml`, buduje obraz i restartuje kontener
 
 ### Publiczny kalendarz na GitHub Pages
 
-Na serwerze z MediaLogiem sklonuj raz repozytorium publikowane przez GitHub Pages, a potem uruchom:
+`docker-build.sh` wysyła na serwer także `publish-medialog.sh`; źródła aplikacji ani `npm` nie są tam potrzebne. Na serwerze sklonuj raz repozytorium strony:
 
 ```bash
-PAGES_DIR=/sciezka/do/klona npm run publish:calendar
+git clone git@github.com:jezinka/myWebsite.git /home/ubuntu/myWebsite
 ```
 
-Polecenie generuje `medialog-calendar.html` z bieżącym miesiącem, kopiuje go do wskazanego repozytorium i wypycha commit tylko, gdy zawartość się zmieni. Do automatyzacji dodaj je do crona, np. co godzinę:
+Po deployu uruchom:
 
 ```bash
-0 * * * * cd /sciezka/do/medialog && PAGES_DIR=/sciezka/do/klona npm run publish:calendar
+PAGES_DIR=/home/ubuntu/myWebsite /home/ubuntu/medialog/publish-medialog.sh
 ```
 
-Po wdrożeniu aplikacji plik można osadzić na stronie Pages przez:
+Polecenie wywołuje generator wewnątrz kontenera, kopiuje `data/medialog.json` oraz lokalne okładki pozycji z bieżącego miesiąca do `data/medialog-covers/` i wypycha commit tylko, gdy zawartość się zmieni. Strona GitHub Pages renderuje dane razem z innymi aplikacjami. Do automatyzacji dodaj je do crona, np. co godzinę:
 
-```html
-<iframe src="/medialog-calendar.html" width="420" height="520" style="border:0" title="Co czytam i oglądam"></iframe>
+```bash
+0 * * * * PAGES_DIR=/home/ubuntu/myWebsite /home/ubuntu/medialog/publish-medialog.sh
 ```
 
 ---
