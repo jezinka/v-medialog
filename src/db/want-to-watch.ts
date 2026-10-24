@@ -43,6 +43,13 @@ export function addUpcomingSeason(
     `SELECT 1 FROM sessions se JOIN seasons sn ON sn.id = se.season_id
      WHERE sn.media_id=? AND sn.want_to_watch=0 AND COALESCE(se.end_date, se.start_date) >= ? LIMIT 1`
   ).get(season.mediaId, season.airDate)) return false;
+  // ponytail: an unnumbered season already on the list with a premiere marker within ~90 days is taken
+  // to be this same season (e.g. Silos S3 added by hand without a number); exact only with numbered seasons
+  if (season.airDate && db.prepare(
+    `SELECT 1 FROM sessions se JOIN seasons sn ON sn.id = se.season_id
+     WHERE sn.media_id=? AND sn.want_to_watch=1 AND sn.season_number IS NULL
+       AND ABS(julianday(se.start_date) - julianday(?)) <= 90 LIMIT 1`
+  ).get(season.mediaId, season.airDate)) return false;
 
   const seasonId = existing
     ? existing.id
