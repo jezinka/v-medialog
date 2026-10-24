@@ -63,7 +63,6 @@ export default function PeopleView({ onOpenPerson }: Props) {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    setLoading(true);
     fetch("/api/persons")
       .then((r) => r.json())
       .then((data: PersonItem[]) => setPersons(data))
@@ -83,9 +82,6 @@ export default function PeopleView({ onOpenPerson }: Props) {
     });
   }, [persons, search, roleFilter]);
 
-  // Reset page when filters change
-  useEffect(() => { setPage(1); }, [search, roleFilter]);
-
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -96,7 +92,7 @@ export default function PeopleView({ onOpenPerson }: Props) {
         <input
           type="search"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           placeholder="Szukaj osoby…"
           className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-56 focus:ring-2 focus:ring-purple-400 focus:outline-none"
         />
@@ -104,7 +100,7 @@ export default function PeopleView({ onOpenPerson }: Props) {
           {ROLE_FILTERS.map((r) => (
             <button
               key={r}
-              onClick={() => setRoleFilter(r)}
+              onClick={() => { setRoleFilter(r); setPage(1); }}
               className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                 roleFilter === r
                   ? "bg-purple-600 text-white border-purple-600"

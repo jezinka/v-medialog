@@ -12,8 +12,6 @@ interface CalendarEntry {
   title: string;
   media_type: string;
   cover_url: string | null;
-  source_url: string | null;
-  author_person_id: number | null;
   month: number;
   assigned_day: number;
   is_placeholder: boolean;
@@ -364,11 +362,10 @@ function CalendarInner() {
                   {Array.from({ length: daysCount }, (_, i) => {
                     const day = i + 1;
                     const entry = dayMap.get(day);
-                    const isYt = entry?.media_type === "yt";
                     const weekday = (firstDay + day - 1) % 7;
                     const isHoliday = holidays.has(dateKey(year, month, day));
                     const href = entry
-                      ? (isYt && entry.author_person_id ? `/people/${entry.author_person_id}` : `/media/${entry.media_id}`)
+                      ? `/media/${entry.media_id}`
                       : undefined;
                     return (
                       <a
@@ -394,11 +391,6 @@ function CalendarInner() {
                               sizes="(max-width: 640px) 14vw, (max-width: 1024px) 9vw, 6vw"
                             />
                           )}
-                          {isYt && !entry?.cover_url && (
-                            <div className="absolute inset-0 bg-red-100 flex items-center justify-center">
-                              <span className="text-[14px]">▶️</span>
-                            </div>
-                          )}
                           {entry?.is_placeholder && (
                             <div className="absolute inset-0 bg-gray-400/50 z-10" />
                           )}
@@ -418,10 +410,6 @@ function CalendarInner() {
                         >
                           {day}
                         </span>
-                        {/* YouTube badge */}
-                        {isYt && (
-                          <span className="absolute bottom-0.5 left-0.5 text-[8px] leading-none z-20 bg-red-600 text-white rounded px-0.5">YT</span>
-                        )}
                         {/* Cinema star */}
                         {entry?.cinema && (
                           <span className="absolute top-4 right-0.5 text-[10px] leading-none z-20 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">⭐</span>

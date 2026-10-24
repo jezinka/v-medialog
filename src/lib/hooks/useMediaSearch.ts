@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-export interface MediaSearchItem {
+interface MediaSearchItem {
   id: number;
   title: string;
   original_title: string | null;

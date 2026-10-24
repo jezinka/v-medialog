@@ -1,4 +1,4 @@
-export const TMDB_TIMEOUT_MS = 10000;
+const TMDB_TIMEOUT_MS = 10000;
 
 /** Build a TMDB image URL for a given poster/backdrop path and size */
 export function tmdbImageUrl(path: string | null | undefined, size: string): string | null {

@@ -201,7 +201,7 @@ export default function NavHeader() {
                       notifications.map((n) => (
                         <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-gray-50">
                           {n.provider_logo && (
-                            <img src={n.provider_logo} alt={n.provider_name} className="w-8 h-8 rounded object-contain shrink-0 mt-0.5" />
+                            <Image unoptimized src={n.provider_logo} alt={n.provider_name} width={32} height={32} className="w-8 h-8 rounded object-contain shrink-0 mt-0.5" />
                           )}
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-semibold text-gray-900 truncate">{n.item_title}</p>

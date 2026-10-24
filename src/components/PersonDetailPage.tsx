@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import CoverImg from "./CoverImg";
-import { MEDIA_TYPE_EMOJI, MEDIA_TYPE_LABELS } from "@/lib/utils";
+import { MEDIA_TYPE_EMOJI } from "@/lib/utils";
 import { toast } from "./Toast";
 
 const POLISH_MONTHS = [

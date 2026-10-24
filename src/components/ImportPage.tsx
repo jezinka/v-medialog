@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import MediaLibraryView from "./MediaLibraryView";
 import PeopleView from "./PeopleView";
 import MergeMediaModal from "./MergeMediaModal";
@@ -166,7 +167,7 @@ export default function ImportPage() {
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  const updateField = (rowNum: number, field: string, value: string) => {
+  const updateField = useCallback((rowNum: number, field: string, value: string) => {
     setEditedItems((items) =>
       items.map((item) =>
         item.row === rowNum
@@ -174,7 +175,7 @@ export default function ImportPage() {
           : item
       )
     );
-  };
+  }, []);
 
   const toggleSelect = (rowNum: number) => {
     setSelected((prev) => {
@@ -268,7 +269,7 @@ export default function ImportPage() {
                 🔗 Połącz / zgrupuj media
               </button>
             </div>
-            <MediaLibraryView onOpenDetail={(id) => router.push(`/media/${id}`)} />
+            <MediaLibraryView />
             {showMerge && <MergeMediaModal onClose={() => setShowMerge(false)} onSuccess={() => {}} />}
           </div>
         ) : activeTab === "people" ? (
@@ -319,8 +320,6 @@ export default function ImportPage() {
 function ExportTab() {
   const [wiping, setWiping] = React.useState(false);
   const [wiped, setWiped] = React.useState(false);
-  const [cleaningYt, setCleaningYt] = React.useState(false);
-  const [ytCleaned, setYtCleaned] = React.useState<{ deletedMedia: number; deletedHistory: number } | null>(null);
 
   const MEDIA_TYPE_OPTIONS = [
     { value: "book",    label: "Książki" },
@@ -343,21 +342,6 @@ function ExportTab() {
   const handleExportMedia = () => {
     const types = selectedTypes.length === ALL_VALUES.length ? "" : `?types=${selectedTypes.join(",")}`;
     window.location.href = `/api/export/media${types}`;
-  };
-
-  const handleCleanYt = async () => {
-    if (!confirm("Czy na pewno chcesz usunąć wszystkie filmy YouTube i kanały YT z bazy?")) return;
-    setCleaningYt(true);
-    try {
-      const res = await fetch("/api/cleanup/yt", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setYtCleaned(data);
-    } catch (e) {
-      alert("Błąd: " + (e instanceof Error ? e.message : String(e)));
-    } finally {
-      setCleaningYt(false);
-    }
   };
 
   const handleWipe = async () => {
@@ -431,7 +415,7 @@ function ExportTab() {
         <p className="font-medium text-gray-700">Format CSV — dziennik mediów:</p>
         <code className="block font-mono">title,original_title,author,media_type,start_date,end_date,volume_episode,tags,notes,discontinued,cover_url,cinema,season,tmdb_id,release_year</code>
         <p className="font-medium text-gray-700 mt-2">Format CSV — lista życzeń:</p>
-        <code className="block font-mono">title,author,media_type,priority,notes,cover_url</code>
+        <code className="block font-mono">title,author,media_type,priority,notes,cover_url,release_year</code>
         <p className="mt-2">Dozwolone typy mediów: book, comic, movie, series, anime, cartoon</p>
         <p>Priorytety: high, normal, low</p>
       </div>
@@ -440,17 +424,6 @@ function ExportTab() {
         <p className="text-sm font-semibold text-red-700 mb-1">⚠️ Niebezpieczna strefa</p>
         <p className="text-xs text-red-600 mb-3">Operacje nieodwracalne.</p>
         <div className="space-y-2">
-          {ytCleaned ? (
-            <p className="text-sm text-green-700 font-medium">✅ Usunięto {ytCleaned.deletedMedia} filmów YT{ytCleaned.deletedHistory > 0 ? ` i ${ytCleaned.deletedHistory} wpisów historii` : ""}. Odśwież stronę.</p>
-          ) : (
-            <button
-              onClick={handleCleanYt}
-              disabled={cleaningYt}
-              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              {cleaningYt ? "Czyszczę..." : "▶️ Usuń dane YouTube z bazy"}
-            </button>
-          )}
           {wiped ? (
             <p className="text-sm text-green-700 font-medium">✅ Baza wyczyszczona. Odśwież stronę.</p>
           ) : (
@@ -716,7 +689,7 @@ function PreviewStep({
                                     onClick={() => onPickTmdbCandidate(item.row, mediaData.title, mediaData.volume_episode || "1", c.tmdb_id, mediaData.original_title || undefined)}
                                     className="flex items-center gap-1 text-left text-xs bg-white hover:bg-blue-50 border border-gray-200 rounded px-1.5 py-0.5 w-full transition-colors"
                                   >
-                                    {c.poster_path && <img src={c.poster_path} alt="" className="w-5 h-7 object-cover rounded flex-shrink-0" />}
+                                    {c.poster_path && <Image unoptimized src={c.poster_path} alt="" width={20} height={28} className="w-5 h-7 object-cover rounded flex-shrink-0" />}
                                     <span className="truncate">{c.name} <span className="text-gray-400">{c.first_air_date?.slice(0, 4)}</span></span>
                                   </button>
                                 ))}
@@ -784,218 +757,6 @@ function ResultStep({ result, onReset }: { result: ImportResult; onReset: () => 
         className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors"
       >
         Importuj kolejne
-      </button>
-    </div>
-  );
-}
-
-interface NetflixPreviewGroup {
-  series: string;
-  seasonNumber: number | null;
-  seasonTitle: string | null;
-  isMovie: boolean;
-  dates: string[];
-  episodes: string[];
-  episodeCount: number;
-}
-
-interface NetflixPreviewResponse {
-  total: number;
-  groups: number;
-  preview: NetflixPreviewGroup[];
-}
-
-interface NetflixImportResult {
-  total: number;
-  createdMedia: number;
-  createdSeasons: number;
-  createdSessions: number;
-  skippedSessions: number;
-  removedPlaceholders: number;
-  message: string;
-}
-
-function NetflixImportTab() {
-  const [csvText, setCsvText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [preview, setPreview] = useState<NetflixPreviewResponse | null>(null);
-  const [result, setResult] = useState<NetflixImportResult | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => setCsvText((ev.target?.result as string) ?? "");
-    reader.readAsText(file, "utf-8");
-  };
-
-  const handlePreview = async () => {
-    if (!csvText.trim()) return;
-    setLoading(true);
-    try {
-      const res = await fetch("/api/import/netflix", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ csv: csvText, preview: true }),
-      });
-      const data = await res.json() as NetflixPreviewResponse;
-      setPreview(data);
-    } catch {
-      alert("Błąd podglądu");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const [error, setError] = useState<string | null>(null);
-
-  const handleImport = async () => {
-    if (!csvText.trim()) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/import/netflix", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ csv: csvText }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError((data as { error?: string }).error ?? `Błąd serwera (${res.status})`);
-        return;
-      }
-      setResult(data as NetflixImportResult);
-      setPreview(null);
-    } catch {
-      setError("Błąd połączenia z serwerem");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleReset = () => {
-    setCsvText("");
-    setPreview(null);
-    setResult(null);
-    setError(null);
-    if (fileRef.current) fileRef.current.value = "";
-  };
-
-  if (result) {
-    return (
-      <div className="space-y-4 text-center py-6">
-        <div className="text-4xl">✅</div>
-        <p className="text-lg font-semibold text-gray-800">{result.message}</p>
-        <div className="grid grid-cols-2 gap-3 max-w-sm mx-auto text-sm">
-          <div className="bg-purple-50 rounded-lg p-3 text-left">
-            <div className="text-2xl font-bold text-purple-700">{result.createdMedia}</div>
-            <div className="text-gray-600">nowych mediów</div>
-          </div>
-          <div className="bg-blue-50 rounded-lg p-3 text-left">
-            <div className="text-2xl font-bold text-blue-700">{result.createdSeasons}</div>
-            <div className="text-gray-600">nowych sezonów</div>
-          </div>
-          <div className="bg-green-50 rounded-lg p-3 text-left">
-            <div className="text-2xl font-bold text-green-700">{result.createdSessions}</div>
-            <div className="text-gray-600">nowych sesji</div>
-          </div>
-          <div className="bg-gray-50 rounded-lg p-3 text-left">
-            <div className="text-2xl font-bold text-gray-500">{result.skippedSessions}</div>
-            <div className="text-gray-600">duplikatów pominięto</div>
-          </div>
-          {result.removedPlaceholders > 0 && (
-            <div className="col-span-2 bg-amber-50 rounded-lg p-3 text-left">
-              <div className="text-2xl font-bold text-amber-600">{result.removedPlaceholders}</div>
-              <div className="text-gray-600">placeholderów zastąpiono</div>
-            </div>
-          )}
-        </div>
-        <button onClick={handleReset} className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
-          Importuj kolejne
-        </button>
-      </div>
-    );
-  }
-
-  if (preview) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-medium text-gray-800">Podgląd importu Netflix</p>
-            <p className="text-sm text-gray-500">{preview.total} wierszy → {preview.groups} unikalnych (tytuł + sezon). Pokazuję pierwsze 50.</p>
-          </div>
-          <button onClick={() => setPreview(null)} className="text-sm text-gray-400 hover:text-gray-600">← Wróć</button>
-        </div>
-        <div className="max-h-96 overflow-y-auto space-y-1 border border-gray-200 rounded-lg p-2">
-          {preview.preview.map((g, i) => (
-            <div key={i} className="flex items-start gap-2 text-xs py-1 px-2 rounded hover:bg-gray-50">
-              <span className="text-lg">{g.isMovie ? "🎬" : "📺"}</span>
-              <div className="min-w-0 flex-1">
-                <span className="font-medium text-gray-800">{g.series}</span>
-                {!g.isMovie && (
-                  <span className="text-gray-500 ml-1">
-                    {g.seasonTitle ? `(${g.seasonTitle})` : g.seasonNumber != null ? `Sezon ${g.seasonNumber}` : ""}
-                  </span>
-                )}
-              </div>
-              <span className="text-gray-400 shrink-0">{g.episodeCount} odcinków / {g.dates.length} dni</span>
-            </div>
-          ))}
-        </div>
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-            ❌ {error}
-          </div>
-        )}
-        <div className="flex gap-3">
-          <button
-            onClick={handleImport}
-            disabled={loading}
-            className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors"
-          >
-            {loading ? "Importuję..." : `Importuj ${preview.total} wpisów (${preview.groups} grup)`}
-          </button>
-          <button onClick={handleReset} className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-lg text-sm font-medium transition-colors">
-            Anuluj
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <p className="text-sm font-medium text-gray-700 mb-1">Historia oglądania Netflix (CSV)</p>
-        <p className="text-xs text-gray-500 mb-3">
-          Pobierz z <strong>netflix.com → Konto → Historia oglądania → Pobierz</strong>.
-          Format: <code className="bg-gray-100 px-1 rounded">Title,Date</code>.
-          Duplikaty (ta sama seria, sezon, data) są automatycznie pomijane.
-        </p>
-        <input
-          ref={fileRef}
-          type="file"
-          accept=".csv,text/csv"
-          onChange={handleFileChange}
-          className="block text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-        />
-        {csvText && (
-          <p className="text-xs text-green-600 mt-1">✓ Wczytano plik ({csvText.split("\n").length - 1} wierszy)</p>
-        )}
-      </div>
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
-          ❌ {error}
-        </div>
-      )}
-      <button
-        onClick={handlePreview}
-        disabled={!csvText.trim() || loading}
-        className="bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors"
-      >
-        {loading ? "Ładuję..." : "Podgląd"}
       </button>
     </div>
   );
@@ -1254,7 +1015,7 @@ function BulkSyncTab() {
                           onClick={() => applyCandidate(item, id!)}
                           className="flex items-center gap-2 px-3 py-1.5 bg-white border border-yellow-300 rounded-lg text-xs hover:bg-yellow-100 transition-colors disabled:opacity-50"
                         >
-                          {img && <img src={img} alt="" className="w-5 h-7 object-cover rounded" />}
+                          {img && <Image unoptimized src={img} alt="" width={20} height={28} className="w-5 h-7 object-cover rounded" />}
                           <span className="font-medium">{name}</span>
                           {sub && <span className="text-gray-500">{sub}</span>}
                           {year && <span className="text-gray-400">{year}</span>}

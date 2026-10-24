@@ -21,7 +21,7 @@ export interface JwOffer {
   availableTo: string | null;
 }
 
-export interface JwResult {
+interface JwResult {
   jwId: string; // e.g. "ts4", "tm92641"
   title: string;
   year: number | null;

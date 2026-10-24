@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import CoverImg from "./CoverImg";
-import { MEDIA_TYPE_ICONS, MEDIA_TYPE_COLORS, MEDIA_TYPE_LABELS, formatDate, BOOK_TYPES, SCREEN_TYPES, ITUNES_TYPES } from "@/lib/utils";
+import { MEDIA_TYPE_ICONS, MEDIA_TYPE_COLORS, MEDIA_TYPE_LABELS, formatDate, BOOK_TYPES, SCREEN_TYPES, ITUNES_TYPES, CALENDAR_TYPES } from "@/lib/utils";
 import { toast } from "./Toast";
 
 interface Props {
@@ -34,7 +35,6 @@ interface MediaData {
   release_year: number | null;
   external_synced_at: string | null;
   series_status: string | null;
-  source_url: string | null;
   season_count: number;
   first_session_date: string | null;
   last_session_date: string | null;
@@ -593,7 +593,6 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     tmdb_id: "",
     ol_key: "",
     media_type: "",
-    source_url: "",
   });
   const [mediaEditSaving, setMediaEditSaving] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -768,7 +767,6 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
       tmdb_id: m.tmdb_id != null ? String(m.tmdb_id) : "",
       ol_key: m.ol_key ?? "",
       media_type: m.media_type,
-      source_url: m.source_url ?? "",
     });
     setIsEditingMedia(true);
   }, []);
@@ -791,7 +789,6 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
           discontinued: mediaEditForm.discontinued,
           tmdb_id: mediaEditForm.tmdb_id ? parseInt(mediaEditForm.tmdb_id) : null,
           ol_key: mediaEditForm.ol_key || null,
-          source_url: mediaEditForm.source_url || null,
         }),
       });
       if (!res.ok) throw new Error();
@@ -1310,7 +1307,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     } finally {
       setYearBatchSaving(false);
     }
-  }, [yearSelectedDates, seasons, mediaId, loadData, onRefresh, yearBatchCinema, yearBatchWithChild]);
+  }, [yearSelectedDates, seasons, mediaId, loadData, onRefresh, yearBatchCinema, yearBatchWithChild, media?.media_type]);
 
   // Map each calendar date to the session it belongs to (for click-to-edit)
   const dateToSessionMap = useMemo(() => {
@@ -1384,7 +1381,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
         setSeasonPickerDate(date);
       }
     },
-    [splitMode, splitRangeStart, splitTarget, sessions, sessionDaysMap, dateToSessionMap, seasons, addSession, openEditSession, mediaId]
+    [splitMode, splitRangeStart, splitTarget, sessions, sessionDaysMap, dateToSessionMap, seasons, addSession, openEditSession, mediaId, media?.media_type]
   );
 
   const handleSplitDayHover = (date: string) => {
@@ -2034,7 +2031,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
 
       {/* Sticky header */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3">
-        <a
+        <Link
           href="/"
           className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-700 transition-colors shrink-0"
           title="Strona główna"
@@ -2042,7 +2039,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7m-9 5v6h4v-6m-4 0H9m6 0h-2" />
           </svg>
-        </a>
+        </Link>
         <button
           onClick={() => onClose?.()}
           className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors shrink-0"
@@ -2208,7 +2205,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                             className="group relative w-9 h-[54px] rounded overflow-hidden border border-gray-200 hover:border-gray-400 transition-colors shrink-0"
                           >
                             {m.cover_url ? (
-                              <img src={m.cover_url} alt={m.title} className="w-full h-full object-cover" />
+                              <Image unoptimized src={m.cover_url} alt={m.title} fill className="object-cover" />
                             ) : (
                               <div className="w-full h-full bg-gray-100 flex items-center justify-center text-[9px] text-gray-400 text-center px-0.5 leading-tight">
                                 {m.title.slice(0, 12)}
@@ -2372,9 +2369,12 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                       <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 border-b border-gray-100">
                         {/* Season poster thumbnail */}
                         {as.seasonPosterPath && (
-                          <img
+                          <Image
+                            unoptimized
                             src={as.seasonPosterPath}
                             alt={as.seasonLabel}
+                            width={28}
+                            height={40}
                             className="h-10 w-7 object-cover rounded flex-shrink-0"
                           />
                         )}
@@ -2539,9 +2539,12 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                   className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100"
                 >
                   {s.cover_url ? (
-                    <img
+                    <Image
+                      unoptimized
                       src={s.cover_url}
                       alt=""
+                      width={32}
+                      height={48}
                       className="w-8 h-12 object-cover rounded shrink-0"
                     />
                   ) : (
@@ -2561,7 +2564,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                     )}
                   </div>
                   <span className="text-xs text-gray-500 shrink-0">{s.session_count} sesji</span>
-                  {(media.media_type === "series" || media.media_type === "anime" || media.media_type === "cartoon") && (
+                  {CALENDAR_TYPES.includes(media.media_type) && (
                     <label className="flex items-center gap-1 cursor-pointer select-none shrink-0">
                       <input
                         type="checkbox"
@@ -2569,7 +2572,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                         onChange={() => handleToggleWantToWatch(s)}
                         className="w-3.5 h-3.5 accent-blue-500"
                       />
-                      <span className="text-xs text-blue-600">👁 Chcę obejrzeć</span>
+                      <span className="text-xs text-blue-600">{BOOK_TYPES.includes(media.media_type) ? "📖 Chcę przeczytać" : "👁 Chcę obejrzeć"}</span>
                     </label>
                   )}
                   <button
@@ -2750,7 +2753,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                       title={`${o.provider_name} · ${o.monetization_type}${o.quality ? ` · ${o.quality}` : ""}`}
                     >
                       {o.provider_logo && (
-                        <img src={o.provider_logo} alt={o.provider_name} className="w-6 h-6 object-contain rounded" />
+                        <Image unoptimized src={o.provider_logo} alt={o.provider_name} width={24} height={24} className="w-6 h-6 object-contain rounded" />
                       )}
                       <span className="font-medium text-gray-800">{o.provider_name}</span>
                       <span className="text-gray-400">{o.monetization_type === "FLATRATE" ? "Sub" : o.monetization_type === "FREE" ? "Free" : o.monetization_type === "BUY" ? "Kup" : "Wynajem"}</span>
@@ -2831,7 +2834,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                     className="flex items-center gap-2 px-3 py-1.5 bg-white border border-blue-200 rounded-lg text-xs hover:bg-blue-100 transition-colors"
                   >
                     {c.poster_path && (
-                      <img src={`https://image.tmdb.org/t/p/w45${c.poster_path}`} alt="" className="w-5 h-7 object-cover rounded" />
+                      <Image unoptimized src={`https://image.tmdb.org/t/p/w45${c.poster_path}`} alt="" width={20} height={28} className="w-5 h-7 object-cover rounded" />
                     )}
                     <span className="font-medium">{c.name}</span>
                     {c.first_air_date && <span className="text-gray-400">{c.first_air_date.slice(0, 4)}</span>}
@@ -2852,7 +2855,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                     className="flex items-center gap-2 px-3 py-1.5 bg-white border border-pink-200 rounded-lg text-xs hover:bg-pink-100 transition-colors"
                   >
                     {c.cover_url && (
-                      <img src={c.cover_url.replace("600x600bb", "45x45bb")} alt="" className="w-7 h-7 object-cover rounded" />
+                      <Image unoptimized src={c.cover_url.replace("600x600bb", "45x45bb")} alt="" width={28} height={28} className="w-7 h-7 object-cover rounded" />
                     )}
                     <span className="font-medium">{c.title}</span>
                     {c.artist && <span className="text-gray-500">{c.artist}</span>}

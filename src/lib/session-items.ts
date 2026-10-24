@@ -1,6 +1,6 @@
 import type { SessionRow } from "@/lib/types";
 
-export interface SessionCalendarItem {
+interface SessionCalendarItem {
   id: number;
   seasonId: number | null;
   mediaId: number;

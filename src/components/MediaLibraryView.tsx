@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import CoverImg from "./CoverImg";
 import { MEDIA_TYPE_EMOJI, MEDIA_TYPE_LABELS, MEDIA_TYPE_COLORS, formatDate } from "@/lib/utils";
 import { toast } from "./Toast";
@@ -38,14 +38,10 @@ interface SeasonRow {
   has_cinema_session?: boolean;
 }
 
-interface Props {
-  onOpenDetail: (mediaId: number) => void;
-}
-
-const TYPE_FILTERS = ["all", "series", "anime", "cartoon", "movie", "book", "comic", "yt", "play"] as const;
+const TYPE_FILTERS = ["all", "series", "anime", "cartoon", "movie", "book", "comic", "play"] as const;
 type TypeFilter = (typeof TYPE_FILTERS)[number];
 
-export default function MediaLibraryView({ onOpenDetail }: Props) {
+export default function MediaLibraryView() {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -166,7 +162,7 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
       if ((data.added ?? 0) > 0) {
         const titles = (data.items ?? []).map((i) => `${i.title} S${i.season}`);
         const summary = titles.length > 0 ? `: ${titles.slice(0, 5).join(", ")}${titles.length > 5 ? ` +${titles.length - 5}` : ""}` : "";
-        toast(`Dodano ${data.added} nadchodzących sezon${data.added === 1 ? "" : "ów"} do listy${summary}!`, "success");
+        toast(`Dodano ${data.added} nadchodzących sezon${data.added === 1 ? "" : "ów"} do listy „Do obejrzenia”${summary}!`, "success");
       } else {
         toast("Brak nowych sezonów do dodania", "info");
       }
@@ -213,7 +209,7 @@ export default function MediaLibraryView({ onOpenDetail }: Props) {
   const toggleSelect = (id: number) => {
     setSelectedMedia((prev) => {
       const n = new Set(prev);
-      n.has(id) ? n.delete(id) : n.add(id);
+      if (n.has(id)) n.delete(id); else n.add(id);
       return n;
     });
   };

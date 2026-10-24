@@ -31,7 +31,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       title, original_title, author, media_type, universe_id,
       cover_url, tmdb_id, ol_key, description, genres, vote_average,
       runtime, release_year, external_synced_at,
-      tags: tagsInput, notes, discontinued, youtube_id,
+      tags: tagsInput, notes, discontinued,
     } = body;
 
     // Build dynamic SET clause — only update fields explicitly provided in body
@@ -55,8 +55,6 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       ["external_synced_at", external_synced_at],
       ["tags", tagsInput],
       ["notes", notes],
-      ["source_url", body.source_url],
-      ["youtube_id", youtube_id ?? body.youtube_id ?? null],
     ];
 
     for (const [col, val] of optionals) {

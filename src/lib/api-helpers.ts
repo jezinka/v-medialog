@@ -8,7 +8,7 @@ export async function parseRouteId(params: Promise<{ id: string }>): Promise<num
   return parsed;
 }
 
-export function parseId(value: string | null | undefined): number | null {
+function parseId(value: string | null | undefined): number | null {
   if (!value) return null;
   const parsed = Number.parseInt(value, 10);
   return Number.isNaN(parsed) ? null : parsed;

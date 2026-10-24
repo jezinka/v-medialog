@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import path from "path";
-import { markWantToWatch } from "./want-to-watch";
+import { addUpcomingSeason, markWantToWatch } from "./want-to-watch";
 
 const DB_PATH = process.env.DATABASE_URL ?? path.join(process.cwd(), "medialog.db");
 
@@ -76,24 +76,6 @@ sqlite.exec(`
     PRIMARY KEY (media_id, tag_id)
   );
 
-  CREATE TABLE IF NOT EXISTS reading_lists (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    description TEXT,
-    created_at TEXT DEFAULT (datetime('now'))
-  );
-
-  CREATE TABLE IF NOT EXISTS reading_list_items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    list_id INTEGER NOT NULL REFERENCES reading_lists(id) ON DELETE CASCADE,
-    title TEXT NOT NULL,
-    author TEXT,
-    media_type TEXT NOT NULL,
-    cover_url TEXT,
-    media_id INTEGER REFERENCES media(id) ON DELETE SET NULL,
-    created_at TEXT DEFAULT (datetime('now'))
-  );
-
   CREATE TABLE IF NOT EXISTS persons (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
@@ -121,10 +103,8 @@ try { sqlite.exec("ALTER TABLE media ADD COLUMN volume_episode TEXT"); } catch {
 try { sqlite.exec("ALTER TABLE media ADD COLUMN series_status TEXT"); } catch { /* already exists */ }
 try { sqlite.exec("ALTER TABLE media ADD COLUMN tmdb_seasons_count INTEGER"); } catch { /* already exists */ }
 try { sqlite.exec("ALTER TABLE media ADD COLUMN track_list TEXT"); } catch { /* already exists */ }
-try { sqlite.exec("ALTER TABLE media ADD COLUMN source_url TEXT"); } catch { /* already exists */ }
 try { sqlite.exec("ALTER TABLE seasons ADD COLUMN want_to_watch INTEGER DEFAULT 0"); } catch { /* already exists */ }
 try { sqlite.exec("ALTER TABLE sessions ADD COLUMN with_child INTEGER DEFAULT 0"); } catch { /* already exists */ }
-try { sqlite.exec("ALTER TABLE media ADD COLUMN youtube_id TEXT"); } catch { /* already exists */ }
 
 // Fix seasons table if it incorrectly references "media_old" instead of "media"
 try {
@@ -170,52 +150,6 @@ try {
     console.log("[db] Migrated media_tags table: fixed FK reference from media_old to media");
   }
 } catch (e) { console.error("[db] media_tags FK migration error:", e); }
-
-// Fix reading_list_items table if it incorrectly references "media_old" instead of "media"
-try {
-  const row = sqlite.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='reading_list_items'`).get() as { sql: string } | undefined;
-  if (row?.sql?.includes('"media_old"')) {
-    sqlite.exec(`PRAGMA foreign_keys = OFF`);
-    sqlite.exec(`
-      CREATE TABLE reading_list_items_fixed (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        list_id INTEGER NOT NULL REFERENCES reading_lists(id) ON DELETE CASCADE,
-        title TEXT NOT NULL,
-        author TEXT,
-        media_type TEXT NOT NULL,
-        cover_url TEXT,
-        media_id INTEGER REFERENCES media(id) ON DELETE SET NULL,
-        created_at TEXT DEFAULT (datetime('now'))
-      );
-      INSERT INTO reading_list_items_fixed SELECT * FROM reading_list_items;
-      DROP TABLE reading_list_items;
-      ALTER TABLE reading_list_items_fixed RENAME TO reading_list_items;
-    `);
-    sqlite.exec(`PRAGMA foreign_keys = ON`);
-    console.log("[db] Migrated reading_list_items table: fixed FK reference from media_old to media");
-  }
-} catch (e) { console.error("[db] reading_list_items FK migration error:", e); }
-
-// Add season columns to reading_list_items if missing
-try {
-  const cols = (sqlite.prepare(`PRAGMA table_info(reading_list_items)`).all() as Array<{ name: string }>).map((c) => c.name);
-  if (!cols.includes("season_number")) {
-    sqlite.exec(`ALTER TABLE reading_list_items ADD COLUMN season_number INTEGER`);
-    console.log("[db] Added season_number to reading_list_items");
-  }
-  if (!cols.includes("season_start_date")) {
-    sqlite.exec(`ALTER TABLE reading_list_items ADD COLUMN season_start_date TEXT`);
-    console.log("[db] Added season_start_date to reading_list_items");
-  }
-  if (!cols.includes("auto_added")) {
-    sqlite.exec(`ALTER TABLE reading_list_items ADD COLUMN auto_added INTEGER DEFAULT 0`);
-    console.log("[db] Added auto_added to reading_list_items");
-  }
-  if (!cols.includes("notes")) {
-    sqlite.exec(`ALTER TABLE reading_list_items ADD COLUMN notes TEXT`);
-    console.log("[db] Added notes to reading_list_items");
-  }
-} catch (e) { console.error("[db] reading_list_items season columns migration error:", e); }
 
 // ── VOD availability tables ──────────────────────────────────────────────────
 sqlite.exec(`
@@ -284,6 +218,57 @@ if (hasWishlistTable()) {
       DROP TABLE wishlist;
     `);
     console.log(`[db] Migrated ${rows.length} wishlist rows to seasons.want_to_watch`);
+  }).immediate();
+}
+
+// Remove the abandoned YouTube media type with its data and columns
+const mediaCols = (sqlite.prepare(`PRAGMA table_info(media)`).all() as { name: string }[]).map((c) => c.name);
+if (mediaCols.includes("youtube_id") || mediaCols.includes("source_url") || sqlite.prepare(`SELECT 1 FROM media WHERE media_type='yt'`).get()) {
+  sqlite.transaction(() => {
+    sqlite.exec(`
+      -- Channels linked only to YouTube media go with them
+      DELETE FROM persons
+      WHERE id IN (SELECT mp.person_id FROM media_persons mp JOIN media m ON m.id = mp.media_id WHERE m.media_type = 'yt')
+        AND id NOT IN (SELECT mp.person_id FROM media_persons mp JOIN media m ON m.id = mp.media_id WHERE m.media_type != 'yt');
+      DELETE FROM vod_offers WHERE item_type = 'media' AND item_id IN (SELECT id FROM media WHERE media_type = 'yt');
+      DELETE FROM vod_notifications WHERE item_type = 'media' AND item_id IN (SELECT id FROM media WHERE media_type = 'yt');
+      DELETE FROM media WHERE media_type = 'yt';
+      DROP TABLE IF EXISTS yt_history;
+    `);
+    const cols = (sqlite.prepare(`PRAGMA table_info(media)`).all() as { name: string }[]).map((c) => c.name);
+    if (cols.includes("youtube_id")) sqlite.exec(`ALTER TABLE media DROP COLUMN youtube_id`);
+    if (cols.includes("source_url")) sqlite.exec(`ALTER TABLE media DROP COLUMN source_url`);
+    console.log("[db] Removed YouTube media type");
+  }).immediate();
+}
+
+// Replace reading lists (only fed by the upcoming-seasons job, never shown in the UI) with seasons.want_to_watch
+if (sqlite.prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name='reading_list_items'`).get()) {
+  sqlite.transaction(() => {
+    if (!sqlite.prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name='reading_list_items'`).get()) return;
+    const items = sqlite.prepare(`SELECT * FROM reading_list_items`).all() as {
+      title: string; author: string | null; media_type: string; cover_url: string | null;
+      media_id: number | null; season_number?: number | null; season_start_date?: string | null;
+    }[];
+    for (const item of items) {
+      if (item.media_id && item.season_number != null) {
+        addUpcomingSeason(sqlite, {
+          mediaId: item.media_id,
+          seasonNumber: item.season_number,
+          title: `Sezon ${item.season_number}`,
+          coverUrl: item.cover_url,
+          airDate: item.season_start_date ?? null,
+        });
+      } else {
+        // Manually added items had no media yet
+        const mediaId = item.media_id ?? Number(sqlite.prepare(
+          `INSERT INTO media (title, author, media_type, cover_url, discontinued) VALUES (?, ?, ?, ?, 0)`
+        ).run(item.title, item.author, item.media_type, item.cover_url).lastInsertRowid);
+        markWantToWatch(sqlite, mediaId);
+      }
+    }
+    sqlite.exec(`DROP TABLE reading_list_items; DROP TABLE IF EXISTS reading_lists;`);
+    console.log(`[db] Migrated ${items.length} reading list items to seasons.want_to_watch`);
   }).immediate();
 }
 

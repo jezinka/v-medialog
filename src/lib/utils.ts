@@ -1,6 +1,4 @@
-export const MEDIA_TYPES = ["book", "comic", "movie", "series", "anime", "cartoon", "yt", "play", "game", "podcast", "record"] as const;
-export type MediaType = typeof MEDIA_TYPES[number];
-
+export const MEDIA_TYPES = ["book", "comic", "movie", "series", "anime", "cartoon", "play", "game", "podcast", "record"] as const;
 export const MEDIA_TYPE_LABELS: Record<string, string> = {
   book: "Książka",
   comic: "Komiks",
@@ -8,7 +6,6 @@ export const MEDIA_TYPE_LABELS: Record<string, string> = {
   series: "Serial",
   anime: "Anime",
   cartoon: "Film animowany",
-  yt: "YouTube",
   play: "Sztuka teatralna",
   game: "Gra",
   podcast: "Podcast",
@@ -22,7 +19,6 @@ export const MEDIA_TYPE_COLORS: Record<string, string> = {
   series: "bg-orange-100 text-orange-800",
   anime: "bg-pink-100 text-pink-800",
   cartoon: "bg-yellow-100 text-yellow-800",
-  yt: "bg-red-100 text-red-800",
   play: "bg-teal-100 text-teal-800",
   game: "bg-green-100 text-green-800",
   podcast: "bg-cyan-100 text-cyan-800",
@@ -36,7 +32,6 @@ export const MEDIA_TYPE_EMOJI: Record<string, string> = {
   series: "📺",
   anime: "🎌",
   cartoon: "🎨",
-  yt: "▶️",
   play: "🎭",
   game: "🎮",
   podcast: "🎙️",
@@ -50,7 +45,6 @@ export const MEDIA_TYPE_ICONS: Record<string, string> = {
   series: "/icons/icons8-tv-show-96.png",
   anime: "/icons/icons8-tv-96.png",
   cartoon: "/icons/icons8-comedy-96.png",
-  yt: "/icons/icons8-youtube-96.png",
   play: "/icons/icons8-comedy-96.png",
   game: "/icons/icons8-nintendo-switch-logo-100.png",
   podcast: "/icons/icons8-cassette-96.png",
@@ -64,7 +58,6 @@ export const MEDIA_TYPE_HEX: Record<string, string> = {
   series: "#f97316",
   anime: "#ec4899",
   cartoon: "#eab308",
-  yt: "#ef4444",
   play: "#14b8a6",
   game: "#16a34a",
   podcast: "#06b6d4",
@@ -82,11 +75,6 @@ export const MONTH_NAMES = [
 ];
 
 export const DAY_LABELS = ["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"];
-
-export function isYearPlaceholder(start: string, end: string | null): boolean {
-  if (!end) return false;
-  return daysBetween(start, end) >= 365;
-}
 
 export function daysBetween(start: string, end: string | null): number {
   if (!end) return 1;
@@ -106,15 +94,3 @@ export function formatDate(dateStr: string): string {
   return `${d}.${m}.${y}`;
 }
 
-export function formatDateTime(dateStr: string | null | undefined): string {
-  if (!dateStr) return "";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const hh = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
-  const ss = String(d.getSeconds()).padStart(2, "0");
-  return `${dd}.${mm}.${yyyy} ${hh}:${min}:${ss}`;
-}

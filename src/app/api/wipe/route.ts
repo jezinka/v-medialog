@@ -18,10 +18,8 @@ export async function POST() {
       DELETE FROM persons;
       DELETE FROM tags;
       DELETE FROM universes;
-      DELETE FROM reading_list_items;
-      DELETE FROM reading_lists;
       DELETE FROM sqlite_sequence WHERE name IN (
-        'sessions','media_persons','seasons','media','persons','tags','universes','reading_list_items','reading_lists'
+        'sessions','media_persons','seasons','media','persons','tags','universes'
       );
     `);
     sqlite.pragma("foreign_keys = ON");
