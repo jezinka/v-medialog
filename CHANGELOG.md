@@ -6,6 +6,7 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- Na liście „Do obejrzenia” serial ma jedną kartę z sezonami w środku (każdy z własnym ▶ i ×), zamiast osobnej karty dla każdego sezonu.
 ## 2026-10-25
 
 - Serialowy rozkład jazdy: na stronie „Do obejrzenia” lista premier kolejnych sezonów śledzonych seriali i anime w danym miesiącu (z przełączaniem miesięcy i przyciskiem „Sprawdź nowe sezony”), a w dzwonku wpis „Premiery w tym miesiącu”. Serwer sam sprawdza nowe sezony w TMDB na początku miesiąca i raz w tygodniu.
