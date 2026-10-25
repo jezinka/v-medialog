@@ -181,15 +181,15 @@ export default function AirDatesPanel({ media, seasons, sessionDaysMap, onChange
     let seasonId: number;
     try {
       seasonId = await ensureSeasonId(as);
-    } catch (e) {
-      toast(e instanceof Error ? e.message : "Błąd tworzenia sezonu", "error");
+    } catch {
+      toast(`Błąd tworzenia sezonu ${as.tmdbSeasonNum}`, "error");
       return;
     }
 
     setImportingDates((prev) => new Set([...prev, ...newDates]));
     const added = await addDaySessions(seasonId, newDates);
     setImportingDates((prev) => { const n = new Set(prev); newDates.forEach((d) => n.delete(d)); return n; });
-    toast(`Dodano ${added} sesji ✓`, "success");
+    toast(added > 0 ? `Dodano ${added} sesji ✓` : "Błąd zapisu sesji", added > 0 ? "success" : "error");
     await onChanged();
   };
 

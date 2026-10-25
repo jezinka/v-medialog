@@ -59,7 +59,7 @@ export default function PodcastEpisodesPanel({ mediaId, seasons, sessionDaysMap,
     setImportingDates((prev) => new Set([...prev, ...newDates]));
     const added = await addDaySessions(seasonId, newDates);
     setImportingDates((prev) => { const n = new Set(prev); newDates.forEach((d) => n.delete(d)); return n; });
-    toast(`Dodano ${added} sesji ✓`, "success");
+    toast(added > 0 ? `Dodano ${added} sesji ✓` : "Błąd zapisu sesji", added > 0 ? "success" : "error");
     await onImported();
   };
 

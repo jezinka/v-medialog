@@ -69,13 +69,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
   const sync = useExternalData(mediaId, media, onCoverChange);
   const cachedData = sync.cachedData;
 
-  useEffect(() => {
-    const init = async () => {
-      await loadData();
-      // Pass media via ref to avoid stale closure
-    };
-    init();
-  }, [loadData]);
+  useEffect(() => { void loadData(); }, [loadData]);
 
   const sessionDaysMap = useMemo(
     () => buildSessionDaysMap(sessions, seasons),

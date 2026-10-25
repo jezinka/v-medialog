@@ -122,7 +122,7 @@ export default function SessionCalendarSection({
       }
       const dates = Array.from(yearSelectedDates).sort();
       const added = await addDaySessions(seasonId, dates, { cinema: yearBatchCinema, withChild: yearBatchWithChild });
-      toast(`Dodano ${added} sesji ✓`, "success");
+      toast(added > 0 ? `Dodano ${added} sesji ✓` : "Błąd zapisu sesji", added > 0 ? "success" : "error");
       setYearSelectedDates(new Set());
       await onChanged();
     } catch {
@@ -287,7 +287,8 @@ export default function SessionCalendarSection({
   }, [sessions]);
 
   return (
-    <>
+    <div>
+      {/* Modals inside this div, not the page's space-y container, whose margin would shrink their fixed overlay */}
       {seasonPickerDate && (
         <SeasonPickerModal
           date={seasonPickerDate}
@@ -312,217 +313,215 @@ export default function SessionCalendarSection({
           onSaved={onChanged}
         />
       )}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-800">{historyLabel}</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-gray-800">{historyLabel}</h3>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              if (splitMode) {
+                setSplitMode(false); setSplitRangeStart(null); setSplitRangeEnd(null); setSplitTarget(null);
+              } else {
+                setSplitMode(true);
+              }
+            }}
+            className={`text-xs flex items-center gap-1 px-2 py-1 rounded border transition-colors ${
+              splitMode
+                ? "border-amber-400 bg-amber-50 text-amber-700"
+                : "border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            ✂️ {splitMode ? "Anuluj podział" : `Podziel na ${partsLabel.toLowerCase()}`}
+          </button>
+          {actions}
+        </div>
+      </div>
+
+      {children}
+      {splitMode && (
+        <div className="mb-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+          {!splitRangeStart
+            ? "Kliknij dzień startowy zakresu"
+            : splitTarget
+            ? "Zakres wybrany — przypisz poniżej"
+            : "Kliknij dzień końcowy zakresu (hover podświetla)"}
+        </div>
+      )}
+      {/* Split assign dialog */}
+      {splitTarget && (
+        <div className="mb-4 border border-amber-300 rounded-lg p-4 bg-amber-50 space-y-3">
+          <p className="text-sm font-medium text-amber-800">
+            Przypisz {splitTarget.sessionIds.length} sesji ({splitTarget.dateRange}) do {partLabel.toLowerCase()}:
+          </p>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-1 text-sm text-gray-700 cursor-pointer">
+              <input type="radio" name="splitChoice" value="new" checked={splitSeasonChoice === "new"} onChange={() => setSplitSeasonChoice("new")} />
+              Nowa {partLabel.toLowerCase()}
+            </label>
+            <label className="flex items-center gap-1 text-sm text-gray-700 cursor-pointer">
+              <input type="radio" name="splitChoice" value="existing" checked={splitSeasonChoice === "existing"} onChange={() => setSplitSeasonChoice("existing")} />
+              Istniejąca {partLabel.toLowerCase()}
+            </label>
+          </div>
+          {splitSeasonChoice === "new" && (
+            <div className="flex gap-2">
+              <input
+                type="number" placeholder={`Nr ${partLabel.toLowerCase()}`} value={splitNewSeasonNumber}
+                onChange={(e) => setSplitNewSeasonNumber(e.target.value)}
+                className="w-28 text-sm border border-gray-300 rounded px-2 py-1"
+              />
+              <input
+                type="text" placeholder="Tytuł (opcjonalny)" value={splitNewSeasonTitle}
+                onChange={(e) => setSplitNewSeasonTitle(e.target.value)}
+                className="flex-1 text-sm border border-gray-300 rounded px-2 py-1"
+              />
+            </div>
+          )}
+          {splitSeasonChoice === "existing" && (
+            <select
+              value={splitExistingSeasonId} onChange={(e) => setSplitExistingSeasonId(e.target.value)}
+              className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+            >
+              <option value="">— wybierz {partLabel.toLowerCase()} —</option>
+              {seasons.map((s, idx) => (
+                <option key={s.id} value={s.id}>
+                  {s.title ?? (partNo(seasons, idx, hasSpecials) === "Sp." ? "Speciale" : `${partLabel} ${partNo(seasons, idx, hasSpecials)}`)}
+                </option>
+              ))}
+            </select>
+          )}
           <div className="flex gap-2">
             <button
-              onClick={() => {
-                if (splitMode) {
-                  setSplitMode(false); setSplitRangeStart(null); setSplitRangeEnd(null); setSplitTarget(null);
-                } else {
-                  setSplitMode(true);
-                }
-              }}
-              className={`text-xs flex items-center gap-1 px-2 py-1 rounded border transition-colors ${
-                splitMode
-                  ? "border-amber-400 bg-amber-50 text-amber-700"
-                  : "border-gray-200 text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-              }`}
+              onClick={handleSplitAssign} disabled={splitSaving}
+              className="text-sm bg-amber-600 text-white px-4 py-1.5 rounded hover:bg-amber-700 disabled:opacity-50"
             >
-              ✂️ {splitMode ? "Anuluj podział" : `Podziel na ${partsLabel.toLowerCase()}`}
+              {splitSaving ? "Zapisuję..." : "Przypisz"}
             </button>
-            {actions}
+            <button
+              onClick={() => { setSplitTarget(null); setSplitRangeStart(null); setSplitRangeEnd(null); }}
+              className="text-sm border border-gray-300 px-4 py-1.5 rounded hover:bg-gray-50"
+            >
+              Anuluj
+            </button>
           </div>
         </div>
-
-        {children}
-        {splitMode && (
-          <div className="mb-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-            {!splitRangeStart
-              ? "Kliknij dzień startowy zakresu"
-              : splitTarget
-              ? "Zakres wybrany — przypisz poniżej"
-              : "Kliknij dzień końcowy zakresu (hover podświetla)"}
-          </div>
-        )}
-        {/* Split assign dialog */}
-        {splitTarget && (
-          <div className="mb-4 border border-amber-300 rounded-lg p-4 bg-amber-50 space-y-3">
-            <p className="text-sm font-medium text-amber-800">
-              Przypisz {splitTarget.sessionIds.length} sesji ({splitTarget.dateRange}) do {partLabel.toLowerCase()}:
-            </p>
-            <div className="flex gap-4">
-              <label className="flex items-center gap-1 text-sm text-gray-700 cursor-pointer">
-                <input type="radio" name="splitChoice" value="new" checked={splitSeasonChoice === "new"} onChange={() => setSplitSeasonChoice("new")} />
-                Nowa {partLabel.toLowerCase()}
-              </label>
-              <label className="flex items-center gap-1 text-sm text-gray-700 cursor-pointer">
-                <input type="radio" name="splitChoice" value="existing" checked={splitSeasonChoice === "existing"} onChange={() => setSplitSeasonChoice("existing")} />
-                Istniejąca {partLabel.toLowerCase()}
-              </label>
-            </div>
-            {splitSeasonChoice === "new" && (
-              <div className="flex gap-2">
+      )}
+      {sessions.length === 0 || isOnlyPlaceholders ? (
+        <div className="space-y-4">
+          {/* Year navigation */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setYearViewYear((y) => y - 1)}
+              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 font-bold"
+            >
+              ‹
+            </button>
+            <span className="text-sm font-semibold text-gray-800 min-w-[3rem] text-center">{yearViewYear}</span>
+            <button
+              onClick={() => setYearViewYear((y) => y + 1)}
+              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 font-bold"
+            >
+              ›
+            </button>
+            {yearSelectedDates.size > 0 && (
+              <label className="flex items-center gap-1.5 cursor-pointer select-none ml-2">
                 <input
-                  type="number" placeholder={`Nr ${partLabel.toLowerCase()}`} value={splitNewSeasonNumber}
-                  onChange={(e) => setSplitNewSeasonNumber(e.target.value)}
-                  className="w-28 text-sm border border-gray-300 rounded px-2 py-1"
+                  type="checkbox"
+                  checked={yearBatchCinema}
+                  onChange={(e) => setYearBatchCinema(e.target.checked)}
+                  className="w-4 h-4 accent-yellow-500"
                 />
+                <span className="text-xs text-gray-700">🎟️ kino</span>
+              </label>
+            )}
+            {yearSelectedDates.size > 0 && SCREEN_TYPES.includes(media.media_type) && (
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
                 <input
-                  type="text" placeholder="Tytuł (opcjonalny)" value={splitNewSeasonTitle}
-                  onChange={(e) => setSplitNewSeasonTitle(e.target.value)}
-                  className="flex-1 text-sm border border-gray-300 rounded px-2 py-1"
+                  type="checkbox"
+                  checked={yearBatchWithChild}
+                  onChange={(e) => setYearBatchWithChild(e.target.checked)}
+                  className="w-4 h-4 accent-emerald-500"
                 />
-              </div>
+                <span className="text-xs text-gray-700">👶 z dzieckiem</span>
+              </label>
             )}
-            {splitSeasonChoice === "existing" && (
-              <select
-                value={splitExistingSeasonId} onChange={(e) => setSplitExistingSeasonId(e.target.value)}
-                className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+            {yearSelectedDates.size > 0 && (
+              <button
+                onClick={handleYearBatchCreate}
+                disabled={yearBatchSaving}
+                className="ml-2 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                <option value="">— wybierz {partLabel.toLowerCase()} —</option>
-                {seasons.map((s, idx) => (
-                  <option key={s.id} value={s.id}>
-                    {s.title ?? (partNo(seasons, idx, hasSpecials) === "Sp." ? "Speciale" : `${partLabel} ${partNo(seasons, idx, hasSpecials)}`)}
-                  </option>
-                ))}
-              </select>
+                {yearBatchSaving ? "Zapisuję..." : `Utwórz ${yearSelectedDates.size} sesj${yearSelectedDates.size === 1 ? "ę" : "e"}`}
+              </button>
             )}
-            <div className="flex gap-2">
+            {yearSelectedDates.size > 0 && (
               <button
-                onClick={handleSplitAssign} disabled={splitSaving}
-                className="text-sm bg-amber-600 text-white px-4 py-1.5 rounded hover:bg-amber-700 disabled:opacity-50"
+                onClick={() => setYearSelectedDates(new Set())}
+                className="text-xs text-gray-400 hover:text-gray-600"
               >
-                {splitSaving ? "Zapisuję..." : "Przypisz"}
+                Wyczyść
               </button>
-              <button
-                onClick={() => { setSplitTarget(null); setSplitRangeStart(null); setSplitRangeEnd(null); }}
-                className="text-sm border border-gray-300 px-4 py-1.5 rounded hover:bg-gray-50"
-              >
-                Anuluj
-              </button>
-            </div>
+            )}
           </div>
-        )}
-        {sessions.length === 0 || isOnlyPlaceholders ? (
-          <div className="space-y-4">
-            {/* Year navigation */}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setYearViewYear((y) => y - 1)}
-                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 font-bold"
-              >
-                ‹
-              </button>
-              <span className="text-sm font-semibold text-gray-800 min-w-[3rem] text-center">{yearViewYear}</span>
-              <button
-                onClick={() => setYearViewYear((y) => y + 1)}
-                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 font-bold"
-              >
-                ›
-              </button>
-              {yearSelectedDates.size > 0 && (
-                <label className="flex items-center gap-1.5 cursor-pointer select-none ml-2">
-                  <input
-                    type="checkbox"
-                    checked={yearBatchCinema}
-                    onChange={(e) => setYearBatchCinema(e.target.checked)}
-                    className="w-4 h-4 accent-yellow-500"
-                  />
-                  <span className="text-xs text-gray-700">🎟️ kino</span>
-                </label>
-              )}
-              {yearSelectedDates.size > 0 && SCREEN_TYPES.includes(media.media_type) && (
-                <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={yearBatchWithChild}
-                    onChange={(e) => setYearBatchWithChild(e.target.checked)}
-                    className="w-4 h-4 accent-emerald-500"
-                  />
-                  <span className="text-xs text-gray-700">👶 z dzieckiem</span>
-                </label>
-              )}
-              {yearSelectedDates.size > 0 && (
-                <button
-                  onClick={handleYearBatchCreate}
-                  disabled={yearBatchSaving}
-                  className="ml-2 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {yearBatchSaving ? "Zapisuję..." : `Utwórz ${yearSelectedDates.size} sesj${yearSelectedDates.size === 1 ? "ę" : "e"}`}
-                </button>
-              )}
-              {yearSelectedDates.size > 0 && (
-                <button
-                  onClick={() => setYearSelectedDates(new Set())}
-                  className="text-xs text-gray-400 hover:text-gray-600"
-                >
-                  Wyczyść
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-3 gap-x-6 gap-y-6">
-              {MONTH_NAMES.map((name, i) => (
+          <div className="grid grid-cols-3 gap-x-6 gap-y-6">
+            {MONTH_NAMES.map((name, i) => (
+              <MonthGrid
+                key={name}
+                year={yearViewYear}
+                month={i + 1}
+                label={name}
+                days={sessionDaysMap}
+                selected={yearSelectedDates}
+                onDayClick={(date) =>
+                  setYearSelectedDates((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(date)) next.delete(date); else next.add(date);
+                    return next;
+                  })
+                }
+              />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-wrap gap-6">
+            {sortedMonths.map((key) => {
+              const [y, m] = key.split("-").map(Number);
+              const monthDays = grouped.get(key) ?? new Map<string, string>();
+              return (
                 <MonthGrid
-                  key={name}
-                  year={yearViewYear}
-                  month={i + 1}
-                  label={name}
-                  days={sessionDaysMap}
-                  selected={yearSelectedDates}
-                  onDayClick={(date) =>
-                    setYearSelectedDates((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(date)) next.delete(date); else next.add(date);
-                      return next;
-                    })
-                  }
+                  key={key}
+                  year={y}
+                  month={m}
+                  label={`${MONTH_NAMES[m - 1]} ${y}`}
+                  days={monthDays}
+                  onDayClick={handleDayClick}
+                  onDayHover={handleSplitDayHover}
                 />
-              ))}
-            </div>
+              );
+            })}
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-6">
-              {sortedMonths.map((key) => {
-                const [y, m] = key.split("-").map(Number);
-                const monthDays = grouped.get(key) ?? new Map<string, string>();
-                return (
-                  <MonthGrid
-                    key={key}
-                    year={y}
-                    month={m}
-                    label={`${MONTH_NAMES[m - 1]} ${y}`}
-                    days={monthDays}
-                    onDayClick={handleDayClick}
-                    onDayHover={handleSplitDayHover}
-                  />
-                );
-              })}
-            </div>
-            <div className="flex gap-2">
-              {!sortedMonths.includes(currentYearMonth) && (
-                <button
-                  onClick={() => addMonth(currentYearMonth)}
-                  className="text-xs text-blue-600 hover:text-blue-800 px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50"
-                >
-                  + Dodaj {currentYearMonth}
-                </button>
-              )}
-              {!sortedMonths.includes(nextAfterLastSession) && (
-                <button
-                  onClick={() => addMonth(nextAfterLastSession)}
-                  className="text-xs text-blue-600 hover:text-blue-800 px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50"
-                >
-                  + Dodaj {nextAfterLastSession}
-                </button>
-              )}
-            </div>
+          <div className="flex gap-2">
+            {!sortedMonths.includes(currentYearMonth) && (
+              <button
+                onClick={() => addMonth(currentYearMonth)}
+                className="text-xs text-blue-600 hover:text-blue-800 px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50"
+              >
+                + Dodaj {currentYearMonth}
+              </button>
+            )}
+            {!sortedMonths.includes(nextAfterLastSession) && (
+              <button
+                onClick={() => addMonth(nextAfterLastSession)}
+                className="text-xs text-blue-600 hover:text-blue-800 px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50"
+              >
+                + Dodaj {nextAfterLastSession}
+              </button>
+            )}
           </div>
-        )}
+        </div>
+      )}
 
-      </div>
-    </>
+    </div>
   );
 }
