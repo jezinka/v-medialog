@@ -1,4 +1,5 @@
 import type { SessionRow } from "@/lib/types";
+import { hasSeasonNumbers } from "./utils.ts";
 
 interface SessionCalendarItem {
   id: number;
@@ -27,7 +28,8 @@ export function sessionToCalendarItem(session: SessionRow): SessionCalendarItem 
     mediaType: session.mediaType,
     startDate: session.startDate,
     endDate: session.endDate,
-    volumeEpisode: session.seasonNumber != null ? String(session.seasonNumber) : null,
+    // Books and movies keep a season row per read / watch, but its number isn't meant to be shown
+    volumeEpisode: session.seasonNumber != null && hasSeasonNumbers(session.mediaType) ? String(session.seasonNumber) : null,
     discontinued: session.discontinued ? true : null,
     cinema: session.cinema,
     withChild: session.withChild,

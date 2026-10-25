@@ -6,7 +6,7 @@ import Calendar from "@/components/Calendar";
 import AddMediaModal from "@/components/AddMediaModal";
 import Modal from "@/components/Modal";
 import PageContainer from "@/components/PageContainer";
-import { BOOK_TYPES, SCREEN_TYPES } from "@/lib/utils";
+import { BOOK_TYPES, SCREEN_TYPES, hasSeasonNumbers } from "@/lib/utils";
 import { type SessionRow, mapSession } from "@/lib/types";
 import { toast } from "@/components/Toast";
 import { createSessionForMedia } from "@/lib/session-actions";
@@ -108,7 +108,7 @@ function LogContent() {
                   <button key={id} onClick={() => { setPickerState(null); openMedia(session.mediaId); }}
                     className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-lg border border-gray-100 text-sm transition-colors">
                     {session.mediaTitle}
-                    {session.seasonNumber != null && <span className="text-gray-400 ml-1">S{session.seasonNumber}</span>}
+                    {session.seasonNumber != null && hasSeasonNumbers(session.mediaType) && <span className="text-gray-400 ml-1">S{session.seasonNumber}</span>}
                   </button>
                 ) : null;
               })}

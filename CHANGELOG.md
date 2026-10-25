@@ -6,6 +6,7 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- Dziennik (dymki w kalendarzu i wybór sesji) nie dopisuje już numeru sezonu do książek, komiksów i filmów.
 ## 2026-10-25
 
 - Okna dialogowe (edycja sesji, medium i sezonu, dodawanie sesji, łączenie mediów) zamykają się klawiszem Esc i są oznaczone jako dialogi dla czytników ekranu.
