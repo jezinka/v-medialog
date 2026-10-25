@@ -24,9 +24,13 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 ## 2026-10-24
 
 ### Nowe
+- Lista życzeń zastąpiona flagą „chcę obejrzeć” / „chcę przeczytać” przy sezonach, z przyciskami „Zaczynam” i „Usuń z listy”; istniejące wpisy przeniesiono automatycznie.
 - Wieloczęściowe książki i mangi: części jako siatka okładek, z edycją, usuwaniem i scalaniem każdej części.
 - Eksport MediaLog do JSON z publikacją na GitHub Pages (skrypt `export:medialog`).
 - Rok wydania przy pozycjach, także w eksporcie CSV.
+
+### Usunięte
+- Typ YouTube razem z jego danymi i polem adresu źródła.
 
 ### Poprawki
 - Powiadomienia VOD wyświetlają się w poprawnym formacie.
@@ -59,12 +63,15 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 - Filtr sesji w kinie.
 - Flaga „chcę obejrzeć” przy sezonach; znika po dodaniu prawdziwej sesji.
 - Sortowanie po dacie ostatniej sesji.
-- Obsługa filmów z YouTube (adresy i identyfikatory).
+- Rozszerzona obsługa YouTube (adresy i identyfikatory).
 
 ## 2026-05-23 – 2026-06-15
 
 ### Nowe
 - Stronicowanie i filtrowanie pozycji, pole z adresem źródła.
+- Scalanie osób („⇄ Scal z osobą”).
+- Daty odcinków podcastów z Apple Podcasts.
+- Filtr kategorii w galerii kalendarza.
 - Sekcja spektakli w statystykach, z autorami.
 - Czyszczenie pozycji z YouTube razem z ich danymi.
 
