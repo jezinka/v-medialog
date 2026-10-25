@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import MediaCoverThumb from "./MediaCoverThumb";
+import NewSeriesList from "./NewSeriesList";
 import { toast } from "./Toast";
 import { MONTH_NAMES, formatDate } from "@/lib/utils";
 import { groupByDate, monthKey, shiftMonth } from "@/lib/schedule";
@@ -82,7 +83,8 @@ export default function SeriesSchedule({ refreshKey, onChecked }: { refreshKey: 
           ))}
         </ol>
       )}
-      <p className="text-[11px] text-gray-400 mt-3">Daty z TMDB (zwykle premiera w USA); polska platforma może pokazać sezon później.</p>
+      <NewSeriesList month={month} onAdded={onChecked} />
+      <p className="text-[11px] text-gray-400 mt-3">Nowe seriale: produkcje z Polski, USA i Wielkiej Brytanii od stacji i platform dostępnych w Polsce. Daty z TMDB (zwykle premiera w USA); polska platforma może pokazać serial lub sezon później.</p>
     </section>
   );
 }
