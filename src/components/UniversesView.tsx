@@ -20,11 +20,18 @@ async function setUniverse(mediaId: number, universeId: number | null) {
   if (!res.ok) throw new Error();
 }
 
-async function createUniverse(name: string): Promise<number> {
+async function getJson<T>(url: string): Promise<T> {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error();
+  return (await res.json()) as T;
+}
+
+/** Creates a universe, linking `mediaIds` to it in the same transaction. */
+async function createUniverse(name: string, mediaIds: number[] = []): Promise<number> {
   const res = await fetch("/api/universes", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, media_ids: mediaIds }),
   });
   if (!res.ok) throw new Error();
   return ((await res.json()) as { id: number }).id;
@@ -38,15 +45,28 @@ export default function UniversesView() {
   const [openId, setOpenId] = useState<number | null>(null);
   const [suggestions, setSuggestions] = useState<SuggestionGroup[] | null>(null);
 
-  const load = useCallback(async () => {
-    const res = await fetch("/api/universes");
-    if (res.ok) setUniverses(await res.json());
+  // Initial list; later reloads go through refresh()
+  useEffect(() => {
+    getJson<UniverseItem[]>("/api/universes").then(setUniverses, () => toast("Błąd ładowania uniwersów", "error"));
   }, []);
 
-  // Initial list; later reloads go through load()
-  useEffect(() => {
-    fetch("/api/universes").then((res) => (res.ok ? res.json() : null)).then((data) => { if (data) setUniverses(data); });
+  const loadSuggestions = useCallback(async () => {
+    try {
+      setSuggestions(await getJson<SuggestionGroup[]>("/api/universes/suggestions"));
+    } catch {
+      toast("Błąd ładowania propozycji", "error");
+    }
   }, []);
+
+  /** Reloads the list, and the suggestions when they are shown (a change can take media out of them). */
+  const refresh = useCallback(async () => {
+    try {
+      setUniverses(await getJson<UniverseItem[]>("/api/universes"));
+    } catch {
+      toast("Błąd ładowania uniwersów", "error");
+    }
+    if (suggestions !== null) await loadSuggestions();
+  }, [suggestions, loadSuggestions]);
 
   const shown = useMemo(() => {
     const q = filter.trim().toLowerCase();
@@ -58,31 +78,23 @@ export default function UniversesView() {
     try {
       const id = await createUniverse(newName.trim());
       setNewName("");
-      await load();
       setOpenId(id);
+      await refresh();
     } catch {
       toast("Błąd tworzenia uniwersum", "error");
     }
-  };
-
-  const loadSuggestions = async () => {
-    const res = await fetch("/api/universes/suggestions");
-    if (res.ok) setSuggestions(await res.json());
-    else toast("Błąd ładowania propozycji", "error");
   };
 
   const acceptSuggestion = async (group: SuggestionGroup) => {
-    const name = group.items[0].title.slice(0, group.base_name.length) || group.base_name;
+    // base_name is the lowercased series name; take the same span of the real title to keep its casing
+    const name = group.items[0].title.trim().slice(0, group.base_name.length) || group.base_name;
     try {
-      const id = await createUniverse(name);
-      for (const item of group.items) await setUniverse(item.id, id);
+      await createUniverse(name, group.items.map((i) => i.id));
       toast(`Utworzono „${name}” (${group.items.length}) ✓`, "success");
-      setSuggestions((prev) => prev?.filter((g) => g !== group) ?? null);
-      await load();
     } catch {
       toast("Błąd tworzenia uniwersum", "error");
-      await load();
     }
+    await refresh();
   };
 
   return (
@@ -110,7 +122,9 @@ export default function UniversesView() {
         </form>
       </div>
 
-      <p className="text-xs text-gray-400">{universes.length} uniwersów</p>
+      <p className="text-xs text-gray-400" aria-live="polite">
+        Uniwersa: {shown.length === universes.length ? universes.length : `${shown.length} z ${universes.length}`}
+      </p>
 
       <ul className="divide-y divide-gray-100 border border-gray-200 rounded-xl">
         {shown.map((u) => (
@@ -123,7 +137,7 @@ export default function UniversesView() {
               <span className="text-sm font-medium text-gray-800">🌌 {u.name}</span>
               <span className="text-xs text-gray-400">{u.media_count} poz.</span>
             </button>
-            {openId === u.id && <UniverseDetail universe={u} onChanged={load} onDeleted={() => { setOpenId(null); void load(); }} />}
+            {openId === u.id && <UniverseDetail universe={u} onChanged={refresh} onDeleted={() => { setOpenId(null); void refresh(); }} />}
           </li>
         ))}
         {shown.length === 0 && <li className="px-4 py-6 text-center text-sm text-gray-400">Brak uniwersów</li>}
@@ -142,7 +156,7 @@ export default function UniversesView() {
             <div className="min-w-0">
               <p className="text-sm text-gray-800">{g.items.map((i) => `${MEDIA_TYPE_EMOJI[i.media_type] ?? ""} ${i.title}`).join(" · ")}</p>
             </div>
-            <button onClick={() => void acceptSuggestion(g)} className="shrink-0 text-xs px-2 py-1 rounded border border-purple-200 text-purple-700 hover:bg-purple-50">
+            <button onClick={() => void acceptSuggestion(g)} aria-label={`Utwórz uniwersum z: ${g.items.map((i) => i.title).join(", ")}`} className="shrink-0 text-xs px-2 py-1 rounded border border-purple-200 text-purple-700 hover:bg-purple-50">
               Utwórz uniwersum
             </button>
           </div>
@@ -162,30 +176,28 @@ function UniverseDetail({ universe, onChanged, onDeleted }: {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchItem[]>([]);
 
-  const loadMembers = useCallback(async () => {
-    const res = await fetch(`/api/universes/${universe.id}`);
-    if (res.ok) setMembers(((await res.json()) as { media: MemberItem[] }).media);
-  }, [universe.id]);
-
+  const membersUrl = `/api/universes/${universe.id}`;
   useEffect(() => {
-    fetch(`/api/universes/${universe.id}`).then((res) => (res.ok ? res.json() : null))
-      .then((data: { media: MemberItem[] } | null) => { if (data) setMembers(data.media); });
-  }, [universe.id]);
+    getJson<{ media: MemberItem[] }>(membersUrl).then((d) => setMembers(d.media), () => toast("Błąd ładowania pozycji", "error"));
+  }, [membersUrl]);
 
   useEffect(() => {
     const q = query.trim();
     if (q.length < 2) return;
-    const timer = setTimeout(async () => {
-      const res = await fetch(`/api/media?search=${encodeURIComponent(q)}&limit=8`);
-      if (res.ok) setResults(((await res.json()) as { items: SearchItem[] }).items);
+    let stale = false; // a slower answer for an older query must not overwrite a newer one
+    const timer = setTimeout(() => {
+      getJson<{ items: SearchItem[] }>(`/api/media?search=${encodeURIComponent(q)}&limit=8`)
+        .then((d) => { if (!stale) setResults(d.items); }, () => {});
     }, 250);
-    return () => clearTimeout(timer);
+    return () => { stale = true; clearTimeout(timer); };
   }, [query]);
 
   const change = async (mediaId: number, universeId: number | null) => {
     try {
       await setUniverse(mediaId, universeId);
-      await loadMembers();
+      setMembers((await getJson<{ media: MemberItem[] }>(membersUrl)).media);
+      setQuery("");
+      setResults([]);
       await onChanged();
     } catch {
       toast("Błąd zapisu", "error");
@@ -193,19 +205,32 @@ function UniverseDetail({ universe, onChanged, onDeleted }: {
   };
 
   const rename = async () => {
-    if (!name.trim() || name.trim() === universe.name) return;
-    const res = await fetch(`/api/universes/${universe.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name }),
-    });
-    if (res.ok) await onChanged(); else toast("Błąd zmiany nazwy", "error");
+    const trimmed = name.trim();
+    if (!trimmed) { setName(universe.name); return; }
+    if (trimmed === universe.name) return;
+    try {
+      const res = await fetch(`/api/universes/${universe.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      if (!res.ok) throw new Error();
+      await onChanged();
+    } catch {
+      toast("Błąd zmiany nazwy", "error");
+      setName(universe.name);
+    }
   };
 
   const remove = async () => {
     if (!confirm(`Usunąć uniwersum „${universe.name}”? Pozycje zostaną, tylko bez uniwersum.`)) return;
-    const res = await fetch(`/api/universes/${universe.id}`, { method: "DELETE" });
-    if (res.ok) onDeleted(); else toast("Błąd usuwania", "error");
+    try {
+      const res = await fetch(`/api/universes/${universe.id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      onDeleted();
+    } catch {
+      toast("Błąd usuwania", "error");
+    }
   };
 
   const memberIds = new Set(members.map((m) => m.id));
@@ -227,7 +252,7 @@ function UniverseDetail({ universe, onChanged, onDeleted }: {
         {members.map((m) => (
           <li key={m.id} className="flex items-center gap-2">
             <div className="relative w-7 h-10 shrink-0 rounded overflow-hidden bg-gray-200">
-              {m.cover_url && <CoverImg src={m.cover_url} alt={m.title} fill className="object-cover" sizes="28px" />}
+              {m.cover_url && <CoverImg src={m.cover_url} alt="" fill className="object-cover" sizes="28px" />}
             </div>
             <Link href={`/media/${m.id}`} className="flex-1 min-w-0 truncate text-sm text-gray-800 hover:underline">
               {MEDIA_TYPE_EMOJI[m.media_type] ?? ""} {m.title}
