@@ -6,6 +6,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ---
 
-## Uwaga dla agentów
+## Zasady pracy dla agentów
 
-Nie wykonuj żadnych operacji zmieniających repozytorium kodu. Do operacji takich należą m.in.: modyfikacja lub usunięcie plików, tworzenie commitów, force-push, zmiana gałęzi, usuwanie tagów czy wgrywanie plików. Wprowadzanie jakichkolwiek zmian w repozytorium wymaga uprzedniej, wyraźnej zgody człowieka-opiekuna projektu.
+- **Gałąź:** każdą zmianę w kodzie rób na nowej gałęzi od `main` (np. `feat/...`, `fix/...`). Nigdy nie commituj bezpośrednio na `main`.
+- **Commity:** na swojej gałęzi możesz commitować i pushować bez pytania. Małe, spójne commity z opisem po co jest zmiana.
+- **Code review:** po każdym commicie uruchom code review tego commita w osobnej sesji (tylko do odczytu, w tym samym katalogu). Uwagi z review popraw kolejnym commitem albo opisz, dlaczego je pomijasz.
+- **Testy:** do każdej nietrywialnej zmiany logiki dopisz test. Używaj wbudowanego `node:test`, bez dodawania frameworka testowego bez zgody. Przed commitem uruchom testy, `npx tsc --noEmit` i `npm run lint`.
+- **Wymaga wyraźnej zgody opiekuna projektu:** merge do `main`, push do `main` i cudzych gałęzi, force-push, usuwanie gałęzi i tagów, dodawanie zależności oraz zmiany poza kodem projektu (bazy danych `*.db`, `dane/`, `data/`, skrypty deploy).
