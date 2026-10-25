@@ -2628,7 +2628,9 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                       key={s.id}
                       onClick={() => setSelectedPartId((id) => (id === s.id ? null : s.id))}
                       title={`${seasonLabel(s, idx, partLabel)} · ${s.session_count} sesji`}
-                      aria-label={`${seasonLabel(s, idx, partLabel)} · ${s.session_count} sesji`}
+                      aria-label={`${seasonLabel(s, idx, partLabel)} · ${s.session_count} sesji${
+                        s.want_to_watch ? (isBook ? " · chcę przeczytać" : " · chcę obejrzeć") : ""
+                      }${s.session_count === 0 ? (isBook ? " · nieprzeczytana" : " · nieobejrzany") : ""}`}
                       aria-pressed={selectedPartId === s.id}
                       className={`group text-left rounded-md transition-shadow ${
                         selectedPartId === s.id ? "ring-2 ring-blue-500 ring-offset-1" : "hover:ring-2 hover:ring-gray-300"
