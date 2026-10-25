@@ -22,18 +22,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const id = await parseRouteId(params);
-    const { season_number, title, cover_url, want_to_watch } = await request.json();
-    if (want_to_watch !== undefined && want_to_watch !== true && want_to_watch !== false) {
+    const body = await request.json() as Record<string, unknown>;
+    if (body.want_to_watch !== undefined && typeof body.want_to_watch !== "boolean") {
       return badRequest("want_to_watch must be a boolean");
     }
 
-    sqlite.prepare(
-      `UPDATE seasons SET season_number=?, title=?, cover_url=?${want_to_watch !== undefined ? ", want_to_watch=?" : ""} WHERE id=?`
-    ).run(
-      ...(want_to_watch !== undefined
-        ? [season_number ?? null, title ?? null, cover_url ?? null, want_to_watch ? 1 : 0, id]
-        : [season_number ?? null, title ?? null, cover_url ?? null, id])
-    );
+    // Partial update: only fields present in the body change (e.g. cover-only saves keep season_number/title)
+    const fields = (["season_number", "title", "cover_url", "want_to_watch"] as const).filter((f) => f in body);
+    if (fields.length > 0) {
+      const values = fields.map((f) => f === "want_to_watch" ? (body[f] ? 1 : 0) : (body[f] ?? null));
+      sqlite.prepare(`UPDATE seasons SET ${fields.map((f) => `${f}=?`).join(", ")} WHERE id=?`).run(...values, id);
+    }
 
     return NextResponse.json(sqlite.prepare(`SELECT * FROM seasons WHERE id=?`).get(id));
   } catch (error) {

@@ -189,6 +189,7 @@ function MiniCalendar({
 }
 
 function seasonLabel(s: SeasonRow, idx: number, label = "Sezon"): string {
+  if (s.season_number === 0) return s.title ? `${s.title} (Speciale)` : "Speciale";
   if (s.season_number != null) return s.title ? `${s.title} (${s.season_number})` : `${label} ${s.season_number}`;
   if (s.title) return `${s.title} (${idx + 1})`;
   return `${idx + 1}`;
@@ -362,10 +363,12 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     const seasonNums = [0, ...Array.from({ length: numSeasons }, (_, i) => i + 1)];
 
     const initial: AirDateSeason[] = seasonNums.map((n) => {
+      // Specials (season 0) never take part in the index-based fallbacks for regular seasons
+      const regular = dbSeasons.filter((s) => s.season_number !== 0);
       const dbSeason = n > 0
         ? (dbSeasons.find((s) => s.season_number === n)
-            ?? (numSeasons === 1 && dbSeasons.length === 1 ? dbSeasons[0] : null)
-            ?? (dbSeasons.length >= n && dbSeasons[n - 1].season_number == null ? dbSeasons[n - 1] : null))
+            ?? (numSeasons === 1 && regular.length === 1 ? regular[0] : null)
+            ?? (regular.length >= n && regular[n - 1].season_number == null ? regular[n - 1] : null))
         : (dbSeasons.find((s) => s.season_number === 0) ?? null);
       return {
         seasonId: dbSeason?.id ?? null,
