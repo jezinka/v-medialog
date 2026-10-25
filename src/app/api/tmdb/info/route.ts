@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildTmdbUrl, fetchTmdb, isTmdbTimeout, tmdbImageUrl } from "@/lib/tmdb";
+import { buildTmdbUrl, fetchTmdb, isTmdbTimeout, tmdbCandidates, tmdbImageUrl } from "@/lib/tmdb";
 
 export interface TmdbInfoResult {
   tmdb_id: number;
@@ -97,19 +97,12 @@ export async function GET(request: NextRequest) {
       const searchUrl = buildTmdbUrl(`search/${searchType}`, apiKey, searchExtra);
       const searchResult = await fetchTmdb<{ results?: unknown[] }>(searchUrl);
       if (!searchResult.ok) return NextResponse.json({ error: `Nie znaleziono "${searchQuery}"` }, { status: 404 });
-      const results = (searchResult.data.results ?? []) as Array<{ id: number; name?: string; title?: string; first_air_date?: string; release_date?: string; poster_path?: string | null }>;
+      const results = (searchResult.data.results ?? []) as Parameters<typeof tmdbCandidates>[0];
 
       if (results.length === 0) return NextResponse.json({ error: `Nie znaleziono "${searchQuery}"` }, { status: 404 });
 
       if (results.length > 1) {
-        return NextResponse.json({
-          candidates: results.slice(0, 5).map((r) => ({
-            tmdb_id: r.id,
-            name: r.name ?? r.title ?? "",
-            first_air_date: r.first_air_date ?? r.release_date ?? "",
-            poster_path: tmdbImageUrl(r.poster_path, "w92"),
-          })),
-        });
+        return NextResponse.json({ candidates: tmdbCandidates(results) });
       }
 
       tmdbId = results[0].id;

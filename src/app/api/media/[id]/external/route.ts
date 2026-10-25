@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
 import { parseRouteId, jsonError, safeJsonParse } from "@/lib/api-helpers";
+import { replaceMediaPersons, type PersonInput } from "@/lib/media-persons";
 
 type MediaRow = {
   id: number;
@@ -62,16 +63,6 @@ export async function GET(
   }
 }
 
-type PersonInput = {
-  name: string;
-  role: string;
-  character_name?: string;
-  display_order?: number;
-  photo_url?: string | null;
-  tmdb_id?: number | null;
-  ol_author_key?: string | null;
-};
-
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -132,38 +123,8 @@ export async function POST(
         numId,
       ]);
 
-      sqlite.prepare(`DELETE FROM media_persons WHERE media_id=?`).run(numId);
-
-      if (Array.isArray(personsInput)) {
-        for (const p of personsInput as PersonInput[]) {
-          if (!p.name || !p.role) continue;
-          let personId: number | null = null;
-
-          if (p.tmdb_id) {
-            const found = sqlite.prepare(`SELECT id FROM persons WHERE tmdb_id=?`).get(p.tmdb_id) as { id: number } | undefined;
-            if (found) {
-              sqlite.prepare(`UPDATE persons SET name=?, photo_url=COALESCE(?,photo_url), ol_author_key=COALESCE(?,ol_author_key) WHERE id=?`)
-                .run(p.name, p.photo_url ?? null, p.ol_author_key ?? null, found.id);
-              personId = found.id;
-            }
-          }
-          if (!personId) {
-            const found = sqlite.prepare(`SELECT id FROM persons WHERE name=?`).get(p.name) as { id: number } | undefined;
-            if (found) {
-              sqlite.prepare(`UPDATE persons SET photo_url=COALESCE(?,photo_url), tmdb_id=COALESCE(?,tmdb_id), ol_author_key=COALESCE(?,ol_author_key) WHERE id=?`)
-                .run(p.photo_url ?? null, p.tmdb_id ?? null, p.ol_author_key ?? null, found.id);
-              personId = found.id;
-            }
-          }
-          if (!personId) {
-            const result = sqlite.prepare(`INSERT INTO persons (name, photo_url, tmdb_id, ol_author_key) VALUES (?,?,?,?)`)
-              .run(p.name, p.photo_url ?? null, p.tmdb_id ?? null, p.ol_author_key ?? null);
-            personId = result.lastInsertRowid as number;
-          }
-          sqlite.prepare(`INSERT INTO media_persons (media_id, person_id, role, character_name, display_order) VALUES (?,?,?,?,?)`)
-            .run(numId, personId, p.role, p.character_name ?? null, p.display_order ?? 0);
-        }
-      }
+      if (Array.isArray(personsInput)) replaceMediaPersons(numId, personsInput);
+      else sqlite.prepare(`DELETE FROM media_persons WHERE media_id=?`).run(numId);
     });
     doSave();
 
