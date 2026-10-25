@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { buildTmdbUrl, fetchTmdb, isTmdbTimeout, tmdbCandidates, tmdbImageUrl } from "@/lib/tmdb";
+import { buildTmdbUrl, fetchTmdb, isTmdbTimeout, tmdbCandidates, tmdbImageUrl, tmdbPersons, type TmdbPerson } from "@/lib/tmdb";
 
 export interface TmdbInfoResult {
   tmdb_id: number;
@@ -10,7 +10,8 @@ export interface TmdbInfoResult {
   backdrop_url: string | null;
   genres: string[];
   vote_average: number;
-  cast: { name: string; character: string; profile_path: string | null }[];
+  /** Actors (with TMDB ids), director or creators — ready for the external-data POST */
+  persons: TmdbPerson[];
   // TV specific
   status?: string;
   first_air_date?: string;
@@ -26,13 +27,6 @@ export interface TmdbInfoResult {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildResult(d: any, tmdbId: number, isTv: boolean): TmdbInfoResult {
-  const cast = ((d.credits?.cast ?? []) as Array<{ name: string; character: string; profile_path?: string | null }>)
-    .slice(0, 12)
-    .map((c) => ({
-      name: c.name,
-      character: c.character,
-      profile_path: tmdbImageUrl(c.profile_path, "w45"),
-    }));
   return {
     tmdb_id: tmdbId,
     title: isTv ? (d.name ?? "") : (d.title ?? ""),
@@ -42,7 +36,7 @@ function buildResult(d: any, tmdbId: number, isTv: boolean): TmdbInfoResult {
     backdrop_url: tmdbImageUrl(d.backdrop_path, "w780"),
     genres: ((d.genres ?? []) as Array<{ name: string }>).map((g) => g.name),
     vote_average: d.vote_average ?? 0,
-    cast,
+    persons: tmdbPersons(d, isTv),
     ...(isTv ? {
       status: d.status,
       first_air_date: d.first_air_date,

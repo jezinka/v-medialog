@@ -29,14 +29,12 @@ type TmdbInfoResponse = {
   poster_url: string | null;
   genres: string[];
   vote_average: number;
-  cast: { name: string; character: string; profile_path: string | null }[];
+  persons: unknown[];
   status?: string;
   first_air_date?: string;
   release_date?: string;
   number_of_seasons?: number;
   runtime?: number;
-  created_by?: { name: string }[];
-  director?: string;
 };
 
 type BookInfoResponse = {
@@ -122,11 +120,7 @@ export default function BulkSyncTab() {
           release_year: releaseYear,
           series_status: isTv ? (d.status ?? null) : null,
           tmdb_seasons_count: isTv ? (d.number_of_seasons ?? null) : null,
-          persons: [
-            ...d.cast.map((c, i) => ({ name: c.name, role: "actor", character_name: c.character, display_order: i, photo_url: c.profile_path })),
-            ...(d.director ? [{ name: d.director, role: "director", display_order: 0 }] : []),
-            ...(d.created_by ?? []).map((c, i) => ({ name: c.name, role: "creator", display_order: i })),
-          ],
+          persons: d.persons,
         };
       } else if (item.source === "books") {
         const d = infoData as BookInfoResponse;

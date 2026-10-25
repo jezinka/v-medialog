@@ -23,9 +23,7 @@ type TmdbInfoResult = {
   release_date?: string | null;
   first_air_date?: string | null;
   poster_url: string | null;
-  director?: string | null;
-  created_by?: Array<{ name: string }>;
-  cast: Array<{ name: string; character: string; profile_path: string | null }>;
+  persons: unknown[];
   status?: string | null;
   number_of_seasons?: number | null;
 };
@@ -67,26 +65,6 @@ export function useExternalData(mediaId: number, media: MediaData | null, onCove
     }
   }, [mediaId]);
 
-  const buildPersons = useCallback((data: TmdbInfoResult) => {
-    const result: Array<{
-      name: string; role: string; character_name?: string;
-      display_order?: number; photo_url?: string | null; tmdb_id?: number | null;
-    }> = [];
-    if ("cast" in data) {
-      result.push(...data.cast.map((c, i) => ({
-        name: c.name, role: "actor", character_name: c.character,
-        display_order: i, photo_url: c.profile_path,
-      })));
-    }
-    if ("director" in data && data.director) {
-      result.push({ name: data.director, role: "director", display_order: 0 });
-    }
-    if ("created_by" in data && data.created_by) {
-      result.push(...data.created_by.map((c, i) => ({ name: c.name, role: "creator", display_order: i })));
-    }
-    return result;
-  }, []);
-
   const saveExternalData = useCallback(async (data: TmdbInfoResult) => {
     const isTvData = "first_air_date" in data;
     const dateStr = data.release_date ?? data.first_air_date;
@@ -102,7 +80,7 @@ export function useExternalData(mediaId: number, media: MediaData | null, onCove
       release_year: releaseYear,
       series_status: isTvData ? (data.status ?? null) : null,
       tmdb_seasons_count: isTvData ? (data.number_of_seasons ?? null) : null,
-      persons: buildPersons(data),
+      persons: data.persons,
     };
 
     await fetch(`/api/media/${mediaId}/external`, {
@@ -141,7 +119,7 @@ export function useExternalData(mediaId: number, media: MediaData | null, onCove
         }
       } catch { /* ignore */ }
     }
-  }, [mediaId, media, buildPersons, onCoverChange]);
+  }, [mediaId, media, onCoverChange]);
 
   const syncFromTmdb = useCallback(async (tmdbId?: number) => {
     if (!media) return;
