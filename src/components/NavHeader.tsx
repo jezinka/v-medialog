@@ -40,12 +40,19 @@ export default function NavHeader() {
   const [showAdd, setShowAdd] = useState(false);
   const [notifications, setNotifications] = useState<VodNotification[]>([]);
   const [showBell, setShowBell] = useState(false);
+  // This month's season premieres, shown in the bell until dismissed
+  const [premieres, setPremieres] = useState<{ month: string; count: number } | null>(null);
   const bellRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = useCallback(async () => {
     try {
       const res = await fetch("/api/vod/notifications");
       if (res.ok) setNotifications(await res.json() as VodNotification[]);
+      const sched = await fetch("/api/schedule");
+      if (sched.ok) {
+        const data = await sched.json() as { month: string; items: unknown[]; seen: boolean };
+        setPremieres(!data.seen && data.items.length > 0 ? { month: data.month, count: data.items.length } : null);
+      }
     } catch { /* silent */ }
   }, []);
 
@@ -66,6 +73,18 @@ export default function NavHeader() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, [showBell]);
+
+  const dismissPremieres = async () => {
+    if (!premieres) return;
+    setPremieres(null);
+    try {
+      await fetch("/api/schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ month: premieres.month }),
+      });
+    } catch { /* shows again on the next poll */ }
+  };
 
   const markAllSeen = async () => {
     const ids = notifications.map((n) => n.id);
@@ -166,20 +185,20 @@ export default function NavHeader() {
                 <div className="relative group">
                   <button
                     className="w-10 h-10 flex items-center justify-center bg-white border border-gray-100 shadow rounded-2xl hover:shadow-md transition-all relative"
-                    aria-label="Powiadomienia VOD"
+                    aria-label="Powiadomienia"
                   >
                     <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                         d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
-                    {notifications.length > 0 && (
+                    {notifications.length + (premieres ? 1 : 0) > 0 && (
                       <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1">
-                        {notifications.length > 99 ? "99+" : notifications.length}
+                        {notifications.length > 98 ? "99+" : notifications.length + (premieres ? 1 : 0)}
                       </span>
                     )}
                   </button>
                   <span className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-2 py-1 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                    Powiadomienia VOD
+                    Powiadomienia
                   </span>
                 </div>
               </div>
@@ -187,7 +206,7 @@ export default function NavHeader() {
               {showBell && (
                 <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 z-50 overflow-hidden">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                    <span className="font-semibold text-gray-900 text-sm">Powiadomienia VOD</span>
+                    <span className="font-semibold text-gray-900 text-sm">Powiadomienia</span>
                     {notifications.length > 0 && (
                       <button onClick={markAllSeen} className="text-xs text-blue-600 hover:underline">
                         Oznacz wszystkie
@@ -195,7 +214,15 @@ export default function NavHeader() {
                     )}
                   </div>
                   <div className="max-h-96 overflow-y-auto divide-y divide-gray-50">
-                    {notifications.length === 0 ? (
+                    {premieres && (
+                      <div className="flex items-center gap-3 px-4 py-3 bg-purple-50">
+                        <a href="/wishlist" onClick={() => void dismissPremieres()} className="flex-1 min-w-0 text-xs font-semibold text-purple-800 hover:underline">
+                          📅 Premiery w tym miesiącu: {premieres.count} {premieres.count === 1 ? "sezon" : premieres.count < 5 ? "sezony" : "sezonów"}
+                        </a>
+                        <button onClick={() => void dismissPremieres()} aria-label="Ukryj premiery" className="text-[10px] text-gray-400 hover:text-gray-600">✕</button>
+                      </div>
+                    )}
+                    {notifications.length === 0 && !premieres ? (
                       <p className="text-sm text-gray-500 text-center py-6">Brak nowych powiadomień</p>
                     ) : (
                       notifications.map((n) => (

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CALENDAR_TYPES, MEDIA_TYPE_LABELS } from "@/lib/utils";
 import { toast } from "./Toast";
 import WatchlistCalendar from "./WatchlistCalendar";
+import SeriesSchedule from "./SeriesSchedule";
 import { useMediaSearch } from "@/lib/hooks/useMediaSearch";
 import MediaCoverThumb from "./MediaCoverThumb";
 
@@ -81,6 +82,8 @@ export default function WishlistPage() {
           )}
         </div>
       </div>
+
+      <SeriesSchedule refreshKey={refreshKey} onChecked={refresh} />
 
       <WatchlistCalendar refreshKey={refreshKey} />
     </div>

@@ -118,6 +118,9 @@ export async function POST() {
     }
   }
 
+  // Read by the scheduler in db/index.ts
+  sqlite.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('last_upcoming_check', ?)`).run(new Date().toISOString());
+
   return NextResponse.json({
     checked: serials.length,
     added: added.length,

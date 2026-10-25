@@ -1,6 +1,7 @@
 import Database from "better-sqlite3";
 import path from "path";
 import { addUpcomingSeason, markWantToWatch } from "./want-to-watch";
+import { upcomingCheckDue } from "../lib/schedule";
 
 const DB_PATH = process.env.DATABASE_URL ?? path.join(process.cwd(), "medialog.db");
 
@@ -296,6 +297,26 @@ if (typeof g.__vodRefreshScheduled === "undefined") {
       console.error("[vod] Auto-refresh error:", e);
     }
   }, 5000); // 5s delay to let the server fully start
+}
+
+// ── Upcoming seasons: checked in a new month or once a week, while the server runs ──
+// Production only: a dev server shouldn't call TMDB and write to the local DB on its own
+if (process.env.NODE_ENV === "production" && typeof g.__upcomingCheckScheduled === "undefined") {
+  g.__upcomingCheckScheduled = true;
+  const checkUpcoming = async () => {
+    try {
+      const row = sqlite.prepare(`SELECT value FROM settings WHERE key='last_upcoming_check'`).get() as { value: string } | undefined;
+      if (!upcomingCheckDue(row?.value ?? null, new Date())) return;
+      console.log("[upcoming] Checking upcoming seasons (last:", row?.value ?? "never", ")");
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
+      const res = await fetch(`${baseUrl}/api/jobs/check-upcoming-seasons`, { method: "POST" });
+      console.log("[upcoming] Done:", res.status);
+    } catch (e) {
+      console.error("[upcoming] Check error:", e);
+    }
+  };
+  setTimeout(checkUpcoming, 15_000); // after the VOD refresh has started
+  setInterval(checkUpcoming, 6 * 3_600_000);
 }
 
 export { sqlite };
