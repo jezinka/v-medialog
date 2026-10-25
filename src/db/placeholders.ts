@@ -14,17 +14,6 @@ const REDUNDANT = `
         AND substr(r.start_date, 1, 4) = substr(p.start_date, 1, 4)
     )`;
 
-export type RedundantPlaceholder = { session_id: number; media_id: number; title: string; year: string };
-
-/** Preview of what removeRedundantPlaceholders would delete. */
-export function redundantPlaceholders(db: Database.Database): RedundantPlaceholder[] {
-  return db.prepare(`
-    SELECT p.id AS session_id, m.id AS media_id, m.title, substr(p.start_date, 1, 4) AS year
-    ${REDUNDANT.replace("FROM sessions p", "FROM sessions p JOIN seasons s ON s.id = p.season_id JOIN media m ON m.id = s.media_id")}
-    ORDER BY m.title, year
-  `).all() as RedundantPlaceholder[];
-}
-
 /** Deletes every placeholder of a season (the explicit "🗑📅" action), whatever the year. */
 export function removeAllPlaceholders(db: Database.Database, seasonId: number): number {
   return db.prepare(`DELETE FROM sessions WHERE season_id = ? AND ${isPlaceholder("sessions")}`).run(seasonId).changes;
