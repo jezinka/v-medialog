@@ -80,7 +80,8 @@ export async function POST(request: NextRequest) {
 
     const newId = Number(r.lastInsertRowid);
     const created = sqlite.prepare(`SELECT * FROM sessions WHERE id=?`).get(newId) as Record<string, unknown> | undefined;
-    if (!created) return NextResponse.json({ error: "Session not found after creation" }, { status: 500 });
+    // A placeholder added to a year that already has a real session is dropped right away
+    if (!created) return NextResponse.json({ id: null, message: "Rok ma już prawdziwą sesję — placeholder pominięty" });
 
     return NextResponse.json({
       id: Number(created.id),

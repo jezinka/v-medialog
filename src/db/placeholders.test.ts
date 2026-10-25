@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import Database from "better-sqlite3";
-import { redundantPlaceholders, removeRedundantPlaceholders } from "./placeholders.ts";
+import { redundantPlaceholders, removeAllPlaceholders, removeRedundantPlaceholders } from "./placeholders.ts";
 
 test("removeRedundantPlaceholders drops only same-year placeholders", () => {
   const db = new Database(":memory:");
@@ -22,4 +22,14 @@ test("removeRedundantPlaceholders drops only same-year placeholders", () => {
   assert.equal(removeRedundantPlaceholders(db, 2), 1);
   assert.equal(removeRedundantPlaceholders(db), 1);
   assert.deepEqual(db.prepare(`SELECT id FROM sessions ORDER BY id`).all().map((r) => (r as { id: number }).id), [2, 3, 5]);
+});
+
+test("removeAllPlaceholders keeps a real Jan 1 session", () => {
+  const db = new Database(":memory:");
+  db.exec(`
+    CREATE TABLE sessions (id INTEGER PRIMARY KEY, season_id INTEGER, start_date TEXT, end_date TEXT);
+    INSERT INTO sessions VALUES (1, 1, '2023-01-01', '2023-12-31'), (2, 1, '2024-01-01', NULL), (3, 1, '2024-01-01', '2024-12-31');
+  `);
+  assert.equal(removeAllPlaceholders(db, 1), 2);
+  assert.deepEqual(db.prepare(`SELECT id FROM sessions`).all(), [{ id: 2 }]);
 });

@@ -25,9 +25,15 @@ export function redundantPlaceholders(db: Database.Database): RedundantPlacehold
   `).all() as RedundantPlaceholder[];
 }
 
+/** Deletes every placeholder of a season (the explicit "🗑📅" action), whatever the year. */
+export function removeAllPlaceholders(db: Database.Database, seasonId: number): number {
+  return db.prepare(`DELETE FROM sessions WHERE season_id = ? AND ${isPlaceholder("sessions")}`).run(seasonId).changes;
+}
+
 /**
  * Deletes redundant placeholders — of one season (after adding sessions to it) or everywhere.
  * Placeholders of years without a real session stay: they may be an earlier, separate watch.
+ * A real session counts for the year it starts in (one spanning New Year clears only that year).
  */
 export function removeRedundantPlaceholders(db: Database.Database, seasonId?: number): number {
   return db.prepare(

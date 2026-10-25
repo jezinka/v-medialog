@@ -1,8 +1,7 @@
 export async function createSessionForMedia(
   mediaId: number,
   startDate: string,
-  endDate: string,
-  options?: { removePlaceholder?: boolean }
+  endDate: string
 ): Promise<void> {
   const seasonsRes = await fetch(`/api/seasons?media_id=${mediaId}`);
   if (!seasonsRes.ok) throw new Error("Nie udało się pobrać sezonów");
@@ -21,10 +20,6 @@ export async function createSessionForMedia(
     seasonId = season.id;
   } else {
     seasonId = seasons[0].id;
-  }
-
-  if (options?.removePlaceholder) {
-    await fetch(`/api/seasons/${seasonId}/placeholders`, { method: "DELETE" });
   }
 
   const sessionRes = await fetch("/api/sessions", {

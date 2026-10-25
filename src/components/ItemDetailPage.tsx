@@ -538,9 +538,6 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
       }
     }
 
-    // Auto-remove placeholder (YYYY-01-01→YYYY-12-31) for this season before adding real sessions
-    await removePlaceholders(seasonId);
-
     let added = 0;
     setImportingDates((prev) => new Set([...prev, ...newDates]));
     for (const date of newDates) {
@@ -1171,7 +1168,6 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     async (date: string, seasonId: number) => {
       setAddingSession(true);
       try {
-        await removePlaceholders(seasonId);
         const res = await fetch("/api/sessions", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1225,8 +1221,6 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
         return;
       }
     }
-
-    await removePlaceholders(seasonId);
 
     let added = 0;
     setImportingDates((prev) => new Set([...prev, ...newDates]));
@@ -1284,8 +1278,6 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
       } else {
         seasonId = seasons[0].id;
       }
-      // Remove year-placeholder before adding real sessions
-      await removePlaceholders(seasonId);
       const dates = Array.from(yearSelectedDates).sort();
       let added = 0;
       for (const date of dates) {

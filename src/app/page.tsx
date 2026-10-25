@@ -47,7 +47,7 @@ function LogContent() {
 
   const createSessionAndOpen = useCallback(async (mediaId: number, startDate: string, endDate: string) => {
     try {
-      await createSessionForMedia(mediaId, startDate, endDate, { removePlaceholder: true });
+      await createSessionForMedia(mediaId, startDate, endDate); // the server drops that year's placeholder
       toast("Sesja dodana ✓", "success");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Błąd tworzenia sesji", "error");
