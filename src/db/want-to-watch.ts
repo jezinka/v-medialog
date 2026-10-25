@@ -18,9 +18,10 @@ export function markWantToWatch(db: Database.Database, mediaId: number): number 
     db.prepare(`UPDATE seasons SET want_to_watch=1 WHERE id=?`).run(empty.id);
     return empty.id;
   }
+  const hasSeasons = db.prepare(`SELECT 1 FROM seasons WHERE media_id=?`).get(mediaId);
   return Number(db.prepare(
     `INSERT INTO seasons (media_id, season_number, want_to_watch) VALUES (?, ?, 1)`
-  ).run(mediaId, nextSeasonNumber(db, mediaId) ?? 1).lastInsertRowid);
+  ).run(mediaId, hasSeasons ? nextSeasonNumber(db, mediaId) : 1).lastInsertRowid);
 }
 
 /**
