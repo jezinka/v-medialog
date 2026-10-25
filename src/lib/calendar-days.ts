@@ -3,7 +3,6 @@ export const SEASON_COLORS = [
   "bg-orange-500", "bg-pink-500", "bg-teal-500",
 ];
 
-/** Day numbers of a month (1-12) preceded by nulls so the first day lands on its weekday, Monday first. */
 export function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }
@@ -13,6 +12,7 @@ export function getFirstDayOfMonth(year: number, month: number): number {
   return (new Date(year, month - 1, 1).getDay() + 6) % 7;
 }
 
+/** Day numbers of a month (1-12) preceded by nulls so the first day lands on its weekday, Monday first. */
 export function monthCells(year: number, month: number): Array<number | null> {
   return [
     ...Array<null>(getFirstDayOfMonth(year, month)).fill(null),
