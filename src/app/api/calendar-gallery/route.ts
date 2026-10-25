@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { sqlite } from "@/db";
+import { MOVIE_TYPES } from "@/lib/utils";
 
 export interface CalendarEntry {
   season_id: number;
@@ -106,7 +107,7 @@ export async function GET(request: Request) {
           title: row.title,
           media_type: row.media_type,
           cover_url: row.cover_url,
-          is_movie: row.media_type === "movie",
+          is_movie: MOVIE_TYPES.includes(row.media_type),
           is_placeholder: true,
           canonical_month: 0,
           valid_days: [],

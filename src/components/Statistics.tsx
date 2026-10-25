@@ -1,9 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BOOK_TYPES, formatDate, MEDIA_TYPE_EMOJI, MONTH_NAMES } from "@/lib/utils";
+import { BOOK_TYPES, formatDate, MEDIA_TYPE_EMOJI, MONTH_NAMES, MOVIE_TYPES } from "@/lib/utils";
 
-const MOVIE_TYPES = ["movie", "cartoon"];
 const SERIES_TYPES = ["series"];
 const ANIME_TYPES = ["anime"];
 

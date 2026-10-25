@@ -18,8 +18,8 @@ interface Props {
 }
 
 const groups = [
-  { title: "Seriale", types: ["series", "anime", "cartoon"] },
-  { title: "Filmy", types: ["movie"] },
+  { title: "Seriale", types: ["series", "anime"] },
+  { title: "Filmy", types: ["movie", "cartoon"] },
   { title: "Książki i komiksy", types: ["book", "comic"] },
 ];
 

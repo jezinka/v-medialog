@@ -28,7 +28,7 @@ interface SeasonRow {
   season_number: number | null;
 }
 
-const SERIES_TYPES = ["series", "anime", "cartoon"];
+const SERIES_TYPES = ["series", "anime"];
 
 export async function POST() {
   const apiKey = process.env.TMDB_API_KEY;
@@ -36,7 +36,7 @@ export async function POST() {
 
   const today = new Date().toISOString().slice(0, 10);
 
-  // Get all ongoing series/anime/cartoon with tmdb_id
+  // Get all ongoing series/anime with tmdb_id
   const serials = sqlite.prepare(`
     SELECT id, title, tmdb_id, media_type
     FROM media

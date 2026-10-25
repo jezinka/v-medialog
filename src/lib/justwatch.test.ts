@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { hasPolish } from "./justwatch.ts";
+import { hasPolish, toJwObjectType } from "./justwatch.ts";
 
 test("hasPolish", () => {
   assert.equal(hasPolish([]), true); // unknown → keep
@@ -10,4 +10,11 @@ test("hasPolish", () => {
   assert.equal(hasPolish(["PL"]), true);
   assert.equal(hasPolish(["pl_PL"]), true);
   assert.equal(hasPolish(["plx"]), false);
+});
+
+test("toJwObjectType: cartoons are films, anime a show", () => {
+  assert.equal(toJwObjectType("cartoon"), "MOVIE");
+  assert.equal(toJwObjectType("movie"), "MOVIE");
+  assert.equal(toJwObjectType("anime"), "SHOW");
+  assert.equal(toJwObjectType("book"), undefined);
 });

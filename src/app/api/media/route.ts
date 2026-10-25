@@ -66,11 +66,11 @@ export async function GET(request: NextRequest) {
         clauses.push(`m.cover_url IS NULL`);
       }
       if (ongoing) {
-        clauses.push(`m.media_type IN ('series','anime','cartoon')`);
+        clauses.push(`m.media_type IN ('series','anime')`);
         clauses.push(`m.series_status NOT IN ('Ended','Canceled','Cancelled')`);
       }
       if (behind) {
-        clauses.push(`m.media_type IN ('series','anime','cartoon')`);
+        clauses.push(`m.media_type IN ('series','anime')`);
         clauses.push(`m.tmdb_seasons_count IS NOT NULL`);
         clauses.push(`(SELECT COUNT(*) FROM seasons s WHERE s.media_id = m.id) < m.tmdb_seasons_count`);
       }

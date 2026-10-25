@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Modal from "../Modal";
-import { SCREEN_TYPES } from "@/lib/utils";
+import { MOVIE_TYPES, SCREEN_TYPES } from "@/lib/utils";
 import { partNo, seasonLabel } from "@/lib/part-number";
 import { SEASON_COLORS } from "@/lib/calendar-days";
 import type { SeasonRow } from "./types";
@@ -29,7 +29,7 @@ export default function SeasonPickerModal({
         <h3 className="text-sm font-semibold text-gray-900">Dodaj sesję</h3>
         <p className="text-xs text-gray-500">{date}</p>
         {/* Cinema toggle — only for movies */}
-        {mediaType === "movie" && (
+        {MOVIE_TYPES.includes(mediaType) && (
           <label className="flex items-center gap-2 cursor-pointer select-none">
             <input
               type="checkbox"

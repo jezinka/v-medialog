@@ -15,5 +15,7 @@ test("calendar item shows the season number only for numbered types", () => {
   assert.equal(sessionToCalendarItem(row("comic", 1)).volumeEpisode, null);
   assert.equal(sessionToCalendarItem(row("book", 1)).volumeEpisode, null);
   assert.equal(sessionToCalendarItem(row("movie", 2)).volumeEpisode, null);
+  assert.equal(sessionToCalendarItem(row("cartoon", 1)).volumeEpisode, null);
+  assert.equal(sessionToCalendarItem(row("anime", 3)).volumeEpisode, "3");
   assert.equal(sessionToCalendarItem(row("series", null)).volumeEpisode, null);
 });

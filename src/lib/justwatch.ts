@@ -237,7 +237,7 @@ export function hasPolish(languages: string[]): boolean {
 
 /** Map app media_type to JustWatch objectType */
 export function toJwObjectType(mediaType: string): "SHOW" | "MOVIE" | undefined {
-  if (mediaType === "movie") return "MOVIE";
-  if (mediaType === "series" || mediaType === "anime" || mediaType === "cartoon") return "SHOW";
+  if (mediaType === "movie" || mediaType === "cartoon") return "MOVIE";
+  if (mediaType === "series" || mediaType === "anime") return "SHOW";
   return undefined;
 }
