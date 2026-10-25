@@ -2,23 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import CoverImg from "./CoverImg";
-import { MEDIA_TYPE_EMOJI } from "@/lib/utils";
+import { MEDIA_TYPE_EMOJI, MONTH_NAMES } from "@/lib/utils";
+import { dateKey, monthCells } from "@/lib/calendar-days";
+import MonthGrid from "./MonthGrid";
 import { toast } from "./Toast";
 
-const POLISH_MONTHS = [
-  "Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec",
-  "Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień",
-];
-const DAY_LABELS = ["Pn","Wt","Śr","Cz","Pt","So","Nd"];
-
 function PersonYearCalendar({ year, daysMap }: { year: number; daysMap: Map<string, string> }) {
-  const activeMonths = Array.from({ length: 12 }, (_, i) => i + 1).filter((month) => {
-    const daysInMonth = new Date(year, month, 0).getDate();
-    for (let d = 1; d <= daysInMonth; d++) {
-      if (daysMap.has(`${year}-${String(month).padStart(2,"0")}-${String(d).padStart(2,"0")}`)) return true;
-    }
-    return false;
-  });
+  const activeMonths = Array.from({ length: 12 }, (_, i) => i + 1)
+    .filter((month) => monthCells(year, month).some((d) => d !== null && daysMap.has(dateKey(year, month, d))));
 
   if (activeMonths.length === 0) return null;
 
@@ -26,40 +17,9 @@ function PersonYearCalendar({ year, daysMap }: { year: number; daysMap: Map<stri
     <div>
       <h3 className="text-xs font-semibold text-gray-500 mb-2">{year}</h3>
       <div className="flex flex-wrap gap-4">
-        {activeMonths.map((month) => {
-          const daysInMonth = new Date(year, month, 0).getDate();
-          const offset = (new Date(year, month - 1, 1).getDay() + 6) % 7;
-          const cells: Array<number | null> = [];
-          for (let i = 0; i < offset; i++) cells.push(null);
-          for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-          return (
-            <div key={month} className="w-[160px] shrink-0">
-              <p className="text-xs font-semibold text-gray-700 mb-1.5">
-                {POLISH_MONTHS[month - 1]}
-              </p>
-              <div className="grid grid-cols-7 gap-px">
-                {DAY_LABELS.map((d) => (
-                  <div key={d} className="text-center text-[9px] text-gray-400 font-medium pb-0.5">{d}</div>
-                ))}
-                {cells.map((day, idx) => {
-                  if (day === null) return <div key={`e-${idx}`} />;
-                  const dateStr = `${year}-${String(month).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-                  const color = daysMap.get(dateStr) ?? null;
-                  return (
-                    <div
-                      key={dateStr}
-                      title={color ? dateStr : undefined}
-                      className={`w-full aspect-square flex items-center justify-center text-[10px] rounded-full
-                        ${color ? `${color} text-white font-semibold` : "text-gray-400"}`}
-                    >
-                      {day}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+        {activeMonths.map((month) => (
+          <MonthGrid key={month} year={year} month={month} label={MONTH_NAMES[month - 1]} days={daysMap} className="w-[160px]" />
+        ))}
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { useState } from "react";
 import CoverImg from "./CoverImg";
 import { MEDIA_TYPES, MEDIA_TYPE_LABELS, MEDIA_TYPE_COLORS, BOOK_TYPES, CALENDAR_TYPES } from "@/lib/utils";
 import { toast } from "./Toast";
+import Modal from "./Modal";
 import { useMediaSearch } from "@/lib/hooks/useMediaSearch";
 
 interface Props {
@@ -170,13 +171,7 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
   };
 
   return (
-    <>
-      <div className="fixed inset-0 bg-black/50 z-50" onClick={onClose} />
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-        <div
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-md pointer-events-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
+    <Modal onClose={onClose} label={initialStartDate ? "Dodaj sesję" : "Przejdź do medium"} closeOnBackdrop z="z-50" className="rounded-2xl shadow-2xl w-full max-w-md">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <div>
               <h2 className="font-semibold text-gray-900">
@@ -393,8 +388,6 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
               </div>
             )}
           </div>
-        </div>
-      </div>
-    </>
+    </Modal>
   );
 }

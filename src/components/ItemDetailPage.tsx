@@ -3,8 +3,11 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import CoverImg from "./CoverImg";
-import { MEDIA_TYPE_ICONS, MEDIA_TYPE_COLORS, MEDIA_TYPE_LABELS, formatDate, BOOK_TYPES, SCREEN_TYPES, ITUNES_TYPES, CALENDAR_TYPES, hasSeasonNumbers } from "@/lib/utils";
+import { MEDIA_TYPE_ICONS, MEDIA_TYPE_COLORS, MEDIA_TYPE_LABELS, formatDate, BOOK_TYPES, SCREEN_TYPES, ITUNES_TYPES, CALENDAR_TYPES, hasSeasonNumbers, MONTH_NAMES } from "@/lib/utils";
 import { partNo } from "@/lib/part-number";
+import { SEASON_COLORS, buildSessionDaysMap, groupByYearMonth } from "@/lib/calendar-days";
+import MonthGrid from "./MonthGrid";
+import Modal from "./Modal";
 import { toast } from "./Toast";
 
 interface Props {
@@ -117,177 +120,11 @@ type TmdbInfoResult = {
   number_of_seasons?: number | null;
 };
 
-const POLISH_MONTHS = [
-  "Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
-  "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień",
-];
-
-const DAY_LABELS = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"];
-
-const SEASON_COLORS = [
-  "bg-blue-500", "bg-purple-500", "bg-green-500",
-  "bg-orange-500", "bg-pink-500", "bg-teal-500",
-];
-
-function MiniCalendar({
-  year,
-  month,
-  sessionDaysByItem,
-  onDayClick,
-  onDayHover,
-}: {
-  year: number;
-  month: number; // 1-12
-  sessionDaysByItem: Map<string, string>; // date → tailwind color class
-  onDayClick: (date: string) => void | Promise<void>;
-  onDayHover?: (date: string) => void;
-}) {
-  const daysInMonth = new Date(year, month, 0).getDate();
-  const offset = (new Date(year, month - 1, 1).getDay() + 6) % 7;
-
-  const cells: Array<number | null> = [];
-  for (let i = 0; i < offset; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
-  return (
-    <div className="w-[180px] shrink-0">
-      <p className="text-xs font-semibold text-gray-700 mb-1.5">
-        {POLISH_MONTHS[month - 1]} {year}
-      </p>
-      <div className="grid grid-cols-7 gap-px">
-        {DAY_LABELS.map((d) => (
-          <div key={d} className="text-center text-[9px] text-gray-400 font-medium pb-0.5">
-            {d}
-          </div>
-        ))}
-        {cells.map((day, idx) => {
-          if (day === null) {
-            return <div key={`e-${idx}`} />;
-          }
-          const mm = String(month).padStart(2, "0");
-          const dd = String(day).padStart(2, "0");
-          const dateStr = `${year}-${mm}-${dd}`;
-          const colorClass = sessionDaysByItem.get(dateStr) ?? null;
-          return (
-            <button
-              key={dateStr}
-              onClick={() => onDayClick(dateStr)}
-              onMouseEnter={() => onDayHover?.(dateStr)}
-              title={dateStr}
-              className={`w-full aspect-square flex items-center justify-center text-[10px] rounded-full transition-colors
-                ${colorClass
-                  ? `${colorClass} text-white font-semibold hover:opacity-80`
-                  : "text-gray-500 hover:bg-gray-100"
-                }`}
-            >
-              {day}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function seasonLabel(s: SeasonRow, no: string, label = "Sezon"): string {
   if (no === "Sp.") return s.title ? `${s.title} (Speciale)` : "Speciale";
   if (s.season_number != null) return s.title ? `${s.title} (${s.season_number})` : `${label} ${s.season_number}`;
   if (s.title) return `${s.title} (${no})`;
   return no;
-}
-
-function YearCalendar({
-  year,
-  sessionDaysByItem,
-  selectedDates,
-  onDayToggle,
-}: {
-  year: number;
-  sessionDaysByItem: Map<string, string>;
-  selectedDates: Set<string>;
-  onDayToggle: (date: string) => void;
-}) {
-  return (
-    <div className="grid grid-cols-3 gap-x-6 gap-y-6">
-      {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => {
-        const daysInMonth = new Date(year, month, 0).getDate();
-        const offset = (new Date(year, month - 1, 1).getDay() + 6) % 7;
-        const cells: Array<number | null> = [];
-        for (let i = 0; i < offset; i++) cells.push(null);
-        for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
-        return (
-          <div key={month} className="w-[180px] shrink-0">
-            <p className="text-xs font-semibold text-gray-700 mb-1.5">
-              {POLISH_MONTHS[month - 1]}
-            </p>
-            <div className="grid grid-cols-7 gap-px">
-              {DAY_LABELS.map((d) => (
-                <div key={d} className="text-center text-[9px] text-gray-400 font-medium pb-0.5">
-                  {d}
-                </div>
-              ))}
-              {cells.map((day, idx) => {
-                if (day === null) return <div key={`e-${idx}`} />;
-                const mm = String(month).padStart(2, "0");
-                const dd = String(day).padStart(2, "0");
-                const dateStr = `${year}-${mm}-${dd}`;
-                const sessionColor = sessionDaysByItem.get(dateStr) ?? null;
-                const isSelected = selectedDates.has(dateStr);
-                return (
-                  <button
-                    key={dateStr}
-                    onClick={() => onDayToggle(dateStr)}
-                    title={dateStr}
-                    className={`w-full aspect-square flex items-center justify-center text-[10px] rounded-full transition-colors
-                      ${sessionColor
-                        ? `${sessionColor} text-white font-semibold hover:opacity-80`
-                        : isSelected
-                        ? "bg-blue-500 text-white font-semibold hover:bg-blue-600"
-                        : "text-gray-500 hover:bg-gray-100"
-                      }`}
-                  >
-                    {day}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function buildSessionDaysMap(sessions: SessionApiRow[], seasons: SeasonRow[]): Map<string, string> {
-  const result = new Map<string, string>();
-  for (const session of sessions) {
-    const seasonIdx = seasons.findIndex((s) => s.id === session.season_id);
-    const color = SEASON_COLORS[(seasonIdx >= 0 ? seasonIdx : 0) % SEASON_COLORS.length];
-    const start = new Date(session.start_date);
-    const end = session.end_date ? new Date(session.end_date) : new Date(session.start_date);
-    const spanDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-    if (spanDays >= 365) continue;
-    const cur = new Date(start);
-    while (cur <= end) {
-      const y = cur.getFullYear();
-      const m = String(cur.getMonth() + 1).padStart(2, "0");
-      const d = String(cur.getDate()).padStart(2, "0");
-      result.set(`${y}-${m}-${d}`, color);
-      cur.setDate(cur.getDate() + 1);
-    }
-  }
-  return result;
-}
-
-function groupByYearMonthColored(days: Map<string, string>): Map<string, Map<string, string>> {
-  const map = new Map<string, Map<string, string>>();
-  for (const [d, color] of days) {
-    const key = d.slice(0, 7); // YYYY-MM
-    if (!map.has(key)) map.set(key, new Map());
-    map.get(key)!.set(d, color);
-  }
-  return map;
 }
 
 export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPerson, onOpenDetail }: Props) {
@@ -1495,7 +1332,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     return merged;
   }, [sessionDaysMap, splitHighlightMap]);
 
-  const grouped = useMemo(() => groupByYearMonthColored(displayDaysMap), [displayDaysMap]);
+  const grouped = useMemo(() => groupByYearMonth(displayDaysMap), [displayDaysMap]);
   const sortedMonths = useMemo(() => {
     const fromData = new Set(grouped.keys());
     const all = new Set([...fromData, ...extraMonths]);
@@ -1638,8 +1475,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     <div className="fixed inset-0 z-50 overflow-y-auto bg-white">
       {/* Season picker overlay */}
       {seasonPickerDate && (
-        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl p-5 max-w-sm w-full space-y-3">
+        <Modal onClose={() => { setSeasonPickerDate(null); setPendingCinema(false); setPendingWithChild(false); }} label="Dodaj sesję" className="rounded-xl shadow-xl p-5 max-w-sm w-full space-y-3">
             <h3 className="text-sm font-semibold text-gray-900">Dodaj sesję</h3>
             <p className="text-xs text-gray-500">{seasonPickerDate}</p>
             {/* Cinema toggle — only for movies */}
@@ -1719,14 +1555,12 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
             >
               Anuluj
             </button>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* Edit session modal */}
       {editingSession && (
-        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl p-5 max-w-sm w-full space-y-4">
+        <Modal onClose={() => setEditingSession(null)} label="Edytuj sesję" className="rounded-xl shadow-xl p-5 max-w-sm w-full space-y-4">
             <h3 className="text-sm font-semibold text-gray-900">Edytuj sesję</h3>
             <div className="space-y-3">
               <div>
@@ -1827,14 +1661,12 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                 Anuluj
               </button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* Edit media modal */}
       {isEditingMedia && (
-        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl p-5 max-w-md w-full space-y-3 max-h-[90vh] overflow-y-auto">
+        <Modal onClose={() => setIsEditingMedia(false)} label="Edytuj medium" className="rounded-xl shadow-xl p-5 max-w-md w-full space-y-3 max-h-[90vh] overflow-y-auto">
             <h3 className="text-sm font-semibold text-gray-900">Edytuj medium</h3>
             {/* lubimyczytac.pl quick-fill */}
             {media && BOOK_TYPES.includes(media.media_type) && (
@@ -2005,14 +1837,12 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                 Anuluj
               </button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* Edit season modal */}
       {editingSeason && (
-        <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl p-5 max-w-sm w-full space-y-3">
+        <Modal onClose={() => setEditingSeason(null)} label={`Edytuj ${partLabel.toLowerCase()}`} className="rounded-xl shadow-xl p-5 max-w-sm w-full space-y-3">
             <h3 className="text-sm font-semibold text-gray-900">Edytuj {partLabel.toLowerCase()}</h3>
             <div className="grid grid-cols-2 gap-2">
               <div>
@@ -2104,8 +1934,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                 Anuluj
               </button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* Sticky header */}
@@ -3054,18 +2883,25 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                   </button>
                 )}
               </div>
-              <YearCalendar
-                year={yearViewYear}
-                sessionDaysByItem={sessionDaysMap}
-                selectedDates={yearSelectedDates}
-                onDayToggle={(date) =>
-                  setYearSelectedDates((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(date)) next.delete(date); else next.add(date);
-                    return next;
-                  })
-                }
-              />
+              <div className="grid grid-cols-3 gap-x-6 gap-y-6">
+                {MONTH_NAMES.map((name, i) => (
+                  <MonthGrid
+                    key={name}
+                    year={yearViewYear}
+                    month={i + 1}
+                    label={name}
+                    days={sessionDaysMap}
+                    selected={yearSelectedDates}
+                    onDayClick={(date) =>
+                      setYearSelectedDates((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(date)) next.delete(date); else next.add(date);
+                        return next;
+                      })
+                    }
+                  />
+                ))}
+              </div>
             </div>
           ) : (
             <div className="space-y-4">
@@ -3074,11 +2910,12 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                   const [y, m] = key.split("-").map(Number);
                   const monthDays = grouped.get(key) ?? new Map<string, string>();
                   return (
-                    <MiniCalendar
+                    <MonthGrid
                       key={key}
                       year={y}
                       month={m}
-                      sessionDaysByItem={monthDays}
+                      label={`${MONTH_NAMES[m - 1]} ${y}`}
+                      days={monthDays}
                       onDayClick={handleDayClick}
                       onDayHover={handleSplitDayHover}
                     />

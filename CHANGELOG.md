@@ -6,6 +6,9 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- Okna dialogowe (edycja sesji, medium i sezonu, dodawanie sesji, łączenie mediów) zamykają się klawiszem Esc i są oznaczone jako dialogi dla czytników ekranu.
+- Kalendarze na stronach pozycji i osoby skracają sobotę jako „Sb”, tak jak kalendarz główny.
+
 ## 2026-10-25
 
 - Usunięto jednorazowy endpoint `/api/sessions/placeholders` (sprzątanie zostało wykonane).

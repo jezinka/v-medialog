@@ -1,4 +1,5 @@
 "use client";
+import Modal from "./Modal";
 
 import { useEffect, useRef, useState } from "react";
 import CoverImg from "./CoverImg";
@@ -86,8 +87,7 @@ export default function MergeMediaModal({ onClose, onSuccess }: Props) {
   const targetMedia = allMedia.find((m) => m.id === targetId);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
+    <Modal onClose={onClose} label="Połącz media" z="z-50" className="rounded-2xl shadow-xl w-full max-w-lg flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <div>
@@ -202,7 +202,6 @@ export default function MergeMediaModal({ onClose, onSuccess }: Props) {
             {saving ? "Łączenie..." : `Połącz ${selected.size > 0 ? `(${selected.size})` : ""}`}
           </button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

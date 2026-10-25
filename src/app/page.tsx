@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Calendar from "@/components/Calendar";
 import AddMediaModal from "@/components/AddMediaModal";
+import Modal from "@/components/Modal";
 import PageContainer from "@/components/PageContainer";
 import { BOOK_TYPES, SCREEN_TYPES } from "@/lib/utils";
 import { type SessionRow, mapSession } from "@/lib/types";
@@ -97,8 +98,7 @@ function LogContent() {
       )}
 
       {pickerState && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setPickerState(null)}>
-          <div className="bg-white rounded-2xl shadow-xl p-4 max-w-sm w-full" onClick={(e) => e.stopPropagation()}>
+        <Modal onClose={() => setPickerState(null)} label="Którą sesję edytować?" closeOnBackdrop z="z-50" className="rounded-2xl shadow-xl p-4 max-w-sm w-full">
             <h3 className="font-semibold text-gray-900 mb-3 text-sm">Którą sesję edytować?</h3>
             <p className="text-xs text-gray-400 mb-2">{pickerState.startDate}</p>
             <div className="space-y-2">
@@ -113,8 +113,7 @@ function LogContent() {
                 ) : null;
               })}
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {addModal && (
