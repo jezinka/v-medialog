@@ -78,3 +78,26 @@ export function toNewSeriesItems(results: TmdbDiscoverResult[], libraryIds: Map<
   }
   return items;
 }
+
+export interface NewSeriesInput { tmdb_id: number; title: string; original_title: string | null; poster_url: string | null; first_air_date: string }
+
+/** Validates the "add to watch list" body; null when anything is missing, mistyped or not a real date. */
+export function parseNewSeriesInput(body: unknown): NewSeriesInput | null {
+  if (!body || typeof body !== "object") return null;
+  const b = body as Record<string, unknown>;
+  if (!Number.isInteger(b.tmdb_id) || (b.tmdb_id as number) <= 0) return null;
+  if (typeof b.title !== "string" || !b.title.trim()) return null;
+  if (b.original_title != null && typeof b.original_title !== "string") return null;
+  if (b.poster_url != null && typeof b.poster_url !== "string") return null;
+  const date = b.first_air_date;
+  if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return null;
+  const parsed = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== date) return null;
+  return {
+    tmdb_id: b.tmdb_id as number,
+    title: b.title.trim(),
+    original_title: (b.original_title as string | undefined)?.trim() || null,
+    poster_url: (b.poster_url as string | undefined) ?? null,
+    first_air_date: date,
+  };
+}

@@ -32,11 +32,11 @@ export default function NewSeriesList({ month, onAdded }: { month: string; onAdd
         body: JSON.stringify(item),
       });
       if (!res.ok) throw new Error();
-      const { media_id } = await res.json() as { media_id: number };
+      const { media_id, added } = await res.json() as { media_id: number; added: boolean };
       setLoaded((prev) => prev && "items" in prev
         ? { ...prev, items: prev.items.map((i) => (i.tmdb_id === item.tmdb_id ? { ...i, media_id } : i)) }
         : prev);
-      toast(`Dodano „${item.title}” do listy ✓`, "success");
+      toast(added ? `Dodano „${item.title}” do listy ✓` : `„${item.title}” już jest w bibliotece`, "success");
       onAdded();
     } catch {
       toast("Błąd dodawania", "error");

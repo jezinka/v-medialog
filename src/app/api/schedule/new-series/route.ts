@@ -5,7 +5,7 @@ import { badRequest, jsonError, serverError } from "@/lib/api-helpers";
 import { downloadCover } from "@/lib/covers";
 import { monthRange } from "@/lib/schedule";
 import { buildTmdbUrl, fetchTmdb, isTmdbTimeout } from "@/lib/tmdb";
-import { NEW_SERIES_COUNTRIES, NEW_SERIES_EXCLUDED_GENRES, NEW_SERIES_NETWORKS, toNewSeriesItems } from "@/lib/new-series";
+import { NEW_SERIES_COUNTRIES, NEW_SERIES_EXCLUDED_GENRES, NEW_SERIES_NETWORKS, parseNewSeriesInput, toNewSeriesItems } from "@/lib/new-series";
 
 type DiscoverPage = { results?: Parameters<typeof toNewSeriesItems>[0]; total_pages?: number };
 
@@ -50,33 +50,31 @@ export async function GET(request: NextRequest) {
 }
 
 /**
- * POST /api/schedule/new-series { tmdb_id, title, original_title?, poster_url?, first_air_date }
+ * POST /api/schedule/new-series { tmdb_id, title, original_title?, poster_url?, first_air_date } → { media_id, added }
  * Puts the show on the watch list: creates the series (or reuses the one with this TMDB id) and its
  * season 1 with a premiere marker, so it also shows among the followed premieres.
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json() as {
-      tmdb_id?: number; title?: string; original_title?: string; poster_url?: string | null; first_air_date?: string;
-    };
-    if (!Number.isInteger(body.tmdb_id) || !body.title?.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(body.first_air_date ?? "")) {
-      return badRequest("tmdb_id, title and first_air_date are required");
-    }
-    const tmdbId = body.tmdb_id!;
-    const existing = sqlite.prepare(
-      `SELECT id FROM media WHERE tmdb_id=? AND media_type IN ('series', 'anime')`
-    ).get(tmdbId) as { id: number } | undefined;
-    // Only TMDB poster URLs are fetched; anything else is ignored
-    const cover = !existing && body.poster_url?.startsWith("https://image.tmdb.org/") ? await downloadCover(body.poster_url) : null;
+    const input = parseNewSeriesInput(await request.json().catch(() => null));
+    if (!input) return badRequest("tmdb_id, title and a valid first_air_date are required");
 
-    const mediaId = sqlite.transaction(() => {
-      const id = existing?.id ?? Number(sqlite.prepare(
+    const findSeries = sqlite.prepare(`SELECT id FROM media WHERE tmdb_id=? AND media_type IN ('series', 'anime')`);
+    // Poster first (a network call can't sit inside the transaction); only TMDB image URLs are fetched
+    const cover = !findSeries.get(input.tmdb_id) && input.poster_url?.startsWith("https://image.tmdb.org/")
+      ? await downloadCover(input.poster_url)
+      : null;
+
+    // The lookup is repeated inside the transaction, so two adds of one show can't both insert it
+    const result = sqlite.transaction(() => {
+      const existing = findSeries.get(input.tmdb_id) as { id: number } | undefined;
+      const mediaId = existing?.id ?? Number(sqlite.prepare(
         `INSERT INTO media (title, original_title, media_type, cover_url, tmdb_id, discontinued) VALUES (?, ?, 'series', ?, ?, 0)`
-      ).run(body.title!.trim(), body.original_title?.trim() || null, cover, tmdbId).lastInsertRowid);
-      addUpcomingSeason(sqlite, { mediaId: id, seasonNumber: 1, title: null, coverUrl: null, airDate: body.first_air_date! });
-      return id;
-    })();
-    return NextResponse.json({ media_id: mediaId }, { status: 201 });
+      ).run(input.title, input.original_title, cover, input.tmdb_id).lastInsertRowid);
+      const added = addUpcomingSeason(sqlite, { mediaId, seasonNumber: 1, title: null, coverUrl: null, airDate: input.first_air_date });
+      return { media_id: mediaId, added: added || !existing };
+    }).immediate();
+    return NextResponse.json(result, { status: result.added ? 201 : 200 });
   } catch (error) {
     console.error(error);
     return serverError("Failed to add series");
