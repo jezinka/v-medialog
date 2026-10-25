@@ -43,6 +43,7 @@ export async function GET() {
              COUNT(DISTINCT s.id) as season_count
       FROM media m
       LEFT JOIN seasons s ON s.media_id = m.id
+      WHERE m.universe_id IS NULL
       GROUP BY m.id
       ORDER BY m.title
     `).all() as MediaRow[];

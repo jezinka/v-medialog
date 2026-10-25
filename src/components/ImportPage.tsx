@@ -3,6 +3,7 @@ import React, { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import MediaLibraryView from "./MediaLibraryView";
 import PeopleView from "./PeopleView";
+import UniversesView from "./UniversesView";
 import MergeMediaModal from "./MergeMediaModal";
 import ExportTab from "./import/ExportTab";
 import UploadStep from "./import/UploadStep";
@@ -12,7 +13,7 @@ import BulkSyncTab from "./import/BulkSyncTab";
 import { isYearPlaceholder } from "./import/types";
 import type { ImportType, ImportResult, PreviewResponse, TmdbFetchState, ValidItem } from "./import/types";
 
-type TabType = "media" | "people" | "import" | "export" | "sync";
+type TabType = "media" | "people" | "universes" | "import" | "export" | "sync";
 type Step = "upload" | "preview" | "result";
 
 export default function ImportPage() {
@@ -169,7 +170,7 @@ export default function ImportPage() {
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
       {/* Tabs */}
       <div className="flex border-b border-gray-200">
-        {(["media", "people", "import", "export", "sync"] as TabType[]).map((tab) => (
+        {(["media", "people", "universes", "import", "export", "sync"] as TabType[]).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -179,7 +180,7 @@ export default function ImportPage() {
                 : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
             }`}
           >
-            {tab === "media" ? "🎬 Media" : tab === "people" ? "👤 Ludzie" : tab === "import" ? "📥 Importuj CSV" : tab === "sync" ? "🔄 Synchronizuj" : "📤 Eksportuj"}
+            {tab === "media" ? "🎬 Media" : tab === "people" ? "👤 Ludzie" : tab === "universes" ? "🌌 Uniwersa" : tab === "import" ? "📥 Importuj CSV" : tab === "sync" ? "🔄 Synchronizuj" : "📤 Eksportuj"}
           </button>
         ))}
       </div>
@@ -200,6 +201,8 @@ export default function ImportPage() {
           </div>
         ) : activeTab === "people" ? (
           <PeopleView onOpenPerson={(id) => router.push(`/people/${id}`)} />
+        ) : activeTab === "universes" ? (
+          <UniversesView />
         ) : activeTab === "export" ? (
           <ExportTab />
         ) : activeTab === "sync" ? (

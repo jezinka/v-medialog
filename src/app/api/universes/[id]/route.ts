@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
-import { notFound, parseRouteId, serverError } from "@/lib/api-helpers";
+import { badRequest, notFound, parseRouteId, serverError } from "@/lib/api-helpers";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -23,5 +23,35 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   } catch (error) {
     console.error(error);
     return serverError("Failed to fetch universe");
+  }
+}
+
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const id = await parseRouteId(params);
+    const { name } = await req.json() as { name?: string };
+    if (!name?.trim()) return badRequest("name is required");
+    const r = sqlite.prepare(`UPDATE universes SET name=?, updated_at=datetime('now') WHERE id=?`).run(name.trim(), id);
+    if (r.changes === 0) return notFound();
+    return NextResponse.json(sqlite.prepare(`SELECT * FROM universes WHERE id=?`).get(id));
+  } catch (error) {
+    console.error(error);
+    return serverError("Failed to update universe");
+  }
+}
+
+/** Deletes the universe; its media stay, just without a universe. */
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const id = await parseRouteId(params);
+    const removed = sqlite.transaction(() => {
+      sqlite.prepare(`UPDATE media SET universe_id=NULL WHERE universe_id=?`).run(id);
+      return sqlite.prepare(`DELETE FROM universes WHERE id=?`).run(id).changes;
+    })();
+    if (removed === 0) return notFound();
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error(error);
+    return serverError("Failed to delete universe");
   }
 }
