@@ -158,7 +158,8 @@ export default function EditSessionModal({
           </button>
           <button
             onClick={handleDelete}
-            className="px-3 py-2 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-100"
+            disabled={editSaving}
+            className="px-3 py-2 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-100 disabled:opacity-50"
           >
             🗑️
           </button>

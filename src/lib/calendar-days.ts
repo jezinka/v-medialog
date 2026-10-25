@@ -23,8 +23,9 @@ export function buildSessionDaysMap(
   for (const session of sessions) {
     const seasonIdx = seasons.findIndex((s) => s.id === session.season_id);
     const color = SEASON_COLORS[(seasonIdx >= 0 ? seasonIdx : 0) % SEASON_COLORS.length];
-    const start = new Date(session.start_date);
-    const end = session.end_date ? new Date(session.end_date) : new Date(session.start_date);
+    // "T00:00" parses as local midnight; a bare date is UTC and would shift a day west of UTC
+    const start = new Date(`${session.start_date}T00:00`);
+    const end = new Date(`${session.end_date ?? session.start_date}T00:00`);
     const spanDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     if (spanDays >= 365) continue;
     const cur = new Date(start);

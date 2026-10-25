@@ -1,8 +1,8 @@
 "use client";
-import Modal from "./Modal";
 
 import { useEffect, useRef, useState } from "react";
 import CoverImg from "./CoverImg";
+import Modal from "./Modal";
 
 interface MediaItem {
   id: number;
