@@ -1534,6 +1534,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     : "bg-gray-100 text-gray-700";
   const label = media ? (MEDIA_TYPE_LABELS[media.media_type] ?? media.media_type) : "";
   const isBook = media ? BOOK_TYPES.includes(media.media_type) : false;
+  const hasSpecials = media ? SCREEN_TYPES.includes(media.media_type) : false; // TMDB season 0
   const partLabel = isBook ? "Część" : "Sezon";
   const partsLabel = isBook ? "Części" : "Sezony";
   const newPartLabel = isBook ? "Nowa część" : "Nowy sezon";
