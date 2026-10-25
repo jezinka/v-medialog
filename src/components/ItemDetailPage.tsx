@@ -1683,7 +1683,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                     key={s.id}
                     onClick={() => addSession(seasonPickerDate, s.id)}
                     disabled={addingSession}
-                    title={seasonLabel(s, partNo(seasons, idx, !isBook), partLabel)}
+                    title={seasonLabel(s, partNo(seasons, idx, hasSpecials), partLabel)}
                     className="rounded-md hover:ring-2 hover:ring-blue-400 disabled:opacity-50"
                   >
                     <div className="relative aspect-[2/3] rounded-md overflow-hidden bg-gray-100">
@@ -1691,11 +1691,11 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                         <Image unoptimized src={s.cover_url} alt="" fill className="object-cover" />
                       ) : (
                         <div className={`absolute inset-0 flex items-center justify-center text-white text-sm font-semibold ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}>
-                          {partNo(seasons, idx, !isBook)}
+                          {partNo(seasons, idx, hasSpecials)}
                         </div>
                       )}
                     </div>
-                    <p className="text-[11px] text-gray-600 text-center mt-0.5">{partNo(seasons, idx, !isBook)}</p>
+                    <p className="text-[11px] text-gray-600 text-center mt-0.5">{partNo(seasons, idx, hasSpecials)}</p>
                   </button>
                 ))}
               </div>
@@ -1712,7 +1712,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                       className={`w-2.5 h-2.5 rounded-full shrink-0 ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}
                     />
                     <span className="font-medium">
-                      {seasonLabel(s, partNo(seasons, idx, !isBook), partLabel)}
+                      {seasonLabel(s, partNo(seasons, idx, hasSpecials), partLabel)}
                     </span>
                     {s.session_count > 0 && (
                       <span className="ml-auto text-xs text-gray-400">{s.session_count} sesji</span>
@@ -1788,7 +1788,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                 >
                   {seasons.map((s, idx) => (
                     <option key={s.id} value={s.id}>
-                      {s.title ?? (partNo(seasons, idx, !isBook) === "Sp." ? "Speciale" : `${partLabel} ${partNo(seasons, idx, !isBook)}`)}
+                      {s.title ?? (partNo(seasons, idx, hasSpecials) === "Sp." ? "Speciale" : `${partLabel} ${partNo(seasons, idx, hasSpecials)}`)}
                     </option>
                   ))}
                 </select>
@@ -2632,8 +2632,8 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                     <button
                       key={s.id}
                       onClick={() => setSelectedPartId((id) => (id === s.id ? null : s.id))}
-                      title={`${seasonLabel(s, partNo(seasons, idx, !isBook), partLabel)} · ${s.session_count} sesji`}
-                      aria-label={`${seasonLabel(s, partNo(seasons, idx, !isBook), partLabel)} · ${s.session_count} sesji${
+                      title={`${seasonLabel(s, partNo(seasons, idx, hasSpecials), partLabel)} · ${s.session_count} sesji`}
+                      aria-label={`${seasonLabel(s, partNo(seasons, idx, hasSpecials), partLabel)} · ${s.session_count} sesji${
                         s.want_to_watch ? (isBook ? " · chcę przeczytać" : " · chcę obejrzeć") : ""
                       }${s.session_count === 0 ? (isBook ? " · nieprzeczytana" : " · nieobejrzany") : ""}`}
                       aria-pressed={selectedPartId === s.id}
@@ -2646,7 +2646,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                           <Image unoptimized src={s.cover_url} alt="" fill className="object-cover" />
                         ) : (
                           <div className={`absolute inset-0 flex items-center justify-center text-white text-sm font-semibold ${SEASON_COLORS[idx % SEASON_COLORS.length]}`} aria-hidden="true">
-                            {partNo(seasons, idx, !isBook)}
+                            {partNo(seasons, idx, hasSpecials)}
                           </div>
                         )}
                         {s.want_to_watch ? (
@@ -2656,7 +2656,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                           <div className="absolute inset-0 bg-white/50" title={isBook ? "Nieprzeczytana" : "Nieobejrzany"} />
                         )}
                       </div>
-                      <p className="text-[11px] text-gray-600 text-center mt-0.5 truncate">{partNo(seasons, idx, !isBook)}</p>
+                      <p className="text-[11px] text-gray-600 text-center mt-0.5 truncate">{partNo(seasons, idx, hasSpecials)}</p>
                     </button>
                   ))}
                 </div>
@@ -2667,7 +2667,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                   return (
                     <div className="mt-3 flex flex-wrap items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{seasonLabel(sel, partNo(seasons, idx, !isBook), partLabel)}</p>
+                        <p className="text-sm font-medium text-gray-800 truncate">{seasonLabel(sel, partNo(seasons, idx, hasSpecials), partLabel)}</p>
                         {(sel.first_session_date || sel.last_session_date) && (
                           <p className="text-xs text-gray-400 mt-0.5">
                             {sel.first_session_date ? formatDate(sel.first_session_date) : "?"} –{" "}
@@ -2984,7 +2984,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                   <option value="">— wybierz {partLabel.toLowerCase()} —</option>
                   {seasons.map((s, idx) => (
                     <option key={s.id} value={s.id}>
-                      {s.title ?? (partNo(seasons, idx, !isBook) === "Sp." ? "Speciale" : `${partLabel} ${partNo(seasons, idx, !isBook)}`)}
+                      {s.title ?? (partNo(seasons, idx, hasSpecials) === "Sp." ? "Speciale" : `${partLabel} ${partNo(seasons, idx, hasSpecials)}`)}
                     </option>
                   ))}
                 </select>
