@@ -36,3 +36,23 @@ export async function createSessionForMedia(
     throw new Error(errorBody.error ?? "Nie udało się utworzyć sesji");
   }
 }
+
+/** Adds a one-day session on each date to the season, skipping failures; returns how many were saved. */
+export async function addDaySessions(
+  seasonId: number,
+  dates: string[],
+  flags = { cinema: false, withChild: false }
+): Promise<number> {
+  let added = 0;
+  for (const date of dates) {
+    try {
+      const res = await fetch("/api/sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ season_id: seasonId, start_date: date, end_date: date, cinema: flags.cinema, with_child: flags.withChild }),
+      });
+      if (res.ok) added++;
+    } catch { /* skip */ }
+  }
+  return added;
+}

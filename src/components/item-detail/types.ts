@@ -52,3 +52,28 @@ export interface SeasonRow {
   last_session_date: string | null;
   want_to_watch: boolean | number | null;
 }
+
+export type CachedPerson = {
+  personId: number;
+  name: string;
+  role: string;
+  characterName: string | null;
+  photoUrl: string | null;
+  displayOrder: number;
+};
+
+/** /api/media/[id]/external: details pulled from TMDB / iTunes / Open Library. */
+export type CachedData = {
+  tmdbId: number | null;
+  olKey: string | null;
+  externalSyncedAt: string | null;
+  description: string | null;
+  genres: string[];
+  voteAverage: number | null;
+  runtime: number | null;
+  releaseYear: number | null;
+  seriesStatus: string | null;
+  tmdbSeasonsCount: number | null;
+  trackList: Array<{ number: number; title: string; duration_ms: number | null }> | null;
+  persons: CachedPerson[];
+};
