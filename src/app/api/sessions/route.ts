@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
+import { removeRedundantPlaceholders } from "@/db/placeholders";
 
 /**
  * GET /api/sessions?year=2025
@@ -65,13 +66,17 @@ export async function POST(request: NextRequest) {
     const seasonExists = sqlite.prepare(`SELECT id FROM seasons WHERE id=?`).get(Number(season_id));
     if (!seasonExists) return NextResponse.json({ error: `Season ${season_id} not found` }, { status: 404 });
 
-    const r = sqlite.prepare(
-      `INSERT INTO sessions (season_id, start_date, end_date, cinema, with_child) VALUES (?, ?, ?, ?, ?)`
-    ).run(Number(season_id), start_date, end_date ?? null, cinema ? 1 : 0, with_child ? 1 : 0);
-
-    // If a real session exists, the season is no longer just "want to watch"
-    sqlite.prepare(`UPDATE seasons SET want_to_watch = 0 WHERE id = ? AND want_to_watch = 1`)
-      .run(Number(season_id));
+    const r = sqlite.transaction(() => {
+      const res = sqlite.prepare(
+        `INSERT INTO sessions (season_id, start_date, end_date, cinema, with_child) VALUES (?, ?, ?, ?, ?)`
+      ).run(Number(season_id), start_date, end_date ?? null, cinema ? 1 : 0, with_child ? 1 : 0);
+      // A real session replaces the "sometime in YYYY" placeholder of its year
+      removeRedundantPlaceholders(sqlite, Number(season_id));
+      // If a real session exists, the season is no longer just "want to watch"
+      sqlite.prepare(`UPDATE seasons SET want_to_watch = 0 WHERE id = ? AND want_to_watch = 1`)
+        .run(Number(season_id));
+      return res;
+    })();
 
     const newId = Number(r.lastInsertRowid);
     const created = sqlite.prepare(`SELECT * FROM sessions WHERE id=?`).get(newId) as Record<string, unknown> | undefined;

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
 import { parseTagsInput, setMediaTags } from "@/lib/tags";
 import { markWantToWatch } from "@/db/want-to-watch";
+import { removeRedundantPlaceholders } from "@/db/placeholders";
 
 interface MediaItem {
   title: string;
@@ -85,6 +86,7 @@ export async function POST(request: NextRequest) {
                 }
               } catch { /* ignore malformed JSON */ }
             }
+            removeRedundantPlaceholders(sqlite, seasonId);
 
             inserted++;
           } catch {
