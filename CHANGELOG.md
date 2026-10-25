@@ -6,9 +6,10 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+## 2026-10-25
+
 - Usunięto jednorazowy endpoint `/api/seasons/numbering` (uzupełnianie numerów zostało wykonane).
 
-## 2026-10-25
 
 ### Nowe
 - Sezony seriali wyświetlają się jako siatka okładek, tak jak tomy mangi; akcje sezonu są w panelu po kliknięciu kafelka.
