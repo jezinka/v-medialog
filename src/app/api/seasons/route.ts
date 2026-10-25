@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
+import { nextSeasonNumber } from "@/db/season-numbering";
 
 /**
  * GET /api/seasons?media_id=5
@@ -43,9 +44,12 @@ export async function POST(request: NextRequest) {
     const mediaExists = sqlite.prepare(`SELECT id FROM media WHERE id=?`).get(media_id);
     if (!mediaExists) return NextResponse.json({ error: "Media not found" }, { status: 404 });
 
-    const r = sqlite.prepare(
+    const r = sqlite.transaction(() => sqlite.prepare(
       `INSERT INTO seasons (media_id, season_number, title, cover_url, want_to_watch) VALUES (?, ?, ?, ?, ?)`
-    ).run(media_id, season_number ?? null, title ?? null, cover_url ?? null, want_to_watch !== undefined ? (want_to_watch ? 1 : 0) : 1);
+    ).run(
+      media_id, season_number ?? nextSeasonNumber(sqlite, media_id), title ?? null, cover_url ?? null,
+      want_to_watch !== undefined ? (want_to_watch ? 1 : 0) : 1
+    ))();
 
     const newId = Number(r.lastInsertRowid);
     const created = sqlite.prepare(`SELECT * FROM seasons WHERE id=?`).get(newId) as Record<string, unknown> | undefined;

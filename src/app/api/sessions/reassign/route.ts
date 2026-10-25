@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
+import { nextSeasonNumber } from "@/db/season-numbering";
 
 /**
  * POST /api/sessions/reassign
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
           `INSERT INTO seasons (media_id, season_number, title, cover_url, want_to_watch) VALUES (?, ?, ?, ?, 1)`
         ).run(
           new_season!.media_id,
-          new_season!.season_number ?? null,
+          new_season!.season_number ?? nextSeasonNumber(sqlite, new_season!.media_id),
           new_season!.title ?? null,
           new_season!.cover_url ?? null,
         );
