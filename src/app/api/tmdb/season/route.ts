@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
   const searchQuery = originalTitle || title!;
 
   const seasonNum = seasonParam ? parseInt(seasonParam, 10) : 1;
-  if (isNaN(seasonNum) || seasonNum < 1) {
+  if (isNaN(seasonNum) || seasonNum < 0) { // 0 = TMDB "Specials"
     return NextResponse.json({ error: "Nieprawidłowy numer sezonu" }, { status: 400 });
   }
 
