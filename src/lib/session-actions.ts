@@ -56,3 +56,14 @@ export async function addDaySessions(
   }
   return added;
 }
+
+/** Creates the media's first season (number `seasonNumber`, or none for unnumbered types) and returns its id. */
+export async function createDefaultSeason(mediaId: number, seasonNumber: number | null): Promise<number> {
+  const res = await fetch("/api/seasons", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ media_id: mediaId, season_number: seasonNumber, title: null }),
+  });
+  if (!res.ok) throw new Error("Failed to create season");
+  return ((await res.json()) as { id: number }).id;
+}

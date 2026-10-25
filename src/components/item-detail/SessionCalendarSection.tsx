@@ -1,17 +1,16 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { toast } from "../Toast";
 import MonthGrid from "../MonthGrid";
-import { SCREEN_TYPES, hasSeasonNumbers, MONTH_NAMES } from "@/lib/utils";
-import { partNo } from "@/lib/part-number";
+import { hasSeasonNumbers, MONTH_NAMES } from "@/lib/utils";
 import { groupByYearMonth } from "@/lib/calendar-days";
-import { addDaySessions } from "@/lib/session-actions";
+import { createDefaultSeason } from "@/lib/session-actions";
 import SeasonPickerModal from "./SeasonPickerModal";
 import EditSessionModal from "./EditSessionModal";
+import YearPickerView from "./YearPickerView";
+import SplitAssignForm, { type SplitTarget } from "./SplitAssignForm";
 import { partLabels } from "./part-labels";
 import type { MediaData, SeasonRow, SessionApiRow } from "./types";
-
-interface SplitTarget { sessionIds: number[]; dateRange: string }
 
 /**
  * Watch / reading history as month calendars. A click on an empty day adds a session (picking the season),
@@ -36,24 +35,12 @@ export default function SessionCalendarSection({
   const [addingSession, setAddingSession] = useState(false);
   const [editingSession, setEditingSession] = useState<SessionApiRow | null>(null);
   const [extraMonths, setExtraMonths] = useState<Set<string>>(new Set());
-  const [yearViewYear, setYearViewYear] = useState(() => new Date().getFullYear());
-  const [yearSelectedDates, setYearSelectedDates] = useState<Set<string>>(new Set());
-  const [yearBatchSaving, setYearBatchSaving] = useState(false);
-  const [yearBatchCinema, setYearBatchCinema] = useState(false);
-  const [yearBatchWithChild, setYearBatchWithChild] = useState(false);
-
   // ── Split-into-seasons mode ─────────────────────────────────────────────────
   const [splitMode, setSplitMode] = useState(false);
   const [splitRangeStart, setSplitRangeStart] = useState<string | null>(null);
   const [splitRangeEnd, setSplitRangeEnd] = useState<string | null>(null);
   // When range is confirmed, show assignment dialog
   const [splitTarget, setSplitTarget] = useState<SplitTarget | null>(null);
-  const [splitSeasonChoice, setSplitSeasonChoice] = useState<"existing" | "new">("new");
-  const [splitExistingSeasonId, setSplitExistingSeasonId] = useState("");
-  const [splitNewSeasonNumber, setSplitNewSeasonNumber] = useState("");
-  const [splitNewSeasonTitle, setSplitNewSeasonTitle] = useState("");
-  const [splitSaving, setSplitSaving] = useState(false);
-
   const addSession = useCallback(
     async (date: string, seasonId: number, flags = { cinema: false, withChild: false }) => {
       setAddingSession(true);
@@ -93,44 +80,6 @@ export default function SessionCalendarSection({
       ),
     [sessions]
   );
-
-  // When only placeholders are present, jump yearViewYear to the placeholder's year.
-  useEffect(() => {
-    if (isOnlyPlaceholders) {
-      setYearViewYear(parseInt(sessions[0].start_date.slice(0, 4)));
-    }
-  }, [isOnlyPlaceholders, sessions]);
-
-  const handleYearBatchCreate = useCallback(async () => {
-    if (yearSelectedDates.size === 0) return;
-    setYearBatchSaving(true);
-    try {
-      let seasonId: number;
-      if (seasons.length === 0) {
-        const noSeasonNumber = !hasSeasonNumbers(media.media_type);
-        const res = await fetch("/api/seasons", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ media_id: media.id, season_number: noSeasonNumber ? null : 1, title: null }),
-        });
-        if (!res.ok) throw new Error("Failed to create season");
-        const data = await res.json() as { id: number };
-        seasonId = data.id;
-        await loadData();
-      } else {
-        seasonId = seasons[0].id;
-      }
-      const dates = Array.from(yearSelectedDates).sort();
-      const added = await addDaySessions(seasonId, dates, { cinema: yearBatchCinema, withChild: yearBatchWithChild });
-      toast(added > 0 ? `Dodano ${added} sesji ✓` : "Błąd zapisu sesji", added > 0 ? "success" : "error");
-      setYearSelectedDates(new Set());
-      await onChanged();
-    } catch {
-      toast("Błąd zapisu sesji", "error");
-    } finally {
-      setYearBatchSaving(false);
-    }
-  }, [yearSelectedDates, seasons, media, loadData, onChanged, yearBatchCinema, yearBatchWithChild]);
 
   // Map each calendar date to the session it belongs to (for click-to-edit)
   const dateToSessionMap = useMemo(() => {
@@ -184,15 +133,8 @@ export default function SessionCalendarSection({
       if (seasons.length === 0) {
         // Auto-create default season then add session
         try {
-          const noSeasonNumber = !hasSeasonNumbers(media.media_type);
-          const r = await fetch("/api/seasons", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ media_id: media.id, season_number: noSeasonNumber ? null : 1, title: null }),
-          });
-          if (!r.ok) { toast("Błąd tworzenia sezonu", "error"); return; }
-          const newSeason = await r.json() as { id: number };
-          addSession(date, newSeason.id);
+          const seasonId = await createDefaultSeason(media.id, hasSeasonNumbers(media.media_type) ? 1 : null);
+          addSession(date, seasonId);
         } catch {
           toast("Błąd tworzenia sezonu", "error");
         }
@@ -203,39 +145,10 @@ export default function SessionCalendarSection({
     [splitMode, splitRangeStart, splitTarget, sessions, sessionDaysMap, dateToSessionMap, seasons, addSession, media]
   );
 
+  const cancelSplitRange = () => { setSplitTarget(null); setSplitRangeStart(null); setSplitRangeEnd(null); };
+
   const handleSplitDayHover = (date: string) => {
     if (splitMode && splitRangeStart && !splitTarget) setSplitRangeEnd(date);
-  };
-
-  const handleSplitAssign = async () => {
-    if (!splitTarget) return;
-    setSplitSaving(true);
-    try {
-      const body: Record<string, unknown> = { session_ids: splitTarget.sessionIds };
-      if (splitSeasonChoice === "existing" && splitExistingSeasonId) {
-        body.target_season_id = parseInt(splitExistingSeasonId);
-      } else {
-        body.new_season = {
-          media_id: media.id,
-          season_number: splitNewSeasonNumber ? parseInt(splitNewSeasonNumber) : undefined,
-          title: splitNewSeasonTitle || undefined,
-        };
-      }
-      const res = await fetch("/api/sessions/reassign", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error();
-      toast("Przeniesiono sesje ✓", "success");
-      setSplitTarget(null); setSplitRangeStart(null); setSplitRangeEnd(null);
-      setSplitNewSeasonNumber(""); setSplitNewSeasonTitle(""); setSplitExistingSeasonId("");
-      await onChanged();
-    } catch {
-      toast("Błąd przenoszenia", "error");
-    } finally {
-      setSplitSaving(false);
-    }
   };
 
   // Build a special sessionDaysMap for split mode that highlights the hover range
@@ -348,140 +261,25 @@ export default function SessionCalendarSection({
       )}
       {/* Split assign dialog */}
       {splitTarget && (
-        <div className="mb-4 border border-amber-300 rounded-lg p-4 bg-amber-50 space-y-3">
-          <p className="text-sm font-medium text-amber-800">
-            Przypisz {splitTarget.sessionIds.length} sesji ({splitTarget.dateRange}) do {partLabel.toLowerCase()}:
-          </p>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-1 text-sm text-gray-700 cursor-pointer">
-              <input type="radio" name="splitChoice" value="new" checked={splitSeasonChoice === "new"} onChange={() => setSplitSeasonChoice("new")} />
-              Nowa {partLabel.toLowerCase()}
-            </label>
-            <label className="flex items-center gap-1 text-sm text-gray-700 cursor-pointer">
-              <input type="radio" name="splitChoice" value="existing" checked={splitSeasonChoice === "existing"} onChange={() => setSplitSeasonChoice("existing")} />
-              Istniejąca {partLabel.toLowerCase()}
-            </label>
-          </div>
-          {splitSeasonChoice === "new" && (
-            <div className="flex gap-2">
-              <input
-                type="number" placeholder={`Nr ${partLabel.toLowerCase()}`} value={splitNewSeasonNumber}
-                onChange={(e) => setSplitNewSeasonNumber(e.target.value)}
-                className="w-28 text-sm border border-gray-300 rounded px-2 py-1"
-              />
-              <input
-                type="text" placeholder="Tytuł (opcjonalny)" value={splitNewSeasonTitle}
-                onChange={(e) => setSplitNewSeasonTitle(e.target.value)}
-                className="flex-1 text-sm border border-gray-300 rounded px-2 py-1"
-              />
-            </div>
-          )}
-          {splitSeasonChoice === "existing" && (
-            <select
-              value={splitExistingSeasonId} onChange={(e) => setSplitExistingSeasonId(e.target.value)}
-              className="w-full text-sm border border-gray-300 rounded px-2 py-1"
-            >
-              <option value="">— wybierz {partLabel.toLowerCase()} —</option>
-              {seasons.map((s, idx) => (
-                <option key={s.id} value={s.id}>
-                  {s.title ?? (partNo(seasons, idx, hasSpecials) === "Sp." ? "Speciale" : `${partLabel} ${partNo(seasons, idx, hasSpecials)}`)}
-                </option>
-              ))}
-            </select>
-          )}
-          <div className="flex gap-2">
-            <button
-              onClick={handleSplitAssign} disabled={splitSaving}
-              className="text-sm bg-amber-600 text-white px-4 py-1.5 rounded hover:bg-amber-700 disabled:opacity-50"
-            >
-              {splitSaving ? "Zapisuję..." : "Przypisz"}
-            </button>
-            <button
-              onClick={() => { setSplitTarget(null); setSplitRangeStart(null); setSplitRangeEnd(null); }}
-              className="text-sm border border-gray-300 px-4 py-1.5 rounded hover:bg-gray-50"
-            >
-              Anuluj
-            </button>
-          </div>
-        </div>
+        <SplitAssignForm
+          target={splitTarget}
+          mediaId={media.id}
+          seasons={seasons}
+          partLabel={partLabel}
+          hasSpecials={hasSpecials}
+          onAssigned={async () => { cancelSplitRange(); await onChanged(); }}
+          onCancel={cancelSplitRange}
+        />
       )}
       {sessions.length === 0 || isOnlyPlaceholders ? (
-        <div className="space-y-4">
-          {/* Year navigation */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setYearViewYear((y) => y - 1)}
-              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 font-bold"
-            >
-              ‹
-            </button>
-            <span className="text-sm font-semibold text-gray-800 min-w-[3rem] text-center">{yearViewYear}</span>
-            <button
-              onClick={() => setYearViewYear((y) => y + 1)}
-              className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 font-bold"
-            >
-              ›
-            </button>
-            {yearSelectedDates.size > 0 && (
-              <label className="flex items-center gap-1.5 cursor-pointer select-none ml-2">
-                <input
-                  type="checkbox"
-                  checked={yearBatchCinema}
-                  onChange={(e) => setYearBatchCinema(e.target.checked)}
-                  className="w-4 h-4 accent-yellow-500"
-                />
-                <span className="text-xs text-gray-700">🎟️ kino</span>
-              </label>
-            )}
-            {yearSelectedDates.size > 0 && SCREEN_TYPES.includes(media.media_type) && (
-              <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={yearBatchWithChild}
-                  onChange={(e) => setYearBatchWithChild(e.target.checked)}
-                  className="w-4 h-4 accent-emerald-500"
-                />
-                <span className="text-xs text-gray-700">👶 z dzieckiem</span>
-              </label>
-            )}
-            {yearSelectedDates.size > 0 && (
-              <button
-                onClick={handleYearBatchCreate}
-                disabled={yearBatchSaving}
-                className="ml-2 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                {yearBatchSaving ? "Zapisuję..." : `Utwórz ${yearSelectedDates.size} sesj${yearSelectedDates.size === 1 ? "ę" : "e"}`}
-              </button>
-            )}
-            {yearSelectedDates.size > 0 && (
-              <button
-                onClick={() => setYearSelectedDates(new Set())}
-                className="text-xs text-gray-400 hover:text-gray-600"
-              >
-                Wyczyść
-              </button>
-            )}
-          </div>
-          <div className="grid grid-cols-3 gap-x-6 gap-y-6">
-            {MONTH_NAMES.map((name, i) => (
-              <MonthGrid
-                key={name}
-                year={yearViewYear}
-                month={i + 1}
-                label={name}
-                days={sessionDaysMap}
-                selected={yearSelectedDates}
-                onDayClick={(date) =>
-                  setYearSelectedDates((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(date)) next.delete(date); else next.add(date);
-                    return next;
-                  })
-                }
-              />
-            ))}
-          </div>
-        </div>
+        <YearPickerView
+          media={media}
+          seasons={seasons}
+          sessionDaysMap={sessionDaysMap}
+          placeholderYear={isOnlyPlaceholders ? parseInt(sessions[0].start_date.slice(0, 4)) : null}
+          loadData={loadData}
+          onChanged={onChanged}
+        />
       ) : (
         <div className="space-y-4">
           <div className="flex flex-wrap gap-6">
