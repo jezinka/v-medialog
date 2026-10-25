@@ -19,6 +19,7 @@ export interface JwOffer {
   url: string;
   availableFrom: string | null;
   availableTo: string | null;
+  languages: string[]; // audio + subtitle language codes; empty = unknown
 }
 
 interface JwResult {
@@ -48,6 +49,8 @@ query SearchVOD($query: String!, $country: Country!) {
           availableFromTime
           availableTo
           standardWebURL
+          audioLanguages
+          subtitleLanguages
           package {
             clearName
             technicalName
@@ -76,19 +79,23 @@ function qualityOrder(q: string) {
   return q === "_4K" ? 3 : q === "HD" ? 2 : 1;
 }
 
-/** Deduplicate offers — keep best quality per provider+monetizationType */
+/** Deduplicate offers — keep best quality per provider+monetizationType, union languages across rows */
 function dedupeOffers(raw: {
   monetizationType: string;
   presentationType: string;
   availableFromTime: string | null;
   availableTo: string | null;
   standardWebURL: string;
+  audioLanguages: string[];
+  subtitleLanguages: string[];
   package: { clearName: string; technicalName: string; icon: string };
 }[]): JwOffer[] {
   const best = new Map<string, JwOffer>();
   for (const o of raw) {
     const key = `${o.package.technicalName}__${o.monetizationType}`;
     const existing = best.get(key);
+    const languages = [...new Set([...(existing?.languages ?? []), ...o.audioLanguages, ...o.subtitleLanguages])];
+    if (existing) existing.languages = languages;
     if (!existing || qualityOrder(o.presentationType) > qualityOrder(existing.quality)) {
       best.set(key, {
         providerName: o.package.clearName,
@@ -99,6 +106,7 @@ function dedupeOffers(raw: {
         url: o.standardWebURL,
         availableFrom: o.availableFromTime ?? null,
         availableTo: o.availableTo ?? null,
+        languages,
       });
     }
   }
@@ -119,6 +127,8 @@ type JwNode = {
     availableFromTime: string | null;
     availableTo: string | null;
     standardWebURL: string;
+    audioLanguages: string[];
+    subtitleLanguages: string[];
     package: { clearName: string; technicalName: string; icon: string };
   }[];
 };
@@ -215,6 +225,14 @@ export async function searchJustWatch(
     objectType: match.objectType,
     offers: dedupeOffers(match.offers),
   };
+}
+
+/**
+ * True if an offer has Polish audio or subtitles ("pl" or a regional "pl-XX").
+ * ponytail: empty list = JustWatch doesn't know, keep the offer rather than hide it
+ */
+export function hasPolish(languages: string[]): boolean {
+  return languages.length === 0 || languages.some((l) => l === "pl" || l.startsWith("pl-"));
 }
 
 /** Map app media_type to JustWatch objectType */

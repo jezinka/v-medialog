@@ -1,5 +1,5 @@
 import { sqlite } from "@/db";
-import { searchJustWatch, toJwObjectType, type JwOffer } from "@/lib/justwatch";
+import { hasPolish, searchJustWatch, toJwObjectType, type JwOffer } from "@/lib/justwatch";
 
 const LEAVING_SOON_DAYS = 7;
 
@@ -21,7 +21,8 @@ export async function refreshVodOffers(media: {
 }): Promise<void> {
   const objectType = media.mediaType ? toJwObjectType(media.mediaType) : undefined;
   const jw = await searchJustWatch(media.title, { year: media.year, tmdbId: media.tmdbId, objectType });
-  const offers = jw?.offers.filter((o) => o.monetizationType === "FLATRATE" || o.monetizationType === "FREE") ?? [];
+  const offers = jw?.offers.filter((o) =>
+    (o.monetizationType === "FLATRATE" || o.monetizationType === "FREE") && hasPolish(o.languages)) ?? [];
 
   const existing = sqlite.prepare(
     `SELECT provider_slug, monetization_type, provider_name FROM vod_offers WHERE item_type='media' AND item_id=?`

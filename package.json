@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start --port 5000",
     "lint": "eslint",
+    "test": "node --test 'src/**/*.test.ts'",
     "export:medialog": "node scripts/export-medialog.mjs"
   },
   "dependencies": {
