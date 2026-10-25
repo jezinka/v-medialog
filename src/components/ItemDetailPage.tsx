@@ -2620,7 +2620,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
               </div>
             ) : (
               <>
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">{partsLabel}</h3>
+                <h3 className="text-sm font-semibold text-gray-800 mb-3">{partsLabel}</h3>
                 {/* Parts as a compact cover grid; click one for its dates and actions */}
                 <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
                   {seasons.map((s, idx) => (
@@ -2628,6 +2628,8 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                       key={s.id}
                       onClick={() => setSelectedPartId((id) => (id === s.id ? null : s.id))}
                       title={`${seasonLabel(s, idx, partLabel)} · ${s.session_count} sesji`}
+                      aria-label={`${seasonLabel(s, idx, partLabel)} · ${s.session_count} sesji`}
+                      aria-pressed={selectedPartId === s.id}
                       className={`group text-left rounded-md transition-shadow ${
                         selectedPartId === s.id ? "ring-2 ring-blue-500 ring-offset-1" : "hover:ring-2 hover:ring-gray-300"
                       }`}
@@ -2636,7 +2638,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                         {s.cover_url ? (
                           <Image unoptimized src={s.cover_url} alt="" fill className="object-cover" />
                         ) : (
-                          <div className={`absolute inset-0 flex items-center justify-center text-white text-sm font-semibold ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}>
+                          <div className={`absolute inset-0 flex items-center justify-center text-white text-sm font-semibold ${SEASON_COLORS[idx % SEASON_COLORS.length]}`} aria-hidden="true">
                             {s.season_number ?? idx + 1}
                           </div>
                         )}
