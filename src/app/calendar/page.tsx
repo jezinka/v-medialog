@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import CoverImg from "@/components/CoverImg";
 import { toast } from "@/components/Toast";
 import { CALENDAR_TYPES, MONTH_NAMES, DAY_LABELS, MEDIA_TYPES, MEDIA_TYPE_LABELS, MEDIA_TYPE_EMOJI } from "@/lib/utils";
+import { dateKey, getDaysInMonth, getFirstDayOfMonth } from "@/lib/calendar-days";
 
 interface CalendarEntry {
   season_id: number;
@@ -17,19 +18,6 @@ interface CalendarEntry {
   is_placeholder: boolean;
   cinema: boolean;
   with_child: boolean;
-}
-
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month, 0).getDate();
-}
-
-function getFirstDayOfMonth(year: number, month: number) {
-  const d = new Date(year, month - 1, 1).getDay();
-  return d === 0 ? 6 : d - 1;
-}
-
-function dateKey(year: number, month: number, day: number) {
-  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 function getPolishHolidays(year: number) {
