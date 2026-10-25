@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState, useCallback } from "react";
 import { MEDIA_TYPE_HEX, DAY_LABELS, MONTH_NAMES, isDateInRange, daysBetween } from "@/lib/utils";
+import { dateKey, getDaysInMonth, getFirstDayOfMonth } from "@/lib/calendar-days";
 
 interface MediaItem {
   id: number;
@@ -21,15 +22,6 @@ interface Props {
   title: string;
   onDayClick?: (startDate: string, endDate: string, mediaType: "book" | "movie", itemIds: number[]) => void;
   calendarType?: "book" | "movie";
-}
-
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
-}
-
-function getFirstDayOfMonth(year: number, month: number) {
-  const d = new Date(year, month, 1).getDay();
-  return d === 0 ? 6 : d - 1;
 }
 
 /** Blend hex color toward white by `amount` (0=unchanged, 1=white) */
@@ -70,12 +62,12 @@ export default function Calendar({ year, items: rawItems, title, onDayClick, cal
 
   const months = useMemo(() => {
     return Array.from({ length: 12 }, (_, monthIdx) => {
-      const daysCount = getDaysInMonth(year, monthIdx);
-      const firstDay = getFirstDayOfMonth(year, monthIdx);
+      const daysCount = getDaysInMonth(year, monthIdx + 1);
+      const firstDay = getFirstDayOfMonth(year, monthIdx + 1);
 
       const days = Array.from({ length: daysCount }, (_, dayIdx) => {
         const day = dayIdx + 1;
-        const dateStr = `${year}-${String(monthIdx + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        const dateStr = dateKey(year, monthIdx + 1, day);
         const mediaOnDay = items.filter((item) => {
           if (isDateInRange(dateStr, item.startDate, item.endDate)) return true;
           if (item.additionalSessions) {

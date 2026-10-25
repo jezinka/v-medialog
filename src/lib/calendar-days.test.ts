@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildSessionDaysMap, groupByYearMonth, monthCells, SEASON_COLORS } from "./calendar-days.ts";
+import { buildSessionDaysMap, getDaysInMonth, getFirstDayOfMonth, groupByYearMonth, monthCells, SEASON_COLORS } from "./calendar-days.ts";
 
 test("monthCells pads to Monday", () => {
   // 1 Oct 2026 is a Thursday → 3 empty cells
@@ -24,4 +24,11 @@ test("buildSessionDaysMap colors days per season and skips year-long placeholder
   const grouped = groupByYearMonth(days);
   assert.deepEqual([...grouped.keys()], ["2026-01", "2026-02", "2026-03"]);
   assert.equal(grouped.get("2026-01")!.size, 2);
+});
+
+test("month helpers: Monday-first offset and month length", () => {
+  assert.equal(getFirstDayOfMonth(2026, 10), 3); // Thursday
+  assert.equal(getFirstDayOfMonth(2026, 2), 6); // Sunday
+  assert.equal(getDaysInMonth(2024, 2), 29);
+  assert.equal(getDaysInMonth(2026, 12), 31);
 });
