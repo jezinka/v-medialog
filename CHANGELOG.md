@@ -7,15 +7,16 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 ## Niewdrożone
 
 - Filmy nie mają już przycisku „Daty emisji TMDB” (pokazywał przypadkowy serial o tym samym identyfikatorze TMDB) ani siatki z jednym sezonem „1”; „chcę obejrzeć” nie nadaje filmom i książkom numeru sezonu.
+
 ## 2026-10-25
-
-- Usunięto jednorazowy endpoint `/api/seasons/numbering` (uzupełnianie numerów zostało wykonane).
-
 
 ### Nowe
 - Sezony seriali wyświetlają się jako siatka okładek, tak jak tomy mangi; akcje sezonu są w panelu po kliknięciu kafelka.
 - Odcinki specjalne z TMDB (sezon 0) pojawiają się w oknie „Daty emisji TMDB” i można je dodać jako sezon.
 - Numery sezonów są zapisywane w bazie: istniejące sezony seriali zostały ponumerowane (594), a nowe dostają kolejny wolny numer. Filmy, książki i komiksy (kolejne seanse i czytania) zostają bez numeru.
+
+### Usunięte
+- Jednorazowy endpoint `/api/seasons/numbering` (uzupełnianie numerów zostało wykonane).
 
 ### Poprawki
 - Sprawdzanie VOD pomija oferty bez polskich napisów ani dźwięku (gdy JustWatch podaje języki).
