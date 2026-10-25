@@ -4,10 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import CoverImg from "./CoverImg";
 import { MEDIA_TYPE_ICONS, MEDIA_TYPE_COLORS, MEDIA_TYPE_LABELS, formatDate, BOOK_TYPES, SCREEN_TYPES, ITUNES_TYPES, CALENDAR_TYPES, hasSeasonNumbers, MONTH_NAMES } from "@/lib/utils";
-import { partNo } from "@/lib/part-number";
+import { partNo, seasonLabel } from "@/lib/part-number";
 import { SEASON_COLORS, buildSessionDaysMap, groupByYearMonth } from "@/lib/calendar-days";
 import MonthGrid from "./MonthGrid";
-import Modal from "./Modal";
+import SeasonPickerModal from "./item-detail/SeasonPickerModal";
+import EditSessionModal from "./item-detail/EditSessionModal";
+import EditMediaModal from "./item-detail/EditMediaModal";
+import EditSeasonModal from "./item-detail/EditSeasonModal";
+import type { MediaData, SessionApiRow, SeasonRow } from "./item-detail/types";
 import { toast } from "./Toast";
 
 interface Props {
@@ -16,59 +20,6 @@ interface Props {
   onRefresh?: () => void;
   onOpenPerson?: (personId: number) => void;
   onOpenDetail?: (mediaId: number) => void;
-}
-
-interface MediaData {
-  id: number;
-  title: string;
-  original_title: string | null;
-  author: string | null;
-  media_type: string;
-  cover_url: string | null;
-  universe_id: number | null;
-  universe_name: string | null;
-  notes: string | null;
-  tags: string | null;
-  discontinued: boolean | number;
-  tmdb_id: number | null;
-  ol_key: string | null;
-  description: string | null;
-  genres: string | null;
-  vote_average: number | null;
-  runtime: number | null;
-  release_year: number | null;
-  external_synced_at: string | null;
-  series_status: string | null;
-  season_count: number;
-  first_session_date: string | null;
-  last_session_date: string | null;
-  tagList: { id: number; name: string }[];
-}
-
-interface SessionApiRow {
-  id: number;
-  season_id: number;
-  start_date: string;
-  end_date: string | null;
-  cinema: boolean | number;
-  with_child: boolean | number | null;
-  season_number: number | null;
-  season_title: string | null;
-  media_id: number;
-  media_title: string;
-  media_type: string;
-}
-
-interface SeasonRow {
-  id: number;
-  media_id: number;
-  season_number: number | null;
-  title: string | null;
-  cover_url: string | null;
-  session_count: number;
-  first_session_date: string | null;
-  last_session_date: string | null;
-  want_to_watch: boolean | number | null;
 }
 
 type CachedData = {
@@ -120,13 +71,6 @@ type TmdbInfoResult = {
   number_of_seasons?: number | null;
 };
 
-function seasonLabel(s: SeasonRow, no: string, label = "Sezon"): string {
-  if (no === "Sp.") return s.title ? `${s.title} (Speciale)` : "Speciale";
-  if (s.season_number != null) return s.title ? `${s.title} (${s.season_number})` : `${label} ${s.season_number}`;
-  if (s.title) return `${s.title} (${no})`;
-  return no;
-}
-
 export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPerson, onOpenDetail }: Props) {
   const [media, setMedia] = useState<MediaData | null>(null);
   const [sessions, setSessions] = useState<SessionApiRow[]>([]);
@@ -136,8 +80,6 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
   const [appleMusicUrlInput, setAppleMusicUrlInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [seasonPickerDate, setSeasonPickerDate] = useState<string | null>(null);
-  const [pendingCinema, setPendingCinema] = useState(false);
-  const [pendingWithChild, setPendingWithChild] = useState(false);
   const [addingSession, setAddingSession] = useState(false);
   const [extraMonths, setExtraMonths] = useState<Set<string>>(new Set());
   const [yearViewYear, setYearViewYear] = useState(() => new Date().getFullYear());
@@ -410,32 +352,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
   }, []);
 
   const [editingSession, setEditingSession] = useState<SessionApiRow | null>(null);
-  const [editStartDate, setEditStartDate] = useState("");
-  const [editEndDate, setEditEndDate] = useState("");
-  const [editCinema, setEditCinema] = useState(false);
-  const [editWithChild, setEditWithChild] = useState(false);
-  const [editSeasonId, setEditSeasonId] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
-  const [editEpisodeCount, setEditEpisodeCount] = useState("");
-
-  // ── Edit media state ────────────────────────────────────────────────────────
   const [isEditingMedia, setIsEditingMedia] = useState(false);
-  const [mediaEditForm, setMediaEditForm] = useState({
-    title: "",
-    original_title: "",
-    author: "",
-    description: "",
-    tags: "",
-    cover_url: "",
-    discontinued: false,
-    tmdb_id: "",
-    ol_key: "",
-    media_type: "",
-  });
-  const [mediaEditSaving, setMediaEditSaving] = useState(false);
-  const [uploadingCover, setUploadingCover] = useState(false);
-  const [lcEditUrl, setLcEditUrl] = useState("");
-  const [lcEditLoading, setLcEditLoading] = useState(false);
 
   // ── VOD offers ──────────────────────────────────────────────────────────────
   type VodOffer = {
@@ -495,185 +412,12 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
       .then((data) => { if (data?.media) setUniverseMembers(data.media); });
   }, [media?.universe_id]);
 
-  const handleLcEditFetch = async () => {
-    if (!lcEditUrl.trim()) return;
-    setLcEditLoading(true);
-    try {
-      const res = await fetch("/api/scrape/lubimyczytac", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: lcEditUrl.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast(data.error ?? "Błąd scrapowania", "error"); return; }
-      setMediaEditForm((f) => ({
-        ...f,
-        title: data.title || f.title,
-        original_title: data.original_title || f.original_title,
-        author: data.author || f.author,
-        cover_url: data.cover_url || f.cover_url,
-        description: data.description || f.description,
-      }));
-      toast("Dane pobrane ✓", "success");
-    } catch {
-      toast("Błąd połączenia", "error");
-    } finally {
-      setLcEditLoading(false);
-    }
-  };
-
-  // ── Edit season state ───────────────────────────────────────────────────────
   const [editingSeason, setEditingSeason] = useState<SeasonRow | null>(null);
-  const [seasonEditForm, setSeasonEditForm] = useState({
-    season_number: "",
-    title: "",
-    cover_url: "",
-  });
-  const [seasonEditSaving, setSeasonEditSaving] = useState(false);
-  const [uploadingSeason, setUploadingSeason] = useState(false);
-
   // ── Add season state ────────────────────────────────────────────────────────
   const [showAddSeason, setShowAddSeason] = useState(false);
   const [selectedPartId, setSelectedPartId] = useState<number | null>(null);
   const [addSeasonForm, setAddSeasonForm] = useState({ season_number: "", title: "" });
   const [addSeasonLoading, setAddSeasonLoading] = useState(false);
-
-  const openEditSession = useCallback((session: SessionApiRow) => {
-    setEditingSession(session);
-    setEditStartDate(session.start_date);
-    setEditEndDate(session.end_date ?? session.start_date);
-    setEditCinema(Boolean(session.cinema));
-    setEditWithChild(Boolean(session.with_child));
-    setEditSeasonId(String(session.season_id));
-  }, []);
-
-  const handleSaveSession = async () => {
-    if (!editingSession) return;
-    if (editEndDate && editEndDate < editStartDate) {
-      toast("Data końca nie może być wcześniej niż data początku", "error");
-      return;
-    }
-    setEditSaving(true);
-    try {
-      const res = await fetch(`/api/sessions/${editingSession.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          start_date: editStartDate,
-          end_date: editEndDate || null,
-          cinema: editCinema,
-          with_child: editWithChild,
-          season_id: parseInt(editSeasonId),
-        }),
-      });
-      if (!res.ok) throw new Error();
-      toast("Sesja zapisana ✓", "success");
-      setEditingSession(null);
-      await loadData();
-      onRefresh?.();
-    } catch {
-      toast("Błąd zapisu", "error");
-    } finally {
-      setEditSaving(false);
-    }
-  };
-
-  const handleDeleteEditingSession = async () => {
-    if (!editingSession) return;
-    if (!confirm("Usunąć tę sesję?")) return;
-    try {
-      const res = await fetch(`/api/sessions/${editingSession.id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error();
-      toast("Sesja usunięta ✓", "success");
-      setEditingSession(null);
-      await loadData();
-      onRefresh?.();
-    } catch {
-      toast("Błąd usuwania", "error");
-    }
-  };
-
-  const openEditMedia = useCallback((m: MediaData) => {
-    setMediaEditForm({
-      title: m.title,
-      original_title: m.original_title ?? "",
-      author: m.author ?? "",
-      description: m.description ?? "",
-      tags: m.tags ?? "",
-      cover_url: m.cover_url ?? "",
-      discontinued: !!(m.discontinued),
-      tmdb_id: m.tmdb_id != null ? String(m.tmdb_id) : "",
-      ol_key: m.ol_key ?? "",
-      media_type: m.media_type,
-    });
-    setIsEditingMedia(true);
-  }, []);
-
-  const handleSaveMedia = async () => {
-    if (!media) return;
-    setMediaEditSaving(true);
-    try {
-      const res = await fetch(`/api/media/${mediaId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: mediaEditForm.title,
-          original_title: mediaEditForm.original_title || null,
-          author: mediaEditForm.author || null,
-          media_type: mediaEditForm.media_type,
-          cover_url: mediaEditForm.cover_url || null,
-          description: mediaEditForm.description || null,
-          tags: mediaEditForm.tags || null,
-          discontinued: mediaEditForm.discontinued,
-          tmdb_id: mediaEditForm.tmdb_id ? parseInt(mediaEditForm.tmdb_id) : null,
-          ol_key: mediaEditForm.ol_key || null,
-        }),
-      });
-      if (!res.ok) throw new Error();
-      toast("Zapisano medium ✓", "success");
-      setIsEditingMedia(false);
-      await loadData();
-      onRefresh?.();
-    } catch {
-      toast("Błąd zapisu", "error");
-    } finally {
-      setMediaEditSaving(false);
-    }
-  };
-
-  const openEditSeason = useCallback((s: SeasonRow) => {
-    setEditingSeason(s);
-    setSeasonEditForm({
-      season_number: s.season_number != null ? String(s.season_number) : "",
-      title: s.title ?? "",
-      cover_url: s.cover_url ?? "",
-    });
-  }, []);
-
-  const handleSaveSeason = async () => {
-    if (!editingSeason) return;
-    setSeasonEditSaving(true);
-    try {
-      const res = await fetch(`/api/seasons/${editingSeason.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          season_number: seasonEditForm.season_number ? parseInt(seasonEditForm.season_number) : null,
-          title: seasonEditForm.title || null,
-          cover_url: seasonEditForm.cover_url || null,
-        }),
-      });
-      if (!res.ok) throw new Error();
-      toast("Sezon zapisany ✓", "success");
-      setEditingSeason(null);
-      await loadData();
-      onRefresh?.();
-    } catch {
-      toast("Błąd zapisu sezonu", "error");
-    } finally {
-      setSeasonEditSaving(false);
-    }
-  };
 
   const handleAddSeason = async () => {
     setAddSeasonLoading(true);
@@ -721,6 +465,12 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
       setLoading(false);
     }
   }, [mediaId]);
+
+  // After an edit: refresh this page and whatever list opened it
+  const reload = useCallback(async () => {
+    await loadData();
+    onRefresh?.();
+  }, [loadData, onRefresh]);
 
   const loadExternalData = useCallback(async (currentMedia?: MediaData | null) => {
     try {
@@ -1002,7 +752,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
   }, [media, mediaId, loadExternalData, fetchVodOffers]);
 
   const addSession = useCallback(
-    async (date: string, seasonId: number) => {
+    async (date: string, seasonId: number, flags = { cinema: false, withChild: false }) => {
       setAddingSession(true);
       try {
         const res = await fetch("/api/sessions", {
@@ -1012,8 +762,8 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
             season_id: seasonId,
             start_date: date,
             end_date: date,
-            cinema: pendingCinema,
-            with_child: pendingWithChild,
+            cinema: flags.cinema,
+            with_child: flags.withChild,
           }),
         });
         if (!res.ok) throw new Error();
@@ -1025,11 +775,9 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
       } finally {
         setAddingSession(false);
         setSeasonPickerDate(null);
-        setPendingCinema(false);
-        setPendingWithChild(false);
       }
     },
-    [loadData, onRefresh, pendingCinema, pendingWithChild]
+    [loadData, onRefresh]
   );
 
   const sessionDaysMap = useMemo(
@@ -1188,7 +936,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
       if (sessionDaysMap.has(date)) {
         // Open edit for the session that covers this date
         const session = dateToSessionMap.get(date);
-        if (session) openEditSession(session);
+        if (session) setEditingSession(session);
         return;
       }
       if (seasons.length === 0) {
@@ -1214,7 +962,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
         setSeasonPickerDate(date);
       }
     },
-    [splitMode, splitRangeStart, splitTarget, sessions, sessionDaysMap, dateToSessionMap, seasons, addSession, openEditSession, mediaId, media?.media_type]
+    [splitMode, splitRangeStart, splitTarget, sessions, sessionDaysMap, dateToSessionMap, seasons, addSession, mediaId, media?.media_type]
   );
 
   const handleSplitDayHover = (date: string) => {
@@ -1385,7 +1133,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
         </label>
       )}
       <button
-        onClick={() => openEditSeason(s)}
+        onClick={() => setEditingSeason(s)}
         title={`Edytuj ${partLabel.toLowerCase()}`}
         className="text-xs text-gray-400 hover:text-gray-700 px-1.5 py-0.5 rounded hover:bg-gray-200"
       >
@@ -1475,466 +1223,40 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     <div className="fixed inset-0 z-50 overflow-y-auto bg-white">
       {/* Season picker overlay */}
       {seasonPickerDate && (
-        <Modal onClose={() => { setSeasonPickerDate(null); setPendingCinema(false); setPendingWithChild(false); }} label="Dodaj sesję" className="rounded-xl shadow-xl p-5 max-w-sm w-full space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900">Dodaj sesję</h3>
-            <p className="text-xs text-gray-500">{seasonPickerDate}</p>
-            {/* Cinema toggle — only for movies */}
-            {media.media_type === "movie" && (
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={pendingCinema}
-                  onChange={(e) => setPendingCinema(e.target.checked)}
-                  className="w-4 h-4 accent-yellow-500"
-                />
-                <span className="text-sm text-gray-700">🎟️ Oglądane w kinie</span>
-              </label>
-            )}
-            {SCREEN_TYPES.includes(media.media_type) && (
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={pendingWithChild}
-                  onChange={(e) => setPendingWithChild(e.target.checked)}
-                  className="w-4 h-4 accent-emerald-500"
-                />
-                <span className="text-sm text-gray-700">👶 Z dzieckiem</span>
-              </label>
-            )}
-            {seasons.length > 1 && (
-              <p className="text-xs font-medium text-gray-500 pt-1">Wybierz {partLabel.toLowerCase()}:</p>
-            )}
-            {isBook ? (
-              <div className="grid grid-cols-5 gap-2 max-h-80 overflow-y-auto p-1">
-                {seasons.map((s, idx) => (
-                  <button
-                    key={s.id}
-                    onClick={() => addSession(seasonPickerDate, s.id)}
-                    disabled={addingSession}
-                    title={seasonLabel(s, partNo(seasons, idx, hasSpecials), partLabel)}
-                    className="rounded-md hover:ring-2 hover:ring-blue-400 disabled:opacity-50"
-                  >
-                    <div className="relative aspect-[2/3] rounded-md overflow-hidden bg-gray-100">
-                      {s.cover_url ? (
-                        <Image unoptimized src={s.cover_url} alt="" fill className="object-cover" />
-                      ) : (
-                        <div className={`absolute inset-0 flex items-center justify-center text-white text-sm font-semibold ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}>
-                          {partNo(seasons, idx, hasSpecials)}
-                        </div>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-gray-600 text-center mt-0.5">{partNo(seasons, idx, hasSpecials)}</p>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {seasons.map((s, idx) => (
-                  <button
-                    key={s.id}
-                    onClick={() => addSession(seasonPickerDate, s.id)}
-                    disabled={addingSession}
-                    className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 text-sm transition-colors disabled:opacity-50"
-                  >
-                    <span
-                      className={`w-2.5 h-2.5 rounded-full shrink-0 ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}
-                    />
-                    <span className="font-medium">
-                      {seasonLabel(s, partNo(seasons, idx, hasSpecials), partLabel)}
-                    </span>
-                    {s.session_count > 0 && (
-                      <span className="ml-auto text-xs text-gray-400">{s.session_count} sesji</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
-            <button
-              onClick={() => { setSeasonPickerDate(null); setPendingCinema(false); setPendingWithChild(false); }}
-              className="text-xs text-gray-400 hover:text-gray-600 w-full text-center pt-1"
-            >
-              Anuluj
-            </button>
-        </Modal>
+        <SeasonPickerModal
+          date={seasonPickerDate}
+          seasons={seasons}
+          mediaType={media.media_type}
+          isBook={isBook}
+          partLabel={partLabel}
+          hasSpecials={hasSpecials}
+          adding={addingSession}
+          onPick={(seasonId, flags) => addSession(seasonPickerDate, seasonId, flags)}
+          onClose={() => setSeasonPickerDate(null)}
+        />
       )}
 
       {/* Edit session modal */}
       {editingSession && (
-        <Modal onClose={() => setEditingSession(null)} label="Edytuj sesję" className="rounded-xl shadow-xl p-5 max-w-sm w-full space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900">Edytuj sesję</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Data rozpoczęcia</label>
-                <input
-                  type="date"
-                  value={editStartDate}
-                  onChange={(e) => setEditStartDate(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">Data zakończenia</label>
-                <input
-                  type="date"
-                  value={editEndDate}
-                  onChange={(e) => setEditEndDate(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-                />
-                <div className="flex items-center gap-2 mt-1.5">
-                  <span className="text-xs text-gray-400">start +</span>
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="odcinki"
-                    value={editEpisodeCount}
-                    onChange={(e) => setEditEpisodeCount(e.target.value)}
-                    className="w-24 border border-gray-200 rounded px-2 py-1 text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const count = parseInt(editEpisodeCount);
-                      if (!editStartDate || isNaN(count) || count < 1) return;
-                      const d = new Date(editStartDate);
-                      d.setDate(d.getDate() + count - 1);
-                      setEditEndDate(d.toISOString().slice(0, 10));
-                    }}
-                    className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded text-gray-600 transition-colors"
-                  >
-                    Ustaw
-                  </button>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">{partLabel}</label>
-                <select
-                  value={editSeasonId}
-                  onChange={(e) => setEditSeasonId(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-                >
-                  {seasons.map((s, idx) => (
-                    <option key={s.id} value={s.id}>
-                      {s.title ?? (partNo(seasons, idx, hasSpecials) === "Sp." ? "Speciale" : `${partLabel} ${partNo(seasons, idx, hasSpecials)}`)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={editCinema}
-                  onChange={(e) => setEditCinema(e.target.checked)}
-                  className="w-4 h-4"
-                />
-                Kino
-              </label>
-              {SCREEN_TYPES.includes(media.media_type) && (
-                <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editWithChild}
-                    onChange={(e) => setEditWithChild(e.target.checked)}
-                    className="w-4 h-4"
-                  />
-                  👶 Z dzieckiem
-                </label>
-              )}
-            </div>
-            <div className="flex gap-2 pt-1">
-              <button
-                onClick={handleSaveSession}
-                disabled={editSaving}
-                className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-              >
-                {editSaving ? "Zapisuję..." : "Zapisz"}
-              </button>
-              <button
-                onClick={handleDeleteEditingSession}
-                className="px-3 py-2 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm hover:bg-red-100"
-              >
-                🗑️
-              </button>
-              <button
-                onClick={() => setEditingSession(null)}
-                className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200"
-              >
-                Anuluj
-              </button>
-            </div>
-        </Modal>
+        <EditSessionModal
+          session={editingSession}
+          seasons={seasons}
+          mediaType={media.media_type}
+          partLabel={partLabel}
+          hasSpecials={hasSpecials}
+          onClose={() => setEditingSession(null)}
+          onSaved={reload}
+        />
       )}
 
       {/* Edit media modal */}
       {isEditingMedia && (
-        <Modal onClose={() => setIsEditingMedia(false)} label="Edytuj medium" className="rounded-xl shadow-xl p-5 max-w-md w-full space-y-3 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-sm font-semibold text-gray-900">Edytuj medium</h3>
-            {/* lubimyczytac.pl quick-fill */}
-            {media && BOOK_TYPES.includes(media.media_type) && (
-              <div className="flex gap-2 pb-1 border-b border-gray-100">
-                <input
-                  type="url"
-                  value={lcEditUrl}
-                  onChange={(e) => setLcEditUrl(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleLcEditFetch()}
-                  placeholder="Uzupełnij z lubimyczytac.pl (URL)…"
-                  className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-orange-200 focus:outline-none"
-                />
-                <button
-                  onClick={handleLcEditFetch}
-                  disabled={lcEditLoading || !lcEditUrl.trim()}
-                  className="shrink-0 bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-orange-600 disabled:opacity-50"
-                >
-                  {lcEditLoading ? "⏳" : "📚 Pobierz"}
-                </button>
-              </div>
-            )}
-            <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Tytuł *</label>
-              <input
-                type="text"
-                value={mediaEditForm.title}
-                onChange={(e) => setMediaEditForm((f) => ({ ...f, title: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Tytuł oryginalny</label>
-              <input
-                type="text"
-                value={mediaEditForm.original_title}
-                onChange={(e) => setMediaEditForm((f) => ({ ...f, original_title: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Autor</label>
-              <input
-                type="text"
-                value={mediaEditForm.author}
-                onChange={(e) => setMediaEditForm((f) => ({ ...f, author: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Tagi (oddzielone przecinkami)</label>
-              <input
-                type="text"
-                value={mediaEditForm.tags}
-                onChange={(e) => setMediaEditForm((f) => ({ ...f, tags: e.target.value }))}
-                placeholder="np. fantasy, klasyka"
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Opis</label>
-              <textarea
-                value={mediaEditForm.description}
-                onChange={(e) => setMediaEditForm((f) => ({ ...f, description: e.target.value }))}
-                rows={3}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm resize-none"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">URL okładki</label>
-              <div className="flex gap-2 items-center">
-                <input
-                  type="text"
-                  value={mediaEditForm.cover_url}
-                  onChange={(e) => setMediaEditForm((f) => ({ ...f, cover_url: e.target.value }))}
-                  placeholder="https://... lub wgraj plik →"
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-                />
-                <label className={`shrink-0 cursor-pointer px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${uploadingCover ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-gray-100 hover:bg-gray-200"}`}>
-                  {uploadingCover ? "Wgrywam…" : "Wgraj"}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    disabled={uploadingCover}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setUploadingCover(true);
-                      try {
-                        const buffer = await file.arrayBuffer();
-                        const base64 = btoa(new Uint8Array(buffer).reduce((s, b) => s + String.fromCharCode(b), ""));
-                        const res = await fetch("/api/cover/upload", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ data: base64, type: file.type }),
-                        });
-                        const data = await res.json();
-                        if (data.path) {
-                          setMediaEditForm((f) => ({ ...f, cover_url: data.path }));
-                          toast("Okładka wgrana ✓", "success");
-                        } else {
-                          toast(data.error ?? "Błąd uploadu", "error");
-                        }
-                      } catch {
-                        toast("Błąd połączenia podczas uploadu", "error");
-                      } finally {
-                        setUploadingCover(false);
-                        e.target.value = "";
-                      }
-                    }}
-                  />
-                </label>
-              </div>
-              {mediaEditForm.cover_url && (
-                <div className="mt-1.5">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={mediaEditForm.cover_url} alt="podgląd" className="w-8 h-12 object-cover rounded border border-gray-200" />
-                </div>
-              )}
-            </div>
-            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={mediaEditForm.discontinued}
-                onChange={(e) => setMediaEditForm((f) => ({ ...f, discontinued: e.target.checked }))}
-                className="w-4 h-4"
-              />
-              Porzucone
-            </label>
-            <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Typ</label>
-              <select
-                value={mediaEditForm.media_type}
-                onChange={(e) => setMediaEditForm((f) => ({ ...f, media_type: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-              >
-                {Object.entries(MEDIA_TYPE_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </div>
-            {media && SCREEN_TYPES.includes(media.media_type) && (
-              <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">
-                  TMDB ID <span className="text-gray-400 font-normal">(opcjonalnie)</span>
-                </label>
-                <input
-                  type="number"
-                  value={mediaEditForm.tmdb_id}
-                  onChange={(e) => setMediaEditForm((f) => ({ ...f, tmdb_id: e.target.value }))}
-                  placeholder="np. 1399"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-                />
-              </div>
-            )}
-            <div className="flex gap-2 pt-1">
-              <button
-                onClick={handleSaveMedia}
-                disabled={mediaEditSaving || uploadingCover}
-                className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-              >
-                {mediaEditSaving ? "Zapisuję..." : uploadingCover ? "Wgrywanie…" : "Zapisz"}
-              </button>
-              <button
-                onClick={() => setIsEditingMedia(false)}
-                className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200"
-              >
-                Anuluj
-              </button>
-            </div>
-        </Modal>
+        <EditMediaModal media={media} onClose={() => setIsEditingMedia(false)} onSaved={reload} />
       )}
 
       {/* Edit season modal */}
       {editingSeason && (
-        <Modal onClose={() => setEditingSeason(null)} label={`Edytuj ${partLabel.toLowerCase()}`} className="rounded-xl shadow-xl p-5 max-w-sm w-full space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900">Edytuj {partLabel.toLowerCase()}</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Numer {partLabel.toLowerCase()}</label>
-                <input
-                  type="number"
-                  value={seasonEditForm.season_number}
-                  onChange={(e) => setSeasonEditForm((f) => ({ ...f, season_number: e.target.value }))}
-                  placeholder="np. 1"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-600 block mb-1">Tytuł {partLabel.toLowerCase()}</label>
-                <input
-                  type="text"
-                  value={seasonEditForm.title}
-                  onChange={(e) => setSeasonEditForm((f) => ({ ...f, title: e.target.value }))}
-                  placeholder="opcjonalnie"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-gray-600 block mb-1">Okładka</label>
-              <div className="flex gap-2 items-center">
-                <input
-                  type="text"
-                  value={seasonEditForm.cover_url}
-                  onChange={(e) => setSeasonEditForm((f) => ({ ...f, cover_url: e.target.value }))}
-                  placeholder="https://... lub wgraj →"
-                  className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
-                />
-                <label className={`shrink-0 cursor-pointer px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${uploadingSeason ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-gray-100 hover:bg-gray-200"}`}>
-                  {uploadingSeason ? "Wgrywam…" : "Wgraj"}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    disabled={uploadingSeason}
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setUploadingSeason(true);
-                      try {
-                        const buffer = await file.arrayBuffer();
-                        const base64 = btoa(new Uint8Array(buffer).reduce((s, b) => s + String.fromCharCode(b), ""));
-                        const res = await fetch("/api/cover/upload", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ data: base64, type: file.type }),
-                        });
-                        const data = await res.json();
-                        if (data.path) {
-                          setSeasonEditForm((f) => ({ ...f, cover_url: data.path }));
-                          toast("Okładka wgrana ✓", "success");
-                        } else {
-                          toast(data.error ?? "Błąd uploadu", "error");
-                        }
-                      } catch {
-                        toast("Błąd połączenia podczas uploadu", "error");
-                      } finally {
-                        setUploadingSeason(false);
-                        e.target.value = "";
-                      }
-                    }}
-                  />
-                </label>
-              </div>
-              {seasonEditForm.cover_url && (
-                <div className="mt-1.5">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={seasonEditForm.cover_url} alt="podgląd" className="w-8 h-12 object-cover rounded border border-gray-200" />
-                </div>
-              )}
-            </div>
-            <div className="flex gap-2 pt-1">
-              <button
-                onClick={handleSaveSeason}
-                disabled={seasonEditSaving || uploadingSeason}
-                className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-              >
-                {seasonEditSaving ? "Zapisuję..." : uploadingSeason ? "Wgrywanie…" : "Zapisz"}
-              </button>
-              <button
-                onClick={() => setEditingSeason(null)}
-                className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200"
-              >
-                Anuluj
-              </button>
-            </div>
-        </Modal>
+        <EditSeasonModal season={editingSeason} partLabel={partLabel} onClose={() => setEditingSeason(null)} onSaved={reload} />
       )}
 
       {/* Sticky header */}
@@ -1965,7 +1287,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
           {label}
         </span>
         <button
-          onClick={() => openEditMedia(media)}
+          onClick={() => setIsEditingMedia(true)}
           className="shrink-0 p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
           title="Edytuj medium"
         >
