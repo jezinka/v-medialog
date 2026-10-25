@@ -6,9 +6,10 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+## 2026-10-25
+
 - Usunięto jednorazowy endpoint `/api/sessions/placeholders` (sprzątanie zostało wykonane).
 
-## 2026-10-25
 
 - Filmy nie mają już przycisku „Daty emisji TMDB” (pokazywał przypadkowy serial o tym samym identyfikatorze TMDB) ani siatki z jednym sezonem „1”; „chcę obejrzeć” nie nadaje filmom i książkom numeru sezonu.
 - Dodanie prawdziwej sesji usuwa ukrytą sesję „kiedyś w roku RRRR” (placeholder) z tego samego roku, więc licznik sesji nie pokazuje już jednej sesji za dużo; istniejące takie sesje zostały posprzątane (69).
