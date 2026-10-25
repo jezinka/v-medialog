@@ -1,5 +1,6 @@
 import type Database from "better-sqlite3";
 import { nextSeasonNumber } from "./season-numbering";
+import { hasSeasonNumbers } from "../lib/utils";
 
 /**
  * Marks media as "want to watch": reuses an already flagged season, otherwise flags
@@ -19,9 +20,11 @@ export function markWantToWatch(db: Database.Database, mediaId: number): number 
     return empty.id;
   }
   const hasSeasons = db.prepare(`SELECT 1 FROM seasons WHERE media_id=?`).get(mediaId);
+  const type = (db.prepare(`SELECT media_type FROM media WHERE id=?`).get(mediaId) as { media_type: string } | undefined)?.media_type ?? "";
+  const first = hasSeasonNumbers(type) ? 1 : null; // a movie/book needs no number
   return Number(db.prepare(
     `INSERT INTO seasons (media_id, season_number, want_to_watch) VALUES (?, ?, 1)`
-  ).run(mediaId, hasSeasons ? nextSeasonNumber(db, mediaId) : 1).lastInsertRowid);
+  ).run(mediaId, hasSeasons ? nextSeasonNumber(db, mediaId) : first).lastInsertRowid);
 }
 
 /**

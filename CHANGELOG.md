@@ -6,6 +6,7 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- Filmy nie mają już przycisku „Daty emisji TMDB” (pokazywał przypadkowy serial o tym samym identyfikatorze TMDB) ani siatki z jednym sezonem „1”; „chcę obejrzeć” nie nadaje filmom i książkom numeru sezonu.
 ## 2026-10-25
 
 - Usunięto jednorazowy endpoint `/api/seasons/numbering` (uzupełnianie numerów zostało wykonane).

@@ -2379,8 +2379,8 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
           </div>
         </div>
 
-        {/* TMDB air dates button — visible for movie / series / anime regardless of seasons */}
-        {media && ["movie", "series", "anime"].includes(media.media_type) && (
+        {/* TMDB air dates button — episodic types only (a movie's tmdb_id is not a TV id) */}
+        {media && ["series", "anime"].includes(media.media_type) && (
           <div className="space-y-3">
             <div className="flex justify-end">
               <button
@@ -2618,8 +2618,8 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
         {/* Seasons section */}
         {seasons.length > 0 && (
           <div>
-            {isBook && seasons.length === 1 && !seasons[0].cover_url ? (
-              // A single book needs no parts list; re-reads are just more sessions in the calendar
+            {media && !hasSeasonNumbers(media.media_type) && seasons.length === 1 && !seasons[0].cover_url ? (
+              // A single movie/book needs no parts list; re-watches are just more sessions in the calendar
               <div className="flex flex-wrap items-center justify-end gap-3">
                 {seasonControls(seasons[0])}
               </div>
