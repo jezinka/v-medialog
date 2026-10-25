@@ -7,5 +7,7 @@ test("hasPolish", () => {
   assert.equal(hasPolish(["ja", "en", "de"]), false);
   assert.equal(hasPolish(["ja", "pl"]), true);
   assert.equal(hasPolish(["pl-PL"]), true);
+  assert.equal(hasPolish(["PL"]), true);
+  assert.equal(hasPolish(["pl_PL"]), true);
   assert.equal(hasPolish(["plx"]), false);
 });

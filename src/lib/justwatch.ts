@@ -94,7 +94,7 @@ function dedupeOffers(raw: {
   for (const o of raw) {
     const key = `${o.package.technicalName}__${o.monetizationType}`;
     const existing = best.get(key);
-    const languages = [...new Set([...(existing?.languages ?? []), ...o.audioLanguages, ...o.subtitleLanguages])];
+    const languages = [...new Set([...(existing?.languages ?? []), ...(o.audioLanguages ?? []), ...(o.subtitleLanguages ?? [])])];
     if (existing) existing.languages = languages;
     if (!existing || qualityOrder(o.presentationType) > qualityOrder(existing.quality)) {
       best.set(key, {
@@ -228,11 +228,11 @@ export async function searchJustWatch(
 }
 
 /**
- * True if an offer has Polish audio or subtitles ("pl" or a regional "pl-XX").
+ * True if an offer has Polish audio or subtitles ("pl" or a regional "pl-PL"/"pl_PL", any case).
  * ponytail: empty list = JustWatch doesn't know, keep the offer rather than hide it
  */
 export function hasPolish(languages: string[]): boolean {
-  return languages.length === 0 || languages.some((l) => l === "pl" || l.startsWith("pl-"));
+  return languages.length === 0 || languages.some((l) => /^pl([-_]|$)/i.test(l));
 }
 
 /** Map app media_type to JustWatch objectType */
