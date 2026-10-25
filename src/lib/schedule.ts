@@ -34,3 +34,12 @@ export function groupByDate<T extends { air_date: string }>(items: T[]): Array<{
   }
   return [...map].map(([date, grouped]) => ({ date, items: grouped }));
 }
+
+/** "1 sezon", "3 sezony", "5 sezonów", "22 sezony" */
+export function seasonsLabel(n: number): string {
+  const tens = n % 100;
+  const ones = n % 10;
+  if (n === 1) return "1 sezon";
+  if (ones >= 2 && ones <= 4 && (tens < 12 || tens > 14)) return `${n} sezony`;
+  return `${n} sezonów`;
+}

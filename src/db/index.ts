@@ -303,16 +303,21 @@ if (typeof g.__vodRefreshScheduled === "undefined") {
 // Production only: a dev server shouldn't call TMDB and write to the local DB on its own
 if (process.env.NODE_ENV === "production" && typeof g.__upcomingCheckScheduled === "undefined") {
   g.__upcomingCheckScheduled = true;
+  let running = false;
   const checkUpcoming = async () => {
+    if (running) return;
+    running = true;
     try {
       const row = sqlite.prepare(`SELECT value FROM settings WHERE key='last_upcoming_check'`).get() as { value: string } | undefined;
       if (!upcomingCheckDue(row?.value ?? null, new Date())) return;
       console.log("[upcoming] Checking upcoming seasons (last:", row?.value ?? "never", ")");
       const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
-      const res = await fetch(`${baseUrl}/api/jobs/check-upcoming-seasons`, { method: "POST" });
+      const res = await fetch(`${baseUrl}/api/jobs/check-upcoming-seasons`, { method: "POST", signal: AbortSignal.timeout(30 * 60_000) });
       console.log("[upcoming] Done:", res.status);
     } catch (e) {
       console.error("[upcoming] Check error:", e);
+    } finally {
+      running = false;
     }
   };
   setTimeout(checkUpcoming, 15_000); // after the VOD refresh has started

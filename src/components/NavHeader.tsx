@@ -6,6 +6,7 @@ import Image from "next/image";
 import AddMediaModal from "./AddMediaModal";
 import { toast } from "./Toast";
 import { createSessionForMedia } from "@/lib/session-actions";
+import { monthKey, seasonsLabel } from "@/lib/schedule";
 
 type VodNotification = {
   id: number;
@@ -48,7 +49,10 @@ export default function NavHeader() {
     try {
       const res = await fetch("/api/vod/notifications");
       if (res.ok) setNotifications(await res.json() as VodNotification[]);
-      const sched = await fetch("/api/schedule");
+    } catch { /* silent */ }
+    try {
+      // The browser's month, as on the schedule page (the server runs in UTC)
+      const sched = await fetch(`/api/schedule?month=${monthKey(new Date())}`);
       if (sched.ok) {
         const data = await sched.json() as { month: string; items: unknown[]; seen: boolean };
         setPremieres(!data.seen && data.items.length > 0 ? { month: data.month, count: data.items.length } : null);
@@ -217,7 +221,7 @@ export default function NavHeader() {
                     {premieres && (
                       <div className="flex items-center gap-3 px-4 py-3 bg-purple-50">
                         <a href="/wishlist" onClick={() => void dismissPremieres()} className="flex-1 min-w-0 text-xs font-semibold text-purple-800 hover:underline">
-                          📅 Premiery w tym miesiącu: {premieres.count} {premieres.count === 1 ? "sezon" : premieres.count < 5 ? "sezony" : "sezonów"}
+                          📅 Premiery w tym miesiącu: {seasonsLabel(premieres.count)}
                         </a>
                         <button onClick={() => void dismissPremieres()} aria-label="Ukryj premiery" className="text-[10px] text-gray-400 hover:text-gray-600">✕</button>
                       </div>

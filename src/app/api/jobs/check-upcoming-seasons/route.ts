@@ -54,7 +54,7 @@ export async function POST() {
       // Fetch TMDB show details with seasons
       const res = await fetch(
         `https://api.themoviedb.org/3/tv/${serial.tmdb_id}?api_key=${apiKey}&language=pl-PL`,
-        { cache: "no-store" }
+        { cache: "no-store", signal: AbortSignal.timeout(10_000) }
       );
       if (!res.ok) {
         errors.push(`${serial.title}: TMDB ${res.status}`);
@@ -118,8 +118,8 @@ export async function POST() {
     }
   }
 
-  // Read by the scheduler in db/index.ts
-  sqlite.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('last_upcoming_check', ?)`).run(new Date().toISOString());
+  // Read by the scheduler in db/index.ts; when every request failed (TMDB down) it retries on its next tick
+  if (serials.length === 0 || errors.length < serials.length) sqlite.prepare(`INSERT OR REPLACE INTO settings (key, value) VALUES ('last_upcoming_check', ?)`).run(new Date().toISOString());
 
   return NextResponse.json({
     checked: serials.length,

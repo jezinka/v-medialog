@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import MediaCoverThumb from "./MediaCoverThumb";
 import { toast } from "./Toast";
 import { MONTH_NAMES, formatDate } from "@/lib/utils";
@@ -10,14 +11,15 @@ import type { ScheduleItem } from "@/app/api/schedule/route";
 /** Month-by-month list of season premieres of the series and anime on the watch list. */
 export default function SeriesSchedule({ refreshKey, onChecked }: { refreshKey: number; onChecked: () => void }) {
   const [month, setMonth] = useState(() => monthKey(new Date()));
-  const [items, setItems] = useState<ScheduleItem[] | null>(null);
+  // Tagged with its month, so a slower or failed load never shows another month's list
+  const [loaded, setLoaded] = useState<{ month: string; items: ScheduleItem[] } | null>(null);
   const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     let stale = false;
     fetch(`/api/schedule?month=${month}`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((data: { items: ScheduleItem[] }) => { if (!stale) setItems(data.items); })
+      .then((data: { items: ScheduleItem[] }) => { if (!stale) setLoaded({ month, items: data.items }); })
       .catch(() => { if (!stale) toast("Błąd ładowania rozkładu", "error"); });
     return () => { stale = true; };
   }, [month, refreshKey]);
@@ -38,6 +40,7 @@ export default function SeriesSchedule({ refreshKey, onChecked }: { refreshKey: 
   };
 
   const [y, m] = month.split("-").map(Number);
+  const items = loaded?.month === month ? loaded.items : null;
   const days = items ? groupByDate(items) : [];
   return (
     <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
@@ -63,7 +66,7 @@ export default function SeriesSchedule({ refreshKey, onChecked }: { refreshKey: 
               <ul className="flex-1 space-y-1.5 min-w-0">
                 {dayItems.map((item) => (
                   <li key={item.season_id}>
-                    <a href={`/media/${item.media_id}`} className="flex items-center gap-3 rounded-lg p-1 hover:bg-gray-50">
+                    <Link href={`/media/${item.media_id}`} className="flex items-center gap-3 rounded-lg p-1 hover:bg-gray-50">
                       <MediaCoverThumb coverUrl={item.cover_url} title={item.title} mediaType={item.media_type} className="w-8 h-11" sizes="32px" />
                       <span className="min-w-0">
                         <span className="block text-sm font-medium text-gray-900 truncate">{item.title}</span>
@@ -71,7 +74,7 @@ export default function SeriesSchedule({ refreshKey, onChecked }: { refreshKey: 
                           {item.season_number != null ? `Sezon ${item.season_number}` : (item.season_title ?? "Nowy sezon")}
                         </span>
                       </span>
-                    </a>
+                    </Link>
                   </li>
                 ))}
               </ul>
