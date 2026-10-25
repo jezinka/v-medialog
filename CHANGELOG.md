@@ -1,6 +1,8 @@
 # Changelog
 
-Zmiany wdrożone w MediaLog, od najnowszych. Nowe zmiany trafiają najpierw do sekcji „Niewdrożone”, a przy wdrożeniu dostają datę.
+Zmiany w MediaLog, od najnowszych. Nowe zmiany trafiają najpierw do sekcji „Niewdrożone”, a przy wdrożeniu dostają datę wdrożenia.
+
+Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie wdrożeń, a pominięto zmiany niewidoczne dla użytkownika (refaktoryzacje, porządki w kodzie).
 
 ## Niewdrożone
 
@@ -18,3 +20,59 @@ Zmiany wdrożone w MediaLog, od najnowszych. Nowe zmiany trafiają najpierw do s
 - Numeracja sezonów nie przesuwa się, gdy specjale obejrzano między sezonami; specjale mają etykietę „Speciale” / „Sp.”.
 - Zapis samej okładki sezonu nie kasuje już jego numeru i tytułu.
 - Kafelki sezonów i tomów są czytelne dla czytników ekranu (opis, stan „chcę obejrzeć”, „nieobejrzany”).
+
+## 2026-10-24
+
+### Nowe
+- Wieloczęściowe książki i mangi: części jako siatka okładek, z edycją, usuwaniem i scalaniem każdej części.
+- Eksport MediaLog do JSON z publikacją na GitHub Pages (skrypt `export:medialog`).
+- Rok wydania przy pozycjach, także w eksporcie CSV.
+
+### Poprawki
+- Powiadomienia VOD wyświetlają się w poprawnym formacie.
+
+## 2026-10-14
+
+### Nowe
+- Eksport kalendarza do HTML.
+
+## 2026-10-10 – 2026-10-11
+
+### Nowe
+- Pobieranie okładek i drukowanie kalendarza.
+- Sesje z dzieckiem widoczne w statystykach.
+- Nowy układ zakładek pozycji i listy życzeń.
+
+### Poprawki
+- Kolidujące wpisy w kalendarzu „do obejrzenia” przesuwają się na najbliższy wolny dzień.
+
+## 2026-09-06
+
+### Nowe
+- Filtr ukrywający porzucone pozycje.
+- Numery sezonów na liście „do obejrzenia”.
+
+## 2026-08-23 – 2026-08-29
+
+### Nowe
+- Sesje z dzieckiem: oznaczenie przy sesji i znacznik przy pozycjach oraz sezonach.
+- Filtr sesji w kinie.
+- Flaga „chcę obejrzeć” przy sezonach; znika po dodaniu prawdziwej sesji.
+- Sortowanie po dacie ostatniej sesji.
+- Obsługa filmów z YouTube (adresy i identyfikatory).
+
+## 2026-05-23 – 2026-06-15
+
+### Nowe
+- Stronicowanie i filtrowanie pozycji, pole z adresem źródła.
+- Sekcja spektakli w statystykach, z autorami.
+- Czyszczenie pozycji z YouTube razem z ich danymi.
+
+### Poprawki
+- Lepsze grupowanie w statystykach i wyszukiwanie pozycji.
+
+## 2026-05-03
+
+### Nowe
+- Pierwsza wersja MediaLog.
+- Pole opisu pozycji (zamiast notatek), informacje o uniwersum przy pozycjach.
