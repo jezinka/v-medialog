@@ -6,6 +6,8 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- Biblioteka w panelu admina ma filtry „🎮 Gra”, „🎙️ Podcast” i „🎵 Płyta” — dotąd te typy były widoczne tylko pod „Wszystkie”.
+
 ## 2026-10-25
 
 - W panelu admina jest zakładka „🌌 Uniwersa”: lista uniwersów z liczbą pozycji, podgląd członków, dodawanie i usuwanie pozycji, zmiana nazwy, usuwanie uniwersum (pozycje zostają) oraz propozycje grupowania mediów o podobnych tytułach.

@@ -28,6 +28,7 @@ export interface SeasonRow {
   has_cinema_session?: boolean;
 }
 
-export const TYPE_FILTERS = ["all", "series", "anime", "cartoon", "movie", "book", "comic", "play"] as const;
+// Every media type needs a chip here (checked by types.test.ts), or it can only be found under "Wszystkie"
+export const TYPE_FILTERS = ["all", "series", "anime", "cartoon", "movie", "book", "comic", "play", "game", "podcast", "record"] as const;
 export type TypeFilter = (typeof TYPE_FILTERS)[number];
 export type SortBy = "title" | "recently_added" | "last_session";
