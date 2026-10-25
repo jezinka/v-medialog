@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useRef, type ReactNode } from "react";
 
-// Open modals, newest last: Escape closes only the topmost one.
+// Open modals, newest last: Escape closes only the topmost one. Safe because each modal pushes here and
+// adds its keydown listener in the same effect, so listener order matches stack order.
+// ponytail: no focus trap yet (Tab can leave the dialog); add one if keyboard users need it
 const openModals: object[] = [];
 
 /**
