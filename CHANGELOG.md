@@ -6,11 +6,12 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+## 2026-10-25
+
 - W panelu admina jest zakładka „🌌 Uniwersa”: lista uniwersów z liczbą pozycji, podgląd członków, dodawanie i usuwanie pozycji, zmiana nazwy, usuwanie uniwersum (pozycje zostają) oraz propozycje grupowania mediów o podobnych tytułach.
 - Dziennik (dymki w kalendarzu i wybór sesji) nie dopisuje już numeru sezonu do książek, komiksów, filmów i bajek.
 - Bajki są traktowane jak filmy pełnometrażowe: kolejne seanse nie dostają numerów sezonów, można zaznaczyć kino, sprawdzanie VOD szuka filmu, a nie serialu, w kalendarzu „do obejrzenia” są wśród filmów i nie trafiają do filtrów ani sprawdzania nowych sezonów seriali.
 
-## 2026-10-25
 
 - Okna dialogowe (edycja sesji, medium i sezonu, dodawanie sesji, łączenie mediów) zamykają się klawiszem Esc i są oznaczone jako dialogi dla czytników ekranu.
 - Kalendarze na stronach pozycji i osoby skracają sobotę jako „Sb”, tak jak kalendarz główny.
