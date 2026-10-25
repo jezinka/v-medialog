@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import CoverImg from "./CoverImg";
 import { MEDIA_TYPE_ICONS, MEDIA_TYPE_COLORS, MEDIA_TYPE_LABELS, formatDate, BOOK_TYPES, SCREEN_TYPES, ITUNES_TYPES, CALENDAR_TYPES } from "@/lib/utils";
+import { partNo } from "@/lib/part-number";
 import { toast } from "./Toast";
 
 interface Props {
@@ -188,11 +189,11 @@ function MiniCalendar({
   );
 }
 
-function seasonLabel(s: SeasonRow, idx: number, label = "Sezon"): string {
+function seasonLabel(s: SeasonRow, no: string, label = "Sezon"): string {
   if (s.season_number === 0) return s.title ? `${s.title} (Speciale)` : "Speciale";
   if (s.season_number != null) return s.title ? `${s.title} (${s.season_number})` : `${label} ${s.season_number}`;
-  if (s.title) return `${s.title} (${idx + 1})`;
-  return `${idx + 1}`;
+  if (s.title) return `${s.title} (${no})`;
+  return no;
 }
 
 function YearCalendar({
@@ -1681,7 +1682,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                     key={s.id}
                     onClick={() => addSession(seasonPickerDate, s.id)}
                     disabled={addingSession}
-                    title={seasonLabel(s, idx, partLabel)}
+                    title={seasonLabel(s, partNo(seasons, idx), partLabel)}
                     className="rounded-md hover:ring-2 hover:ring-blue-400 disabled:opacity-50"
                   >
                     <div className="relative aspect-[2/3] rounded-md overflow-hidden bg-gray-100">
@@ -1689,11 +1690,11 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                         <Image unoptimized src={s.cover_url} alt="" fill className="object-cover" />
                       ) : (
                         <div className={`absolute inset-0 flex items-center justify-center text-white text-sm font-semibold ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}>
-                          {s.season_number ?? idx + 1}
+                          {partNo(seasons, idx)}
                         </div>
                       )}
                     </div>
-                    <p className="text-[11px] text-gray-600 text-center mt-0.5">{s.season_number ?? idx + 1}</p>
+                    <p className="text-[11px] text-gray-600 text-center mt-0.5">{partNo(seasons, idx)}</p>
                   </button>
                 ))}
               </div>
@@ -1710,7 +1711,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                       className={`w-2.5 h-2.5 rounded-full shrink-0 ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}
                     />
                     <span className="font-medium">
-                      {seasonLabel(s, idx, partLabel)}
+                      {seasonLabel(s, partNo(seasons, idx), partLabel)}
                     </span>
                     {s.session_count > 0 && (
                       <span className="ml-auto text-xs text-gray-400">{s.session_count} sesji</span>
@@ -1786,7 +1787,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                 >
                   {seasons.map((s, idx) => (
                     <option key={s.id} value={s.id}>
-                      {s.title ?? (s.season_number != null ? `${partLabel} ${s.season_number}` : `${partLabel} ${idx + 1}`)}
+                      {s.title ?? (s.season_number != null ? `${partLabel} ${s.season_number}` : `${partLabel} ${partNo(seasons, idx)}`)}
                     </option>
                   ))}
                 </select>
@@ -2630,8 +2631,8 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                     <button
                       key={s.id}
                       onClick={() => setSelectedPartId((id) => (id === s.id ? null : s.id))}
-                      title={`${seasonLabel(s, idx, partLabel)} · ${s.session_count} sesji`}
-                      aria-label={`${seasonLabel(s, idx, partLabel)} · ${s.session_count} sesji${
+                      title={`${seasonLabel(s, partNo(seasons, idx), partLabel)} · ${s.session_count} sesji`}
+                      aria-label={`${seasonLabel(s, partNo(seasons, idx), partLabel)} · ${s.session_count} sesji${
                         s.want_to_watch ? (isBook ? " · chcę przeczytać" : " · chcę obejrzeć") : ""
                       }${s.session_count === 0 ? (isBook ? " · nieprzeczytana" : " · nieobejrzany") : ""}`}
                       aria-pressed={selectedPartId === s.id}
@@ -2644,7 +2645,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                           <Image unoptimized src={s.cover_url} alt="" fill className="object-cover" />
                         ) : (
                           <div className={`absolute inset-0 flex items-center justify-center text-white text-sm font-semibold ${SEASON_COLORS[idx % SEASON_COLORS.length]}`} aria-hidden="true">
-                            {s.season_number ?? idx + 1}
+                            {partNo(seasons, idx)}
                           </div>
                         )}
                         {s.want_to_watch ? (
@@ -2654,7 +2655,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                           <div className="absolute inset-0 bg-white/50" title={isBook ? "Nieprzeczytana" : "Nieobejrzany"} />
                         )}
                       </div>
-                      <p className="text-[11px] text-gray-600 text-center mt-0.5 truncate">{s.season_number ?? idx + 1}</p>
+                      <p className="text-[11px] text-gray-600 text-center mt-0.5 truncate">{partNo(seasons, idx)}</p>
                     </button>
                   ))}
                 </div>
@@ -2665,7 +2666,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                   return (
                     <div className="mt-3 flex flex-wrap items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">{seasonLabel(sel, idx, partLabel)}</p>
+                        <p className="text-sm font-medium text-gray-800 truncate">{seasonLabel(sel, partNo(seasons, idx), partLabel)}</p>
                         {(sel.first_session_date || sel.last_session_date) && (
                           <p className="text-xs text-gray-400 mt-0.5">
                             {sel.first_session_date ? formatDate(sel.first_session_date) : "?"} –{" "}
@@ -2982,7 +2983,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                   <option value="">— wybierz {partLabel.toLowerCase()} —</option>
                   {seasons.map((s, idx) => (
                     <option key={s.id} value={s.id}>
-                      {s.title ?? (s.season_number != null ? `${partLabel} ${s.season_number}` : `${partLabel} ${idx + 1}`)}
+                      {s.title ?? (s.season_number != null ? `${partLabel} ${s.season_number}` : `${partLabel} ${partNo(seasons, idx)}`)}
                     </option>
                   ))}
                 </select>
