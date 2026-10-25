@@ -1532,9 +1532,10 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
   const isBook = media ? BOOK_TYPES.includes(media.media_type) : false;
   const partLabel = isBook ? "Część" : "Sezon";
   const partsLabel = isBook ? "Części" : "Sezony";
+  const newPartLabel = isBook ? "Nowa część" : "Nowy sezon";
   const historyLabel = isBook ? "Historia czytania" : "Historia oglądania";
 
-  // Per-part controls shared by the season list and the book cover grid
+  // Per-part controls shared by the single-book row and the parts cover grid
   const seasonControls = (s: SeasonRow) => (
     <>
       <span className="text-xs text-gray-500 shrink-0">{s.session_count} sesji</span>
@@ -2620,9 +2621,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
             ) : (
               <>
             <h3 className="text-sm font-semibold text-gray-800 mb-3">{partsLabel}</h3>
-            {isBook ? (
-              <>
-                {/* Volumes as a compact cover grid; click one for its dates and actions */}
+                {/* Parts as a compact cover grid; click one for its dates and actions */}
                 <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 gap-2">
                   {seasons.map((s, idx) => (
                     <button
@@ -2642,10 +2641,10 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                           </div>
                         )}
                         {s.want_to_watch ? (
-                          <span className="absolute top-0.5 right-0.5 text-[10px] leading-none bg-white/90 rounded px-0.5" title="Chcę przeczytać">📖</span>
+                          <span className="absolute top-0.5 right-0.5 text-[10px] leading-none bg-white/90 rounded px-0.5" title={isBook ? "Chcę przeczytać" : "Chcę obejrzeć"}>{isBook ? "📖" : "👁"}</span>
                         ) : null}
                         {s.session_count === 0 && (
-                          <div className="absolute inset-0 bg-white/50" title="Nieprzeczytana" />
+                          <div className="absolute inset-0 bg-white/50" title={isBook ? "Nieprzeczytana" : "Nieobejrzany"} />
                         )}
                       </div>
                       <p className="text-[11px] text-gray-600 text-center mt-0.5 truncate">{s.season_number ?? idx + 1}</p>
@@ -2672,44 +2671,6 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                   );
                 })()}
               </>
-            ) : (
-                <div className="space-y-2">
-                  {seasons.map((s, idx) => (
-                    <div
-                      key={s.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 border border-gray-100"
-                    >
-                      {s.cover_url ? (
-                        <Image
-                          unoptimized
-                          src={s.cover_url}
-                          alt=""
-                          width={32}
-                          height={48}
-                          className="w-8 h-12 object-cover rounded shrink-0"
-                        />
-                      ) : (
-                        <span
-                          className={`w-3 h-3 rounded-full shrink-0 ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">
-                          {seasonLabel(s, idx, partLabel)}
-                        </p>
-                        {(s.first_session_date || s.last_session_date) && (
-                          <p className="text-xs text-gray-400 mt-0.5">
-                            {s.first_session_date ? formatDate(s.first_session_date) : "?"} –{" "}
-                            {s.last_session_date ? formatDate(s.last_session_date) : "?"}
-                          </p>
-                        )}
-                      </div>
-                      {seasonControls(s)}
-                    </div>
-                  ))}
-                </div>
-            )}
-              </>
             )}
 
             {/* Add season */}
@@ -2722,11 +2683,11 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
                 }}
                 className="mt-2 text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
               >
-                + Nowa {partLabel.toLowerCase()}
+                + {newPartLabel}
               </button>
             ) : (
               <div className="mt-3 border border-gray-200 rounded-lg p-3 bg-gray-50 space-y-2">
-                <p className="text-xs font-semibold text-gray-700">Nowa {partLabel.toLowerCase()}</p>
+                <p className="text-xs font-semibold text-gray-700">{newPartLabel}</p>
                 <div className="flex gap-2">
                   <div className="w-20">
                     <label className="text-xs text-gray-500 block mb-1">Numer</label>
