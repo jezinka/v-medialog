@@ -1,45 +1,14 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import CoverImg from "./CoverImg";
-import { MEDIA_TYPE_EMOJI, MEDIA_TYPE_LABELS, MEDIA_TYPE_COLORS, formatDate } from "@/lib/utils";
 import { toast } from "./Toast";
 import type { SuggestionGroup } from "@/app/api/universes/suggestions/route";
+import LibraryToolbar from "./library/LibraryToolbar";
+import SuggestionsPanel from "./library/SuggestionsPanel";
+import MediaRow from "./library/MediaRow";
+import type { MediaItem, SeasonRow, SortBy, TypeFilter } from "./library/types";
 
 const PAGE_SIZE = 50;
-
-interface MediaItem {
-  id: number;
-  title: string;
-  original_title: string | null;
-  author: string | null;
-  media_type: string;
-  cover_url: string | null;
-  season_count: number;
-  first_session_date: string | null;
-  last_session_date: string | null;
-  has_child_session?: boolean;
-  has_cinema_session?: boolean;
-  tmdb_id: string | null;
-  series_status: string | null;
-  tmdb_seasons_count: number | null;
-}
-
-interface SeasonRow {
-  id: number;
-  media_id: number;
-  season_number: number | null;
-  title: string | null;
-  cover_url: string | null;
-  session_count: number;
-  first_session_date: string | null;
-  last_session_date: string | null;
-  has_child_session?: boolean;
-  has_cinema_session?: boolean;
-}
-
-const TYPE_FILTERS = ["all", "series", "anime", "cartoon", "movie", "book", "comic", "play"] as const;
-type TypeFilter = (typeof TYPE_FILTERS)[number];
 
 export default function MediaLibraryView() {
   const [items, setItems] = useState<MediaItem[]>([]);
@@ -54,7 +23,7 @@ export default function MediaLibraryView() {
   const [hideDiscontinued, setHideDiscontinued] = useState(false);
   const [withChildOnly, setWithChildOnly] = useState(false);
   const [cinemaOnly, setCinemaOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<"title" | "recently_added" | "last_session">("title");
+  const [sortBy, setSortBy] = useState<SortBy>("title");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [seasons, setSeasons] = useState<Record<number, SeasonRow[]>>({});
   const [seasonsLoading, setSeasonsLoading] = useState<Set<number>>(new Set());
@@ -265,213 +234,34 @@ export default function MediaLibraryView() {
     setDeleting(false);
   };
 
-  const seasonLabel = (s: SeasonRow) => {
-    if (s.title) return s.title;
-    if (s.season_number != null) return `Sezon ${s.season_number}`;
-    return `Sezon #${s.id}`;
-  };
-
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Szukaj…"
-          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-56 focus:ring-2 focus:ring-purple-400 focus:outline-none"
-        />
-        <div className="flex gap-1 flex-wrap">
-          {TYPE_FILTERS.map((t) => (
-            <button
-              key={t}
-              onClick={() => setTypeFilter(t)}
-              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                typeFilter === t
-                  ? "bg-purple-600 text-white border-purple-600"
-                  : "border-gray-300 text-gray-600 hover:border-gray-400"
-              }`}
-            >
-              {t === "all" ? "Wszystkie" : `${MEDIA_TYPE_EMOJI[t] ?? ""} ${MEDIA_TYPE_LABELS[t] ?? t}`}
-            </button>
-          ))}
-          <button
-            onClick={() => setNoCoverOnly((v) => !v)}
-            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-              noCoverOnly
-                ? "bg-orange-500 text-white border-orange-500"
-                : "border-gray-300 text-gray-600 hover:border-gray-400"
-            }`}
-          >
-            🖼️ Brak okładki
-          </button>
-          <button
-            onClick={() => setOngoingOnly((v) => !v)}
-            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-              ongoingOnly
-                ? "bg-green-600 text-white border-green-600"
-                : "border-gray-300 text-gray-600 hover:border-gray-400"
-            }`}
-          >
-            📺 Trwające
-          </button>
-          <button
-            onClick={() => setBehindOnly((v) => !v)}
-            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-              behindOnly
-                ? "bg-yellow-500 text-white border-yellow-500"
-                : "border-gray-300 text-gray-600 hover:border-gray-400"
-            }`}
-          >
-            ⏳ Niedokończone
-          </button>
-          <button
-            onClick={() => setHideDiscontinued((v) => !v)}
-            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-              hideDiscontinued
-                ? "bg-red-600 text-white border-red-600"
-                : "border-red-300 text-red-700 hover:border-red-400"
-            }`}
-          >
-            🚫 Ukryj porzucone
-          </button>
-          <button
-            onClick={() => setWithChildOnly((v) => !v)}
-            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-              withChildOnly
-                ? "bg-emerald-700 text-white border-emerald-700"
-                : "border-emerald-300 text-emerald-700 hover:border-emerald-400"
-            }`}
-          >
-            👶 Z dzieckiem
-          </button>
-          <button
-            onClick={() => setCinemaOnly((v) => !v)}
-            className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-              cinemaOnly
-                ? "bg-amber-600 text-white border-amber-600"
-                : "border-amber-300 text-amber-700 hover:border-amber-400"
-            }`}
-          >
-            🎟️ W kinie
-          </button>
-        </div>
-        <span className="text-sm text-gray-500 ml-auto">{total} mediów</span>
-        <div className="flex items-center gap-1 text-xs text-gray-500">
-          <span>Sortuj:</span>
-          <button
-            onClick={() => setSortBy("title")}
-            className={`px-2 py-1 rounded-full border transition-colors ${
-              sortBy === "title"
-                ? "bg-gray-700 text-white border-gray-700"
-                : "border-gray-300 text-gray-600 hover:border-gray-400"
-            }`}
-          >
-            A–Z
-          </button>
-          <button
-            onClick={() => setSortBy("recently_added")}
-            className={`px-2 py-1 rounded-full border transition-colors ${
-              sortBy === "recently_added"
-                ? "bg-gray-700 text-white border-gray-700"
-                : "border-gray-300 text-gray-600 hover:border-gray-400"
-            }`}
-          >
-            🆕 Ostatnio dodane
-          </button>
-          <button
-            onClick={() => setSortBy("last_session")}
-            className={`px-2 py-1 rounded-full border transition-colors ${
-              sortBy === "last_session"
-                ? "bg-gray-700 text-white border-gray-700"
-                : "border-gray-300 text-gray-600 hover:border-gray-400"
-            }`}
-          >
-            📅 Ostatnio oglądane/czytane
-          </button>
-        </div>
-        <button
-          onClick={handleToggleSuggestions}
-          title="Sugestie scalania"
-          className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-            showSuggestions
-              ? "bg-amber-500 text-white border-amber-500"
-              : "border-amber-300 text-amber-600 hover:border-amber-400"
-          }`}
-        >
-          💡 Sugestie scalania
-        </button>
-        <button
-          onClick={handleCheckUpcoming}
-          disabled={checkingUpcoming}
-          title="Sprawdź nowe sezony w TMDB"
-          className="text-xs px-2.5 py-1 rounded-full border border-blue-300 text-blue-600 hover:border-blue-400 transition-colors disabled:opacity-50"
-        >
-          {checkingUpcoming ? "⏳ Sprawdzam…" : "📡 Nowe sezony"}
-        </button>
-        {selectedMedia.size > 0 && (
-          <button
-            onClick={deleteSelected}
-            disabled={deleting}
-            className="text-xs px-3 py-1.5 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
-          >
-            {deleting ? "Usuwanie…" : `🗑️ Usuń zaznaczone (${selectedMedia.size})`}
-          </button>
-        )}
-      </div>
+      <LibraryToolbar
+        search={search} setSearch={setSearch}
+        typeFilter={typeFilter} setTypeFilter={setTypeFilter}
+        noCoverOnly={noCoverOnly} setNoCoverOnly={setNoCoverOnly}
+        ongoingOnly={ongoingOnly} setOngoingOnly={setOngoingOnly}
+        behindOnly={behindOnly} setBehindOnly={setBehindOnly}
+        hideDiscontinued={hideDiscontinued} setHideDiscontinued={setHideDiscontinued}
+        withChildOnly={withChildOnly} setWithChildOnly={setWithChildOnly}
+        cinemaOnly={cinemaOnly} setCinemaOnly={setCinemaOnly}
+        sortBy={sortBy} setSortBy={setSortBy}
+        total={total}
+        showSuggestions={showSuggestions} handleToggleSuggestions={handleToggleSuggestions}
+        checkingUpcoming={checkingUpcoming} handleCheckUpcoming={handleCheckUpcoming}
+        selectedCount={selectedMedia.size} deleting={deleting} deleteSelected={deleteSelected}
+      />
 
-      {/* Suggestions panel */}
       {showSuggestions && (
-        <div className="border border-amber-200 bg-amber-50 rounded-xl p-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-amber-900">💡 Sugestie scalania</h2>
-            <button onClick={() => setShowSuggestions(false)} className="text-xs text-amber-400 hover:text-amber-600">✕</button>
-          </div>
-          {loadingSuggestions ? (
-            <div className="flex justify-center py-4">
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-amber-500" />
-            </div>
-          ) : suggestions.filter((s) => !dismissedSuggestions.has(s.base_name)).length === 0 ? (
-            <div className="text-xs text-amber-700 text-center py-3">Brak sugestii — wszystko wygląda OK 🎉</div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {suggestions
-                .filter((s) => !dismissedSuggestions.has(s.base_name))
-                .map((suggestion) => (
-                  <div key={suggestion.base_name} className="bg-white border border-amber-200 rounded-xl p-3 space-y-2">
-                    <div className="flex items-start justify-between gap-1">
-                      <p className="text-xs font-semibold text-amber-900 capitalize">{suggestion.base_name}</p>
-                      <button
-                        onClick={() => dismissSuggestion(suggestion.base_name)}
-                        className="text-amber-300 hover:text-amber-500 text-xs shrink-0"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    <div className="space-y-1">
-                      {suggestion.items.map((item) => (
-                        <div key={item.id} className="flex items-center gap-1.5 text-xs">
-                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-medium ${MEDIA_TYPE_COLORS[item.media_type] ?? "bg-gray-100 text-gray-600"}`}>
-                            {MEDIA_TYPE_LABELS[item.media_type] ?? item.media_type}
-                          </span>
-                          <span className="text-gray-700 truncate flex-1">{item.title}</span>
-                          <span className="text-[10px] text-gray-400 shrink-0">{item.season_count}s</span>
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => handleApplySuggestion(suggestion)}
-                      disabled={applyingSuggestion === suggestion.base_name}
-                      className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium py-1.5 rounded-lg transition-colors disabled:opacity-50"
-                    >
-                      {applyingSuggestion === suggestion.base_name ? "Scalanie…" : "Scal w jedno medium"}
-                    </button>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
+        <SuggestionsPanel
+          suggestions={suggestions}
+          loadingSuggestions={loadingSuggestions}
+          dismissedSuggestions={dismissedSuggestions}
+          applyingSuggestion={applyingSuggestion}
+          onClose={() => setShowSuggestions(false)}
+          dismissSuggestion={dismissSuggestion}
+          handleApplySuggestion={handleApplySuggestion}
+        />
       )}
 
       {/* List */}
@@ -483,149 +273,20 @@ export default function MediaLibraryView() {
         ) : items.length === 0 ? (
           <p className="text-sm text-gray-500 p-6 text-center">Brak wyników</p>
         ) : (
-          items.map((medium) => {
-            const isExpanded = expandedId === medium.id;
-            const isSelected = selectedMedia.has(medium.id);
-            const mediaSeasons = seasons[medium.id] ?? [];
-            const isLoadingSeasons = seasonsLoading.has(medium.id);
-
-            return (
-              <div key={medium.id} className={`transition-colors ${isSelected ? "bg-red-50" : "bg-white"}`}>
-                {/* Medium row */}
-                <div className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => toggleSelect(medium.id)}
-                    className="cursor-pointer shrink-0"
-                  />
-
-                  {/* Cover */}
-                  <div className="w-8 h-10 shrink-0 rounded overflow-hidden bg-gray-100">
-                    {medium.cover_url ? (
-                      <CoverImg src={medium.cover_url} alt={medium.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-gray-400 text-lg">
-                        {MEDIA_TYPE_EMOJI[medium.media_type] ?? "📄"}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <a
-                      href={`/media/${medium.id}`}
-                      className="font-medium text-gray-900 hover:text-purple-700 text-left truncate block max-w-xs"
-                    >
-                      {medium.title}
-                    </a>
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                      <span>{MEDIA_TYPE_EMOJI[medium.media_type]} {MEDIA_TYPE_LABELS[medium.media_type] ?? medium.media_type}</span>
-                      {medium.author && <span>· {medium.author}</span>}
-                      {medium.last_session_date && (
-                        <span>· ostatnio {formatDate(medium.last_session_date)}</span>
-                      )}
-                      {medium.has_cinema_session && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-1.5 py-0.5 font-medium">
-                          🎟️ w kinie
-                        </span>
-                      )}
-                      {medium.has_child_session && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 px-1.5 py-0.5 font-medium">
-                          👶 z dzieckiem
-                        </span>
-                      )}
-                      {medium.series_status && (
-                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                          medium.series_status === "Ended" || medium.series_status === "Canceled"
-                            ? "bg-gray-100 text-gray-500"
-                            : medium.series_status === "Returning Series"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-blue-100 text-blue-700"
-                        }`}>
-                          {medium.series_status}
-                          {medium.tmdb_seasons_count != null && ` · ${medium.season_count}/${medium.tmdb_seasons_count} sez.`}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Season count + expand */}
-                  <button
-                    onClick={() => toggleExpand(medium.id)}
-                    className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-purple-700 px-2 py-1 rounded hover:bg-purple-50 transition-colors shrink-0"
-                  >
-                    <span className="font-mono bg-gray-100 rounded px-1.5 py-0.5 text-gray-700">
-                      {medium.season_count}
-                    </span>
-                    sezon{medium.season_count === 1 ? "" : "y/ów"}
-                    <span className={`transition-transform ${isExpanded ? "rotate-180" : ""}`}>▾</span>
-                  </button>
-
-                  {/* Delete */}
-                  <button
-                    onClick={() => deleteMedia(medium)}
-                    className="text-red-400 hover:text-red-600 text-sm px-1 shrink-0"
-                    title="Usuń medium"
-                  >
-                    🗑️
-                  </button>
-                </div>
-
-                {/* Expanded seasons */}
-                {isExpanded && (
-                  <div className="bg-gray-50 border-t border-gray-100 px-4 py-3">
-                    {isLoadingSeasons ? (
-                      <p className="text-xs text-gray-400 py-2">Ładowanie…</p>
-                    ) : mediaSeasons.length === 0 ? (
-                      <p className="text-xs text-gray-400 py-2">Brak sezonów</p>
-                    ) : (
-                      <div className="space-y-1.5">
-                        {mediaSeasons.map((s) => (
-                          <div key={s.id} className="flex items-center gap-3 bg-white rounded-lg px-3 py-2 border border-gray-100">
-                            {/* Mini cover */}
-                            <div className="w-6 h-8 shrink-0 rounded overflow-hidden bg-gray-100">
-                              {s.cover_url ? (
-                                <CoverImg src={s.cover_url} alt={seasonLabel(s)} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full bg-gray-200" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm font-medium text-gray-800">{seasonLabel(s)}</span>
-                              <div className="text-xs text-gray-400 mt-0.5 flex flex-wrap gap-2">
-                                <span>{s.session_count} sesji</span>
-                                {s.first_session_date && (
-                                  <span>{formatDate(s.first_session_date)}{s.last_session_date && s.last_session_date !== s.first_session_date ? ` – ${formatDate(s.last_session_date)}` : ""}</span>
-                                )}
-                                {s.has_cinema_session && (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 text-amber-700 px-1.5 py-0.5 font-medium">
-                                    🎟️ w kinie
-                                  </span>
-                                )}
-                                {s.has_child_session && (
-                                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-700 px-1.5 py-0.5 font-medium">
-                                    👶 z dzieckiem
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <button
-                              onClick={() => deleteSeason(s)}
-                              className="text-xs text-red-400 hover:text-red-600 px-1"
-                              title="Usuń sezon"
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })
+          items.map((medium) => (
+            <MediaRow
+              key={medium.id}
+              medium={medium}
+              isExpanded={expandedId === medium.id}
+              isSelected={selectedMedia.has(medium.id)}
+              mediaSeasons={seasons[medium.id] ?? []}
+              isLoadingSeasons={seasonsLoading.has(medium.id)}
+              toggleSelect={toggleSelect}
+              toggleExpand={toggleExpand}
+              deleteMedia={deleteMedia}
+              deleteSeason={deleteSeason}
+            />
+          ))
         )}
       </div>
 
