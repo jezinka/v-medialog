@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import { SCREEN_TYPES } from "../lib/utils";
+import { SCREEN_TYPES, hasSeasonNumbers } from "../lib/utils";
 import { planSeasonNumbers } from "../lib/season-numbering";
 
 type SeasonNumberRow = { id: number; season_number: number | null };
@@ -12,9 +12,9 @@ function orderedSeasons(db: Database.Database, mediaId: number): SeasonNumberRow
   `).all(mediaId) as SeasonNumberRow[];
 }
 
-function hasSpecials(db: Database.Database, mediaId: number): boolean {
+function mediaType(db: Database.Database, mediaId: number): string {
   const m = db.prepare(`SELECT media_type FROM media WHERE id=?`).get(mediaId) as { media_type: string } | undefined;
-  return !!m && SCREEN_TYPES.includes(m.media_type);
+  return m?.media_type ?? "";
 }
 
 export type SeasonNumberingEntry = {
@@ -22,7 +22,7 @@ export type SeasonNumberingEntry = {
   changes: { season_id: number; season_number: number }[] | null; // null = clash, fix by hand
 };
 
-/** Media with 2+ seasons where some are unnumbered, and the numbers they would get. */
+/** Media with 2+ seasons where some are unnumbered, and the numbers they would get (movies/books excluded). */
 export function seasonNumberingPlan(db: Database.Database): SeasonNumberingEntry[] {
   const media = db.prepare(`
     SELECT m.id, m.title, m.media_type FROM media m
@@ -30,7 +30,7 @@ export function seasonNumberingPlan(db: Database.Database): SeasonNumberingEntry
       AND EXISTS (SELECT 1 FROM seasons s WHERE s.media_id = m.id AND s.season_number IS NULL)
     ORDER BY m.title
   `).all() as { id: number; title: string; media_type: string }[];
-  return media.map((m) => {
+  return media.filter((m) => hasSeasonNumbers(m.media_type)).map((m) => {
     const plan = planSeasonNumbers(orderedSeasons(db, m.id), SCREEN_TYPES.includes(m.media_type));
     return {
       media_id: m.id, title: m.title, media_type: m.media_type,
@@ -49,12 +49,14 @@ export function applySeasonNumbering(db: Database.Database, plan: SeasonNumberin
 /**
  * Number for a new season of a media that already has seasons: numbers the existing
  * unnumbered ones first (as displayed), then returns the next free number.
- * Returns null for the first season of a media (single movies/books stay unnumbered).
+ * Returns null for the first season of a media and for movies/books (re-watches stay unnumbered).
  */
 export function nextSeasonNumber(db: Database.Database, mediaId: number): number | null {
+  const type = mediaType(db, mediaId);
+  if (!hasSeasonNumbers(type)) return null;
   const rows = orderedSeasons(db, mediaId);
   if (rows.length === 0) return null;
-  const plan = planSeasonNumbers(rows, hasSpecials(db, mediaId));
+  const plan = planSeasonNumbers(rows, SCREEN_TYPES.includes(type));
   if (plan) {
     const update = db.prepare(`UPDATE seasons SET season_number=? WHERE id=?`);
     for (const p of plan) update.run(p.season_number, p.id);

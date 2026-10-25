@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import CoverImg from "./CoverImg";
-import { MEDIA_TYPE_ICONS, MEDIA_TYPE_COLORS, MEDIA_TYPE_LABELS, formatDate, BOOK_TYPES, SCREEN_TYPES, ITUNES_TYPES, CALENDAR_TYPES } from "@/lib/utils";
+import { MEDIA_TYPE_ICONS, MEDIA_TYPE_COLORS, MEDIA_TYPE_LABELS, formatDate, BOOK_TYPES, SCREEN_TYPES, ITUNES_TYPES, CALENDAR_TYPES, hasSeasonNumbers } from "@/lib/utils";
 import { partNo } from "@/lib/part-number";
 import { toast } from "./Toast";
 
@@ -1271,7 +1271,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
     try {
       let seasonId: number;
       if (seasons.length === 0) {
-        const noSeasonNumber = media?.media_type === "movie" || BOOK_TYPES.includes(media?.media_type ?? "");
+        const noSeasonNumber = !hasSeasonNumbers(media?.media_type ?? "");
         const res = await fetch("/api/seasons", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -1365,7 +1365,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
       if (seasons.length === 0) {
         // Auto-create default season then add session
         try {
-          const noSeasonNumber = media?.media_type === "movie" || BOOK_TYPES.includes(media?.media_type ?? "");
+          const noSeasonNumber = !hasSeasonNumbers(media?.media_type ?? "");
           const r = await fetch("/api/seasons", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

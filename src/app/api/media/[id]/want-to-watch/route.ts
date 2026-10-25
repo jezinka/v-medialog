@@ -11,7 +11,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     if (!media) return jsonError("Media not found", 404);
     // Only these types have a column on the want-to-watch page
     if (!CALENDAR_TYPES.includes(media.media_type)) return jsonError("This media type can't be added to the list", 400);
-    const seasonId = markWantToWatch(sqlite, mediaId);
+    const seasonId = sqlite.transaction(() => markWantToWatch(sqlite, mediaId))();
     return NextResponse.json({ seasonId, message: "Dodano do listy" }, { status: 201 });
   } catch (error) {
     console.error(error);

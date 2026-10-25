@@ -67,6 +67,8 @@ export const MEDIA_TYPE_HEX: Record<string, string> = {
 export const BOOK_TYPES = ["book", "comic"];
 export const SCREEN_TYPES = ["movie", "series", "anime", "cartoon"];
 export const ITUNES_TYPES = ["record", "podcast"];
+/** Movies and books/comics repeat as re-watches/re-reads, so their seasons stay unnumbered. */
+export const hasSeasonNumbers = (mediaType: string) => mediaType !== "movie" && !BOOK_TYPES.includes(mediaType);
 export const CALENDAR_TYPES = ["book", "comic", "movie", "series", "anime", "cartoon"];
 
 export const MONTH_NAMES = [
