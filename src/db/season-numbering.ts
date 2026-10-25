@@ -17,35 +17,6 @@ function mediaType(db: Database.Database, mediaId: number): string {
   return m?.media_type ?? "";
 }
 
-export type SeasonNumberingEntry = {
-  media_id: number; title: string; media_type: string;
-  changes: { season_id: number; season_number: number }[] | null; // null = clash, fix by hand
-};
-
-/** Media with 2+ seasons where some are unnumbered, and the numbers they would get (movies/books excluded). */
-export function seasonNumberingPlan(db: Database.Database): SeasonNumberingEntry[] {
-  const media = db.prepare(`
-    SELECT m.id, m.title, m.media_type FROM media m
-    WHERE (SELECT COUNT(*) FROM seasons s WHERE s.media_id = m.id) >= 2
-      AND EXISTS (SELECT 1 FROM seasons s WHERE s.media_id = m.id AND s.season_number IS NULL)
-    ORDER BY m.title
-  `).all() as { id: number; title: string; media_type: string }[];
-  return media.filter((m) => hasSeasonNumbers(m.media_type)).map((m) => {
-    const plan = planSeasonNumbers(orderedSeasons(db, m.id), SCREEN_TYPES.includes(m.media_type));
-    return {
-      media_id: m.id, title: m.title, media_type: m.media_type,
-      changes: plan && plan.map((p) => ({ season_id: p.id, season_number: p.season_number })),
-    };
-  });
-}
-
-/** Writes the clash-free part of the plan in one transaction; returns the number of seasons numbered. */
-export function applySeasonNumbering(db: Database.Database, plan: SeasonNumberingEntry[]): number {
-  const update = db.prepare(`UPDATE seasons SET season_number=? WHERE id=? AND season_number IS NULL`);
-  return db.transaction(() => plan.flatMap((e) => e.changes ?? [])
-    .reduce((n, c) => n + update.run(c.season_number, c.season_id).changes, 0))();
-}
-
 /**
  * Number for a new season of a media that already has seasons: numbers the existing
  * unnumbered ones first (as displayed), then returns the next free number.
