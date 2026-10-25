@@ -8,3 +8,8 @@ test("partNo skips specials when numbering unnumbered parts", () => {
   assert.deepEqual(parts.map((_, i) => partNo(parts, i)), ["1", "Sp.", "2", "3"]);
   assert.equal(partNo([{ season_number: 5 }], 0), "5");
 });
+
+test("partNo treats part 0 as an ordinary volume without specials", () => {
+  const vols = [{ season_number: 0 }, { season_number: null }];
+  assert.deepEqual(vols.map((_, i) => partNo(vols, i, false)), ["0", "2"]);
+});
