@@ -120,7 +120,7 @@ export default function NewSeriesList({ initialMonth, initialCountry, initialPla
                   href={`https://www.themoviedb.org/tv/${item.tmdb_id}?language=pl-PL`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title="Otwórz na TMDB w nowej karcie"
+                  title={`${item.title} – otwórz na TMDB w nowej karcie`}
                   className="block text-sm font-medium text-gray-900 truncate hover:text-purple-700 hover:underline"
                 >
                   {item.title}
