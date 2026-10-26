@@ -6,9 +6,10 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+## 2026-10-26
+
 - Na liście „✨ Nowe seriale” można zaznaczyć „Bez seriali z biblioteki”, żeby ukryć seriale, które już są w bibliotece. Wybór zapisuje się w adresie strony.
 
-## 2026-10-26
 
 - Zakładkę „✨ Nowe seriale” można zawęzić do kraju (Polska, USA, Wielka Brytania) i platformy lub stacji dostępnej w Polsce (np. Netflix, HBO Max, Disney+, SkyShowtime, TVP). Seriale z Hulu i FX są pod Disney+, z HBO i Max pod HBO Max, a z Paramount+ i Peacock pod SkyShowtime. Miesiąc i filtry zapisują się w adresie strony, więc zostają po odświeżeniu i w skopiowanym linku.
 
