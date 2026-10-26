@@ -226,7 +226,7 @@ export default function PersonDetailPage({ personId, onBack, onOpenMedia }: Prop
         </div>
       </div>
 
-      <MergePersonPanel personId={personId} personName={person.name} onMerged={() => void reloadPerson()} />
+      <MergePersonPanel personId={personId} personName={person.name} onMerged={() => void reloadPerson().catch(() => toast("Błąd odświeżania osoby", "error"))} />
       {screenEntries.length > 0 && (
         <section className="space-y-2">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Filmy i seriale</h2>
