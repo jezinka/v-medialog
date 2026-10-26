@@ -6,6 +6,8 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+## 2026-10-26
+
 - Rozkład jazdy pokazuje też „✨ Nowe seriale”: premiery w danym miesiącu seriali z Polski, USA i Wielkiej Brytanii od stacji i platform dostępnych w Polsce (bez reality show, talk show i programów informacyjnych). Przycisk „+ do obejrzenia” dodaje serial do biblioteki i listy z datą premiery; seriale, które już są w bibliotece, mają link „✓ w bibliotece”.
 - Na liście „Do obejrzenia” serial ma jedną kartę z sezonami w środku (każdy z własnym ▶ i ×), zamiast osobnej karty dla każdego sezonu.
 
