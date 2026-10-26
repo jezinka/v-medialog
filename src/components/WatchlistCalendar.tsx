@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { WatchlistEntry } from "@/app/api/watchlist-calendar/route";
 import MediaCoverThumb from "./MediaCoverThumb";
 import { toast } from "./Toast";
+import { groupSeasonsByMedia } from "@/lib/watchlist";
 
 interface VodOffer {
   id: number;
@@ -99,19 +100,44 @@ export default function WatchlistCalendar({ refreshKey }: Props) {
               <p className="text-sm text-gray-400 py-4">Brak pozycji.</p>
             ) : (
               <div className="space-y-2">
-                {seasons.map((entry) => (
+                {types.includes("series") ? groupSeasonsByMedia(seasons).map(({ media_id, seasons: mediaSeasons }) => {
+                  const first = mediaSeasons[0];
+                  return (
+                    <div key={media_id} className="flex gap-3 rounded-lg border border-gray-100 p-2 hover:bg-gray-50 transition-colors">
+                      <a href={`/media/${media_id}`} className="shrink-0">
+                        <MediaCoverThumb coverUrl={first.cover_url} title={first.title} mediaType={first.media_type} />
+                      </a>
+                      <div className="flex-1 min-w-0">
+                        <a href={`/media/${media_id}`} className="block text-sm font-medium text-gray-900 truncate hover:underline">{first.title}</a>
+                        {vodMap[media_id]?.length > 0 && (
+                          <p className="text-xs text-green-700 truncate">{vodMap[media_id].map((offer) => offer.provider_name).join(", ")}</p>
+                        )}
+                        <ul className="mt-0.5">
+                          {mediaSeasons.map((entry) => (
+                            <li key={entry.season_id} className="flex items-center gap-2 text-xs text-gray-500">
+                              <span className="flex-1 min-w-0 truncate">
+                                {entry.season_number != null ? `Sezon ${entry.season_number}` : "Sezon"}
+                                {entry.last_session_date ? ` · ${entry.last_session_date}` : " · bez daty premiery"}
+                              </span>
+                              <button onClick={() => handleStart(entry)} className="text-green-700 hover:text-green-900" title="Zaczynam" aria-label={`Zaczynam: ${entry.title}, sezon ${entry.season_number ?? ""}`}>
+                                ▶
+                              </button>
+                              <button onClick={() => handleRemove(entry)} className="text-red-500 hover:text-red-700" title="Usuń z listy" aria-label={`Usuń z listy: ${entry.title}, sezon ${entry.season_number ?? ""}`}>
+                                ×
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  );
+                }) : seasons.map((entry) => (
                   <div key={entry.season_id} className="flex gap-3 rounded-lg border border-gray-100 p-2 hover:bg-gray-50 transition-colors">
                     <a href={`/media/${entry.media_id}`} className="flex flex-1 gap-3 min-w-0">
                       <MediaCoverThumb coverUrl={entry.cover_url} title={entry.title} mediaType={entry.media_type} />
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">{entry.title}</p>
                         {entry.author && <p className="text-xs text-gray-500 truncate">{entry.author}</p>}
-                        {types.includes("series") && (
-                          <p className="text-xs text-gray-500">
-                            {entry.season_number != null ? `Sezon ${entry.season_number}` : "Sezon"}
-                            {entry.last_session_date ? ` · ${entry.last_session_date}` : " · bez daty premiery"}
-                          </p>
-                        )}
                         {vodMap[entry.media_id]?.length > 0 && (
                           <p className="text-xs text-green-700 truncate">{vodMap[entry.media_id].map((offer) => offer.provider_name).join(", ")}</p>
                         )}
