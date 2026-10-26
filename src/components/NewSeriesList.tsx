@@ -81,7 +81,7 @@ export default function NewSeriesList({ initialMonth, initialCountry, initialPla
   };
 
   const current = loaded?.query === query ? loaded : null;
-  const ignoredCount = current && "items" in current ? current.items.filter((i) => i.ignored).length : 0;
+  const ignoredCount = current && "items" in current ? current.items.filter((i) => i.ignored && !(hideLibrary && i.media_id)).length : 0;
   const visible = current && "items" in current
     ? current.items.filter((i) => (showIgnored || !i.ignored) && !(hideLibrary && i.media_id)).sort((a, b) => a.first_air_date.localeCompare(b.first_air_date))
     : [];
