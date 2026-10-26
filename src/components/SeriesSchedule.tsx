@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import MediaCoverThumb from "./MediaCoverThumb";
-import NewSeriesList from "./NewSeriesList";
+import MonthSwitcher from "./MonthSwitcher";
 import { toast } from "./Toast";
-import { MONTH_NAMES, formatDate } from "@/lib/utils";
-import { groupByDate, monthKey, shiftMonth } from "@/lib/schedule";
+import { formatDate } from "@/lib/utils";
+import { groupByDate, monthKey } from "@/lib/schedule";
 import type { ScheduleItem } from "@/app/api/schedule/route";
 
 /** Month-by-month list of season premieres of the series and anime on the watch list. */
@@ -40,20 +40,18 @@ export default function SeriesSchedule({ refreshKey, onChecked }: { refreshKey: 
     }
   };
 
-  const [y, m] = month.split("-").map(Number);
   const items = loaded?.month === month ? loaded.items : null;
   const days = items ? groupByDate(items) : [];
   return (
     <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
       <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2">
-          <button onClick={() => setMonth((cur) => shiftMonth(cur, -1))} aria-label="Poprzedni miesiąc" className="w-7 h-7 rounded-full hover:bg-gray-100 text-gray-600 font-bold">‹</button>
-          <h2 className="text-base font-semibold text-gray-800 min-w-[11rem] text-center">📅 Premiery: {MONTH_NAMES[m - 1].toLowerCase()} {y}</h2>
-          <button onClick={() => setMonth((cur) => shiftMonth(cur, 1))} aria-label="Następny miesiąc" className="w-7 h-7 rounded-full hover:bg-gray-100 text-gray-600 font-bold">›</button>
+        <MonthSwitcher label="📅 Premiery" month={month} onChange={setMonth} />
+        <div className="flex items-center gap-3">
+          <Link href={`/new-series?month=${month}`} className="text-xs text-purple-600 hover:text-purple-800">✨ Nowe seriale →</Link>
+          <button onClick={() => void checkNow()} disabled={checking} className="text-xs text-gray-600 hover:text-gray-900 disabled:opacity-50">
+            {checking ? "Sprawdzam…" : "Sprawdź nowe sezony"}
+          </button>
         </div>
-        <button onClick={() => void checkNow()} disabled={checking} className="text-xs text-gray-600 hover:text-gray-900 disabled:opacity-50">
-          {checking ? "Sprawdzam…" : "Sprawdź nowe sezony"}
-        </button>
       </div>
       {items === null ? (
         <p className="text-sm text-gray-400 py-2">Ładowanie…</p>
@@ -83,8 +81,7 @@ export default function SeriesSchedule({ refreshKey, onChecked }: { refreshKey: 
           ))}
         </ol>
       )}
-      <NewSeriesList month={month} onAdded={onChecked} />
-      <p className="text-[11px] text-gray-400 mt-3">Nowe seriale: produkcje z Polski, USA i Wielkiej Brytanii od stacji i platform dostępnych w Polsce. Daty z TMDB (zwykle premiera w USA); polska platforma może pokazać serial lub sezon później.</p>
+      <p className="text-[11px] text-gray-400 mt-3">Daty z TMDB (zwykle premiera w USA); polska platforma może pokazać sezon później.</p>
     </section>
   );
 }

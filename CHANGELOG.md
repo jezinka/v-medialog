@@ -6,6 +6,14 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- Zakładkę „✨ Nowe seriale” można zawęzić do kraju (Polska, USA, Wielka Brytania) i platformy lub stacji dostępnej w Polsce (np. Netflix, HBO Max, Disney+, SkyShowtime, TVP). Seriale z Hulu i FX są pod Disney+, z HBO i Max pod HBO Max, a z Paramount+ i Peacock pod SkyShowtime. Miesiąc i filtry zapisują się w adresie strony, więc zostają po odświeżeniu i w skopiowanym linku.
+
+- Serial na liście „✨ Nowe seriale” można ukryć przyciskiem „ukryj”: znika we wszystkich miesiącach, a „Pokaż ukryte (n)” pod listą pozwala go przywrócić.
+
+- Na liście „✨ Nowe seriale” każdy serial ma krótki opis (do dwóch linijek, pełny po najechaniu): po polsku, a gdy TMDB nie ma polskiego, po angielsku.
+
+- „✨ Nowe seriale” mają własną zakładkę w nawigacji (obok „Do obejrzenia”) z przełącznikiem miesięcy; link „✨ Nowe seriale →” w rozkładzie jazdy otwiera ją w tym samym miesiącu. Rozkład jazdy pokazuje już tylko premiery kolejnych sezonów śledzonych seriali.
+
 ## 2026-10-26
 
 - Rozkład jazdy pokazuje też „✨ Nowe seriale”: premiery w danym miesiącu seriali z Polski, USA i Wielkiej Brytanii od stacji i platform dostępnych w Polsce (bez reality show, talk show i programów informacyjnych). Przycisk „+ do obejrzenia” dodaje serial do biblioteki i listy z datą premiery; seriale, które już są w bibliotece, mają link „✓ w bibliotece”.

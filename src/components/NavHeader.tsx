@@ -24,6 +24,7 @@ const TAB_BUTTONS = [
   { path: "/", icon: "/icons/icons8-library-96.png", tooltip: "Dziennik" },
   { path: "/calendar", icon: "/icons/icons8-calendar-96.png", tooltip: "Kalendarz" },
   { path: "/wishlist", icon: "/icons/icons8-planner-96.png", tooltip: "Do obejrzenia" },
+  { path: "/new-series", icon: "/icons/icons8-tv-show-96.png", tooltip: "Nowe seriale" },
   { path: "/stats", icon: "/icons/icons8-combo-chart-96.png", tooltip: "Statystyki" },
   { path: "/import", icon: "/icons/icons8-gear-96.png", tooltip: "Admin" },
 ];
