@@ -6,9 +6,10 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+## 2026-10-26
+
 - Tytuł serialu na liście „✨ Nowe seriale” otwiera jego stronę na TMDB w nowej karcie.
 
-## 2026-10-26
 
 - Przy serialach na liście „✨ Nowe seriale” widać średnią ocenę z TMDB i liczbę głosów (np. „★ 7,4 (12)”), o ile ktoś już oceniał.
 
