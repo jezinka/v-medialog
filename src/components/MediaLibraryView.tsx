@@ -6,6 +6,7 @@ import type { SuggestionGroup } from "@/app/api/universes/suggestions/route";
 import LibraryToolbar from "./library/LibraryToolbar";
 import SuggestionsPanel from "./library/SuggestionsPanel";
 import MediaRow from "./library/MediaRow";
+import Pagination from "./library/Pagination";
 import type { MediaItem, SeasonRow, SortBy, TypeFilter } from "./library/types";
 
 const PAGE_SIZE = 50;
@@ -142,8 +143,6 @@ export default function MediaLibraryView() {
 
   // Reset to page 1 when filters change
   useEffect(() => { setPage(1); }, [debouncedSearch, typeFilter, noCoverOnly, ongoingOnly, behindOnly, hideDiscontinued, withChildOnly, cinemaOnly, sortBy]);
-
-  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const loadSeasons = useCallback(async (mediaId: number) => {
     if (seasons[mediaId]) return;
@@ -290,66 +289,7 @@ export default function MediaLibraryView() {
         )}
       </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-1 pt-2">
-          <button
-            onClick={() => setPage(1)}
-            disabled={page === 1}
-            className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-          >
-            «
-          </button>
-          <button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-            className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-          >
-            ‹
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter((p) => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
-            .reduce<(number | "...")[]>((acc, p, idx, arr) => {
-              if (idx > 0 && p - (arr[idx - 1] as number) > 1) acc.push("...");
-              acc.push(p);
-              return acc;
-            }, [])
-            .map((p, i) =>
-              p === "..." ? (
-                <span key={`ellipsis-${i}`} className="px-2 text-xs text-gray-400">…</span>
-              ) : (
-                <button
-                  key={p}
-                  onClick={() => setPage(p as number)}
-                  className={`px-2.5 py-1 text-xs rounded border transition-colors ${
-                    page === p
-                      ? "bg-purple-600 text-white border-purple-600"
-                      : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                  }`}
-                >
-                  {p}
-                </button>
-              )
-            )}
-          <button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-            className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-          >
-            ›
-          </button>
-          <button
-            onClick={() => setPage(totalPages)}
-            disabled={page === totalPages}
-            className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
-          >
-            »
-          </button>
-          <span className="text-xs text-gray-400 ml-2">
-            {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} z {total}
-          </span>
-        </div>
-      )}
+      <Pagination page={page} total={total} pageSize={PAGE_SIZE} setPage={setPage} />
     </div>
   );
 }

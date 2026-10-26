@@ -1,10 +1,11 @@
 "use client";
 import { useState } from "react";
 import CoverImg from "./CoverImg";
-import { MEDIA_TYPES, MEDIA_TYPE_LABELS, MEDIA_TYPE_COLORS, BOOK_TYPES, CALENDAR_TYPES } from "@/lib/utils";
-import { toast } from "./Toast";
+import { MEDIA_TYPE_LABELS, MEDIA_TYPE_COLORS } from "@/lib/utils";
 import Modal from "./Modal";
 import { useMediaSearch } from "@/lib/hooks/useMediaSearch";
+import CreateMediaForm, { EMPTY_MEDIA_FORM } from "./add-media/CreateMediaForm";
+import QuickFill from "./add-media/QuickFill";
 
 interface Props {
   onClose: () => void;
@@ -16,159 +17,8 @@ interface Props {
 export default function AddMediaModal({ onClose, onSelect, initialStartDate, initialEndDate }: Props) {
   const { mediaSearch, filteredMedia, handleSearchChange, dropdownRef } = useMediaSearch();
   const [showCreate, setShowCreate] = useState(false);
-  const [createForm, setCreateForm] = useState({
-    title: "",
-    original_title: "",
-    author: "",
-    media_type: "book",
-    universe_id: "",
-    cover_url: "",
-    description: "",
-    tmdb_id: "",
-  });
-  const [createLoading, setCreateLoading] = useState(false);
-  const [addToWishlist, setAddToWishlist] = useState(false);
-  const [lcUrl, setLcUrl] = useState("");
-  const [lcLoading, setLcLoading] = useState(false);
-  const [tmdbUrl, setTmdbUrl] = useState("");
-  const [tmdbLoading, setTmdbLoading] = useState(false);
-
-  const handleLcFetch = async () => {
-    if (!lcUrl.trim()) return;
-    setLcLoading(true);
-    try {
-      const res = await fetch("/api/scrape/lubimyczytac", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: lcUrl.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) { toast(data.error ?? "Błąd scrapowania", "error"); return; }
-      setCreateForm((f) => ({
-        ...f,
-        title: data.title || f.title,
-        original_title: data.original_title || f.original_title,
-        author: data.author || f.author,
-        cover_url: data.cover_url || f.cover_url,
-        description: data.description || f.description,
-        media_type: "book",
-      }));
-      setShowCreate(true);
-      toast("Dane pobrane ✓", "success");
-    } catch {
-      toast("Błąd połączenia", "error");
-    } finally {
-      setLcLoading(false);
-    }
-  };
-
-  const handleTmdbFetch = async () => {
-    if (!tmdbUrl.trim()) return;
-    setTmdbLoading(true);
-    try {
-      const value = tmdbUrl.trim();
-      const applyTmdbData = (data: { title?: string; original_title?: string; director?: string; poster_url?: string; overview?: string }, type: "movie" | "series", tmdbId: string) => {
-        setCreateForm((f) => ({
-          ...f,
-          title: data.title || f.title,
-          original_title: data.original_title || f.original_title,
-          author: data.director || f.author,
-          cover_url: data.poster_url || f.cover_url,
-          description: data.overview || f.description,
-          media_type: type,
-          tmdb_id: tmdbId,
-        }));
-      };
-
-      const match = value.match(/themoviedb\.org\/(movie|tv)\/(\d+)/);
-      if (match) {
-        const [, tmdbType, tmdbId] = match;
-        const type = tmdbType === "movie" ? "movie" : "series";
-        const res = await fetch(`/api/tmdb/info?tmdb_id=${tmdbId}&type=${type}`);
-        const data = await res.json();
-        if (!res.ok) { toast(data.error ?? "Błąd TMDB", "error"); return; }
-        applyTmdbData(data, type, tmdbId);
-        setShowCreate(true);
-        toast("Dane pobrane ✓", "success");
-        return;
-      }
-
-      let resolved:
-        | { data: { tmdb_id: number; title?: string; original_title?: string; director?: string; poster_url?: string; overview?: string; candidates?: Array<{ tmdb_id: number; name: string }> }; type: "series" | "movie" }
-        | null = null;
-      for (const type of ["series", "movie"] as const) {
-        const res = await fetch(`/api/tmdb/info?title=${encodeURIComponent(value)}&type=${type}`);
-        const data = await res.json() as { candidates?: Array<{ tmdb_id: number; name: string }> };
-        if (res.ok) { resolved = { data: data as { tmdb_id: number; title?: string; original_title?: string; director?: string; poster_url?: string; overview?: string; candidates?: Array<{ tmdb_id: number; name: string }> }, type }; break; }
-        if (res.status !== 404) { toast((data as { error?: string }).error ?? "Błąd TMDB", "error"); return; }
-      }
-      if (!resolved) { toast(`Nie znaleziono "${value}"`, "error"); return; }
-
-      let finalData = resolved.data;
-      if (finalData.candidates?.length) {
-        // ponytail: pick first candidate; add picker UI only if this proves too often wrong
-        const picked = finalData.candidates[0];
-        const detailRes = await fetch(`/api/tmdb/info?tmdb_id=${picked.tmdb_id}&type=${resolved.type}`);
-        const detailData = await detailRes.json();
-        if (!detailRes.ok) { toast(detailData.error ?? "Błąd TMDB", "error"); return; }
-        finalData = detailData as { tmdb_id: number; title?: string; original_title?: string; director?: string; poster_url?: string; overview?: string };
-      }
-
-      applyTmdbData(finalData, resolved.type, String(finalData.tmdb_id));
-      setShowCreate(true);
-      toast("Dane pobrane ✓", "success");
-    } catch {
-      toast("Błąd połączenia z TMDB", "error");
-    } finally {
-      setTmdbLoading(false);
-    }
-  };
-
-  const handleCreate = async () => {
-    if (!createForm.title.trim()) { toast("Tytuł jest wymagany", "error"); return; }
-    setCreateLoading(true);
-    try {
-      const res = await fetch("/api/media", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: createForm.title,
-          original_title: createForm.original_title || null,
-          author: createForm.author || null,
-          media_type: createForm.media_type,
-          universe_id: createForm.universe_id ? parseInt(createForm.universe_id) : null,
-          cover_url: createForm.cover_url || null,
-          description: createForm.description || null,
-          tmdb_id: createForm.tmdb_id || null,
-        }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const created = await res.json() as { id: number; title: string; author: string | null; media_type: string; cover_url: string | null; tmdb_id: string | null };
-      // Create a linked person record for the author/director
-      if (createForm.author.trim()) {
-        const role = BOOK_TYPES.includes(createForm.media_type) ? "author" : "director";
-        await fetch(`/api/media/${created.id}/external`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            persons: [{ name: createForm.author.trim(), role, display_order: 0 }],
-          }),
-        });
-      }
-      if (addToWishlist && CALENDAR_TYPES.includes(created.media_type)) {
-        const wishRes = await fetch(`/api/media/${created.id}/want-to-watch`, { method: "POST" });
-        if (!wishRes.ok) throw new Error(await wishRes.text());
-        toast("Dodano do listy życzeń!", "success");
-      } else {
-        toast("Utworzono medium!", "success");
-      }
-      onSelect(created.id, initialStartDate, initialEndDate);
-    } catch (err) {
-      toast("Błąd: " + (err as Error).message, "error");
-    } finally {
-      setCreateLoading(false);
-    }
-  };
+  const [createForm, setCreateForm] = useState(EMPTY_MEDIA_FORM);
+  const [lcFilled, setLcFilled] = useState(false);
 
   return (
     <Modal onClose={onClose} label={initialStartDate ? "Dodaj sesję" : "Przejdź do medium"} closeOnBackdrop z="z-50" className="rounded-2xl shadow-2xl w-full max-w-md">
@@ -240,152 +90,22 @@ export default function AddMediaModal({ onClose, onSelect, initialStartDate, ini
                 >
                   + Utwórz nowe medium
                 </button>
-                {/* lubimyczytac.pl quick-fill */}
-                <div className="pt-1 border-t border-gray-100">
-                  <p className="text-[11px] text-gray-400 mb-1.5">Uzupełnij z lubimyczytac.pl</p>
-                  <div className="flex gap-2">
-                    <input
-                      type="url"
-                      value={lcUrl}
-                      onChange={(e) => setLcUrl(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleLcFetch()}
-                      placeholder="https://lubimyczytac.pl/ksiazka/..."
-                      className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleLcFetch}
-                      disabled={lcLoading || !lcUrl.trim()}
-                      className="shrink-0 bg-orange-500 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-orange-600 disabled:opacity-50"
-                    >
-                      {lcLoading ? "⏳" : "Pobierz"}
-                    </button>
-                  </div>
-                </div>
-                {/* TMDB quick-fill */}
-                <div className="pt-1 border-t border-gray-100">
-                  <p className="text-[11px] text-gray-400 mb-1.5">Uzupełnij z TMDB (link lub tytuł)</p>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={tmdbUrl}
-                      onChange={(e) => setTmdbUrl(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleTmdbFetch()}
-                      placeholder="np. Inception lub https://www.themoviedb.org/movie/..."
-                      className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleTmdbFetch}
-                      disabled={tmdbLoading || !tmdbUrl.trim()}
-                      className="shrink-0 bg-teal-600 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-teal-700 disabled:opacity-50"
-                    >
-                      {tmdbLoading ? "⏳" : "Pobierz"}
-                    </button>
-                  </div>
-                </div>
+                <QuickFill
+                  onFilled={(update, source) => {
+                    setCreateForm(update);
+                    setLcFilled(source === "lubimyczytac");
+                    setShowCreate(true);
+                  }}
+                />
               </>
             ) : (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-medium text-gray-700">Nowe medium</p>
-                  {/* LC quick-fill also accessible from create form */}
-                  {!lcUrl && BOOK_TYPES.includes(createForm.media_type) && (
-                    <button
-                      type="button"
-                      onClick={() => setShowCreate(false)}
-                      className="text-[11px] text-orange-500 hover:text-orange-700"
-                    >
-                      📚 Pobierz z lubimyczytac
-                    </button>
-                  )}
-                </div>
-                {/* Cover preview */}
-                {createForm.cover_url && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={createForm.cover_url} alt="" className="h-20 w-auto rounded border border-gray-200 object-contain" />
-                )}
-                <input
-                  type="text"
-                  value={createForm.title}
-                  onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))}
-                  placeholder="Tytuł *"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                  autoFocus
-                />
-                <input
-                  type="text"
-                  value={createForm.original_title}
-                  onChange={(e) => setCreateForm((f) => ({ ...f, original_title: e.target.value }))}
-                  placeholder="Tytuł oryginalny"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                />
-                <input
-                  type="text"
-                  value={createForm.author}
-                  onChange={(e) => setCreateForm((f) => ({ ...f, author: e.target.value }))}
-                  placeholder="Autor"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                />
-                <select
-                  value={createForm.media_type}
-                  onChange={(e) => setCreateForm((f) => ({ ...f, media_type: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                >
-                  {MEDIA_TYPES.map((t) => (
-                    <option key={t} value={t}>{MEDIA_TYPE_LABELS[t] ?? t}</option>
-                  ))}
-                </select>
-                <input
-                  type="url"
-                  value={createForm.cover_url}
-                  onChange={(e) => setCreateForm((f) => ({ ...f, cover_url: e.target.value }))}
-                  placeholder="URL okładki / miniatury"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                />
-                <textarea
-                  value={createForm.description}
-                  onChange={(e) => setCreateForm((f) => ({ ...f, description: e.target.value }))}
-                  placeholder="Opis"
-                  rows={3}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none resize-none"
-                />
-                <input
-                  type="number"
-                  value={createForm.universe_id}
-                  onChange={(e) => setCreateForm((f) => ({ ...f, universe_id: e.target.value }))}
-                  placeholder="ID Uniwersum (opcjonalnie)"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
-                />
-                {CALENDAR_TYPES.includes(createForm.media_type) && (
-                  <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none pt-1">
-                    <input
-                      type="checkbox"
-                      checked={addToWishlist}
-                      onChange={(e) => setAddToWishlist(e.target.checked)}
-                      className="w-4 h-4 accent-purple-600"
-                    />
-                    {BOOK_TYPES.includes(createForm.media_type) ? "📖 Chcę przeczytać" : "👁 Chcę obejrzeć"}
-                  </label>
-                )}
-                <div className="flex gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setShowCreate(false)}
-                    className="flex-1 border border-gray-200 text-gray-600 py-2 rounded-xl text-sm hover:bg-gray-100 transition-colors"
-                  >
-                    Anuluj
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCreate}
-                    disabled={createLoading}
-                    className="flex-1 bg-gray-900 text-white py-2 rounded-xl text-sm hover:bg-gray-700 transition-colors disabled:opacity-50"
-                  >
-                    {createLoading ? "Tworzenie..." : "Utwórz medium"}
-                  </button>
-                </div>
-              </div>
+              <CreateMediaForm
+                form={createForm}
+                setForm={setCreateForm}
+                showLcLink={!lcFilled}
+                onBack={() => setShowCreate(false)}
+                onCreated={(id) => onSelect(id, initialStartDate, initialEndDate)}
+              />
             )}
           </div>
     </Modal>

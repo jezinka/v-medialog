@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { sqlite } from "@/db";
 import { readdirSync, unlinkSync, existsSync } from "fs";
-import { join, dirname } from "path";
-
-const DB_PATH = process.env.DATABASE_URL ?? join(process.cwd(), "medialog.db");
-const COVERS_DIR = join(dirname(DB_PATH), "covers");
+import { join } from "path";
+import { COVERS_DIR } from "@/lib/covers";
 
 export async function POST() {
   try {

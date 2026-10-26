@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import Image from "next/image";
+import { TV_TYPES } from "@/lib/utils";
 
 type TmdbSyncCandidate = { tmdb_id: number; name: string; first_air_date: string; poster_path: string | null };
 type BookSyncCandidate = { ol_key: string; title: string; author: string; year: number | null; cover_url: string | null };
@@ -89,7 +90,7 @@ export default function BulkSyncTab() {
       let infoData: TmdbInfoResponse | BookInfoResponse | ItunesInfoResponse | null = null;
 
       if (item.source === "tmdb") {
-        const type = ["series", "anime"].includes(item.media_type) ? "series" : "movie";
+        const type = TV_TYPES.includes(item.media_type) ? "series" : "movie";
         const res = await fetch(`/api/tmdb/info?tmdb_id=${candidateId}&type=${type}`);
         if (!res.ok) throw new Error("Błąd TMDB");
         infoData = await res.json() as TmdbInfoResponse;
@@ -108,7 +109,7 @@ export default function BulkSyncTab() {
       let body: Record<string, unknown> = {};
       if (item.source === "tmdb") {
         const d = infoData as TmdbInfoResponse;
-        const isTv = ["series", "anime"].includes(item.media_type);
+        const isTv = TV_TYPES.includes(item.media_type);
         const dateStr = isTv ? d.first_air_date : d.release_date;
         const releaseYear = dateStr ? parseInt(dateStr.slice(0, 4)) || null : null;
         body = {

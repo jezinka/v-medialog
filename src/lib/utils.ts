@@ -67,6 +67,8 @@ export const MEDIA_TYPE_HEX: Record<string, string> = {
 export const BOOK_TYPES = ["book", "comic"];
 export const SCREEN_TYPES = ["movie", "series", "anime", "cartoon"];
 export const ITUNES_TYPES = ["record", "podcast"];
+/** Screen types TMDB keeps as TV shows */
+export const TV_TYPES = ["series", "anime"];
 /** Feature-length screen types (cartoons are animated films) */
 export const MOVIE_TYPES = ["movie", "cartoon"];
 /** Movies and books/comics repeat as re-watches/re-reads, so their seasons stay unnumbered. */

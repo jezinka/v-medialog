@@ -2,6 +2,7 @@
 import Image from "next/image";
 import { MEDIA_TYPE_LABELS, isYearPlaceholder } from "./types";
 import type { ImportType, MediaPreviewRow, PreviewResponse, TmdbFetchState, ValidItem, WishlistPreviewRow } from "./types";
+import { TV_TYPES } from "@/lib/utils";
 
 interface PreviewStepProps {
   preview: PreviewResponse;
@@ -112,7 +113,7 @@ export default function PreviewStep({
                   </td>
                   {importType === "media" && (() => {
                     const mediaData = item.data as MediaPreviewRow;
-                    const isSeries = mediaData.media_type === "series" || mediaData.media_type === "anime";
+                    const isSeries = TV_TYPES.includes(mediaData.media_type);
                     const tmdbState = tmdbStates[item.row] ?? { status: "idle" };
                     return (
                     <>

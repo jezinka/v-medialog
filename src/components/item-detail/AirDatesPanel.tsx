@@ -4,6 +4,8 @@ import Image from "next/image";
 import { toast } from "../Toast";
 import { formatDate } from "@/lib/utils";
 import { addDaySessions } from "@/lib/session-actions";
+import { matchDbSeason } from "@/lib/season-numbering";
+import TmdbLinkPanel from "./TmdbLinkPanel";
 import type { MediaData, SeasonRow } from "./types";
 
 interface AirDateSeason {
@@ -16,7 +18,6 @@ interface AirDateSeason {
   loading: boolean;
   error: string | null;
 }
-type TmdbCandidate = { tmdb_id: number; name: string; first_air_date: string; poster_path: string | null };
 
 /**
  * TMDB episode air dates per season (linking the series to TMDB first if needed),
@@ -32,9 +33,6 @@ export default function AirDatesPanel({ media, seasons, sessionDaysMap, onChange
   const [airDateSeasons, setAirDateSeasons] = useState<AirDateSeason[]>([]);
   const [importingDates, setImportingDates] = useState<Set<string>>(new Set());
   const [savingCover, setSavingCover] = useState<Set<number>>(new Set()); // tmdbSeasonNum being saved
-  const [tmdbLinkSearch, setTmdbLinkSearch] = useState("");
-  const [tmdbLinkCandidates, setTmdbLinkCandidates] = useState<TmdbCandidate[]>([]);
-  const [tmdbLinkLoading, setTmdbLinkLoading] = useState(false);
   const [showTmdbLink, setShowTmdbLink] = useState(false);
 
   // Fetch all TMDB seasons for a given tmdb_id, using DB seasons for id mapping
@@ -53,13 +51,7 @@ export default function AirDatesPanel({ media, seasons, sessionDaysMap, onChange
     const seasonNums = [0, ...Array.from({ length: numSeasons }, (_, i) => i + 1)];
 
     const initial: AirDateSeason[] = seasonNums.map((n) => {
-      // Specials (season 0) never take part in the index-based fallbacks for regular seasons
-      const regular = dbSeasons.filter((s) => s.season_number !== 0);
-      const dbSeason = n > 0
-        ? (dbSeasons.find((s) => s.season_number === n)
-            ?? (numSeasons === 1 && regular.length === 1 ? regular[0] : null)
-            ?? (regular.length >= n && regular[n - 1].season_number == null ? regular[n - 1] : null))
-        : (dbSeasons.find((s) => s.season_number === 0) ?? null);
+      const dbSeason = matchDbSeason(n, numSeasons, dbSeasons);
       return {
         seasonId: dbSeason?.id ?? null,
         seasonLabel: n === 0 ? "Speciale (sezon 0)" : (dbSeason?.title ?? `Sezon ${n}`),
@@ -83,22 +75,6 @@ export default function AirDatesPanel({ media, seasons, sessionDaysMap, onChange
     setAirDateSeasons(results.filter((s) => s.tmdbSeasonNum > 0 || s.episodeCount > 0));
   };
 
-  const searchTmdbCandidates = async () => {
-    if (!tmdbLinkSearch.trim()) return;
-    setTmdbLinkLoading(true);
-    try {
-      const infoRes = await fetch(`/api/tmdb/info?title=${encodeURIComponent(tmdbLinkSearch)}&type=series`);
-      const infoData = await infoRes.json() as { candidates?: TmdbCandidate[]; tmdb_id?: number; title?: string };
-      if (infoData.candidates) setTmdbLinkCandidates(infoData.candidates);
-      else if (infoData.tmdb_id) setTmdbLinkCandidates([{ tmdb_id: infoData.tmdb_id, name: infoData.title ?? tmdbLinkSearch, first_air_date: "", poster_path: null }]);
-      else toast("Nie znaleziono", "error");
-    } catch {
-      toast("Błąd wyszukiwania", "error");
-    } finally {
-      setTmdbLinkLoading(false);
-    }
-  };
-
   const linkTmdbAndLoad = async (tmdbId: number) => {
     try {
       const res = await fetch(`/api/media/${media.id}`, {
@@ -109,7 +85,6 @@ export default function AirDatesPanel({ media, seasons, sessionDaysMap, onChange
       if (!res.ok) throw new Error();
       toast("Powiązano z TMDB ✓", "success");
       setShowTmdbLink(false);
-      setTmdbLinkCandidates([]);
       setShowAirDates(true);
       await onChanged();
       await fetchAllTmdbSeasons(tmdbId, seasons);
@@ -200,7 +175,7 @@ export default function AirDatesPanel({ media, seasons, sessionDaysMap, onChange
           onClick={() => {
             if (showAirDates) { setShowAirDates(false); setShowTmdbLink(false); return; }
             if (media.tmdb_id) { loadAirDates(); }
-            else { setShowTmdbLink(true); setShowAirDates(true); setTmdbLinkSearch(media.original_title || media.title || ""); }
+            else { setShowTmdbLink(true); setShowAirDates(true); }
           }}
           className={`text-xs flex items-center gap-1 px-2 py-1 rounded border transition-colors ${
             showAirDates
@@ -214,46 +189,7 @@ export default function AirDatesPanel({ media, seasons, sessionDaysMap, onChange
 
       {/* TMDB linking panel (when no tmdb_id) */}
       {showTmdbLink && !media.tmdb_id && (
-        <div className="mb-4 border border-blue-200 rounded-lg p-3 bg-blue-50 space-y-3">
-          <p className="text-xs text-blue-700 font-medium">Powiąż z TMDB żeby zaciągnąć daty emisji</p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={tmdbLinkSearch}
-              onChange={(e) => setTmdbLinkSearch(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && searchTmdbCandidates()}
-              placeholder="Tytuł serialu..."
-              className="flex-1 text-sm border border-blue-200 rounded px-2 py-1 bg-white"
-            />
-            <button
-              onClick={searchTmdbCandidates}
-              disabled={tmdbLinkLoading}
-              className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
-            >
-              {tmdbLinkLoading ? "..." : "Szukaj"}
-            </button>
-          </div>
-          {tmdbLinkCandidates.length > 0 && (
-            <div className="space-y-1">
-              {tmdbLinkCandidates.map((c) => (
-                <button
-                  key={c.tmdb_id}
-                  onClick={() => linkTmdbAndLoad(c.tmdb_id)}
-                  className="flex items-center gap-2 w-full text-left px-2 py-1.5 rounded bg-white border border-blue-100 hover:border-blue-400 text-sm transition-colors"
-                >
-                  {c.poster_path && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={c.poster_path} alt="" className="w-8 h-12 object-cover rounded shrink-0" />
-                  )}
-                  <div>
-                    <p className="font-medium text-gray-900">{c.name}</p>
-                    {c.first_air_date && <p className="text-xs text-gray-400">{c.first_air_date}</p>}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <TmdbLinkPanel initialSearch={media.original_title || media.title || ""} onPick={(tmdbId) => void linkTmdbAndLoad(tmdbId)} />
       )}
 
       {/* Air dates panel */}

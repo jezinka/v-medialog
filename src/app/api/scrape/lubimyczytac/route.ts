@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFileSync, mkdirSync, existsSync } from "fs";
-import { join, dirname } from "path";
-import { createHash } from "crypto";
+import { saveCover } from "@/lib/covers";
 
 export interface LubimyczytacData {
   title: string;
@@ -10,9 +8,6 @@ export interface LubimyczytacData {
   cover_url: string | null;
   description: string | null;
 }
-
-const DB_PATH = process.env.DATABASE_URL ?? join(process.cwd(), "medialog.db");
-const COVERS_DIR = join(dirname(DB_PATH), "covers");
 
 async function downloadCover(url: string): Promise<string | null> {
   try {
@@ -26,10 +21,7 @@ async function downloadCover(url: string): Promise<string | null> {
     const buffer = Buffer.from(await res.arrayBuffer());
     if (buffer.length === 0) return null;
 
-    if (!existsSync(COVERS_DIR)) mkdirSync(COVERS_DIR, { recursive: true });
-    const filename = createHash("md5").update(buffer).digest("hex") + ext;
-    writeFileSync(join(COVERS_DIR, filename), buffer);
-    return `/api/covers/${filename}`;
+    return saveCover(buffer, ext);
   } catch {
     return null;
   }

@@ -17,6 +17,7 @@ import { useExternalData } from "./item-detail/useExternalData";
 import { partLabels } from "./item-detail/part-labels";
 import type { MediaData, SessionApiRow, SeasonRow } from "./item-detail/types";
 import { toast } from "./Toast";
+import { SCREEN_TYPES, TV_TYPES } from "@/lib/utils";
 
 interface Props {
   mediaId: number;
@@ -135,7 +136,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
         </ItemHero>
 
         {/* Episodic types only (a movie's tmdb_id is not a TV id) */}
-        {["series", "anime"].includes(media.media_type) && (
+        {TV_TYPES.includes(media.media_type) && (
           <AirDatesPanel media={media} seasons={seasons} sessionDaysMap={sessionDaysMap} onChanged={reload} />
         )}
 
@@ -147,7 +148,7 @@ export default function ItemDetailPage({ mediaId, onClose, onRefresh, onOpenPers
 
         <CastSection actors={actors} onOpenPerson={onOpenPerson} />
 
-        {["movie", "series", "anime", "cartoon"].includes(media.media_type) && <VodSection media={media} />}
+        {SCREEN_TYPES.includes(media.media_type) && <VodSection media={media} />}
 
         <SessionCalendarSection
           media={media}

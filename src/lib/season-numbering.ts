@@ -21,3 +21,15 @@ export function planSeasonNumbers(
   }
   return plan;
 }
+
+/**
+ * The library season a TMDB season `n` belongs to: by number, else the only season of a one-season show,
+ * else the unnumbered season at that position. Specials (season 0) only match season 0.
+ */
+export function matchDbSeason<S extends { season_number: number | null }>(n: number, numSeasons: number, dbSeasons: S[]): S | null {
+  if (n === 0) return dbSeasons.find((s) => s.season_number === 0) ?? null;
+  const regular = dbSeasons.filter((s) => s.season_number !== 0);
+  return dbSeasons.find((s) => s.season_number === n)
+    ?? (numSeasons === 1 && regular.length === 1 ? regular[0] : null)
+    ?? (regular.length >= n && regular[n - 1].season_number == null ? regular[n - 1] : null);
+}
