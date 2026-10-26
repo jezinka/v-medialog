@@ -190,6 +190,14 @@ sqlite.exec(`
   );
 `);
 
+// New series hidden from the "✨ Nowe seriale" tab, by TMDB id
+sqlite.exec(`
+  CREATE TABLE IF NOT EXISTS ignored_new_series (
+    tmdb_id INTEGER PRIMARY KEY,
+    ignored_at TEXT DEFAULT (datetime('now'))
+  );
+`);
+
 // Replace the legacy wishlist table with seasons.want_to_watch
 const hasWishlistTable = () => Boolean(sqlite.prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name='wishlist'`).get());
 if (hasWishlistTable()) {

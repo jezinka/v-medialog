@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
     const library = sqlite.prepare(
       `SELECT tmdb_id, id FROM media WHERE tmdb_id IS NOT NULL AND media_type IN ('series', 'anime')`
     ).all() as { tmdb_id: number; id: number }[];
-    const items = toNewSeriesItems(results, new Map(library.map((r) => [r.tmdb_id, r.id])), fallbackOverviews);
+    const ignored = sqlite.prepare(`SELECT tmdb_id FROM ignored_new_series`).pluck().all() as number[];
+    const items = toNewSeriesItems(results, new Map(library.map((r) => [r.tmdb_id, r.id])), fallbackOverviews, new Set(ignored));
     return NextResponse.json({ items });
   } catch (error) {
     if (isTmdbTimeout(error)) return jsonError("Timeout — brak odpowiedzi z TMDB", 504);

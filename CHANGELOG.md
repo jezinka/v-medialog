@@ -6,6 +6,8 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- Serial na liście „✨ Nowe seriale” można ukryć przyciskiem „ukryj”: znika we wszystkich miesiącach, a „Pokaż ukryte (n)” pod listą pozwala go przywrócić.
+
 - Na liście „✨ Nowe seriale” każdy serial ma krótki opis (do dwóch linijek, pełny po najechaniu): po polsku, a gdy TMDB nie ma polskiego, po angielsku.
 
 - „✨ Nowe seriale” mają własną zakładkę w nawigacji (obok „Do obejrzenia”) z przełącznikiem miesięcy; link „✨ Nowe seriale →” w rozkładzie jazdy otwiera ją w tym samym miesiącu. Rozkład jazdy pokazuje już tylko premiery kolejnych sezonów śledzonych seriali.

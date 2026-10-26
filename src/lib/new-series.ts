@@ -46,6 +46,8 @@ export interface NewSeriesItem {
   poster_url: string | null;
   /** id of the media in the library with this TMDB id */
   media_id: number | null;
+  /** hidden from the list by the user */
+  ignored: boolean;
 }
 
 type TmdbDiscoverResult = {
@@ -66,6 +68,7 @@ export function toNewSeriesItems(
   results: TmdbDiscoverResult[],
   libraryIds: Map<number, number>,
   fallbackOverviews: Map<number, string> = new Map(),
+  ignoredIds: Set<number> = new Set(),
 ): NewSeriesItem[] {
   const seen = new Set<number>();
   const items: NewSeriesItem[] = [];
@@ -81,9 +84,16 @@ export function toNewSeriesItems(
       origin_country: r.origin_country ?? [],
       poster_url: r.poster_path ? `https://image.tmdb.org/t/p/w185${r.poster_path}` : null,
       media_id: libraryIds.get(r.id) ?? null,
+      ignored: ignoredIds.has(r.id),
     });
   }
   return items;
+}
+
+/** The TMDB id from an { tmdb_id } body; null unless it is a positive integer */
+export function parseTmdbId(body: unknown): number | null {
+  const id = (body as { tmdb_id?: unknown } | null)?.tmdb_id;
+  return Number.isInteger(id) && (id as number) > 0 ? (id as number) : null;
 }
 
 export interface NewSeriesInput { tmdb_id: number; title: string; original_title: string | null; poster_url: string | null; first_air_date: string }

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseNewSeriesInput, toNewSeriesItems } from "./new-series.ts";
+import { parseNewSeriesInput, parseTmdbId, toNewSeriesItems } from "./new-series.ts";
 
 test("toNewSeriesItems keeps dated shows once and links library ones", () => {
   const items = toNewSeriesItems([
@@ -21,6 +21,21 @@ test("toNewSeriesItems falls back to the English overview only when the Polish o
     { id: 3, name: "Bez opisu", first_air_date: "2026-11-15" },
   ], new Map(), new Map([[1, "In English"], [2, "Also English"]]));
   assert.deepEqual(items.map((i) => i.overview), ["Po polsku", "Also English", ""]);
+});
+
+test("toNewSeriesItems marks ignored shows", () => {
+  const items = toNewSeriesItems([
+    { id: 1, name: "A", first_air_date: "2026-11-11" },
+    { id: 2, name: "B", first_air_date: "2026-11-12" },
+  ], new Map(), new Map(), new Set([2]));
+  assert.deepEqual(items.map((i) => i.ignored), [false, true]);
+});
+
+test("parseTmdbId accepts only positive integers", () => {
+  assert.equal(parseTmdbId({ tmdb_id: 42 }), 42);
+  for (const body of [null, {}, { tmdb_id: 0 }, { tmdb_id: -1 }, { tmdb_id: 1.5 }, { tmdb_id: "42" }]) {
+    assert.equal(parseTmdbId(body), null);
+  }
 });
 
 test("parseNewSeriesInput rejects bad bodies", () => {
