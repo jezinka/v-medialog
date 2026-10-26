@@ -20,33 +20,46 @@ export async function GET(request: NextRequest) {
   if (!range) return badRequest("month must be YYYY-MM");
 
   try {
-    const results: NonNullable<DiscoverPage["results"]> = [];
-    // ponytail: two pages (40 shows) is plenty for one month; more would be noise
-    for (let page = 1; page <= 2; page++) {
-      const res = await fetchTmdb<DiscoverPage>(buildTmdbUrl("discover/tv", apiKey, {
-        "first_air_date.gte": range.first,
-        "first_air_date.lte": range.last,
-        with_origin_country: NEW_SERIES_COUNTRIES.join("|"),
-        with_networks: Object.keys(NEW_SERIES_NETWORKS).join("|"),
-        without_genres: NEW_SERIES_EXCLUDED_GENRES.join("|"),
-        sort_by: "popularity.desc",
-        page: String(page),
-      }));
-      if (!res.ok) return jsonError("Błąd TMDB", 502);
-      results.push(...(res.data.results ?? []));
-      if ((res.data.total_pages ?? 1) <= page) break;
+    const results = await discover(apiKey, range, "pl-PL");
+    if (!results) return jsonError("Błąd TMDB", 502);
+    // Many new shows have no Polish overview yet; the same query in English fills them in
+    const fallbackOverviews = new Map<number, string>();
+    if (results.some((r) => r.first_air_date && !r.overview)) {
+      for (const r of (await discover(apiKey, range, "en-US")) ?? []) if (r.overview) fallbackOverviews.set(r.id, r.overview);
     }
 
     const library = sqlite.prepare(
       `SELECT tmdb_id, id FROM media WHERE tmdb_id IS NOT NULL AND media_type IN ('series', 'anime')`
     ).all() as { tmdb_id: number; id: number }[];
-    const items = toNewSeriesItems(results, new Map(library.map((r) => [r.tmdb_id, r.id])));
+    const items = toNewSeriesItems(results, new Map(library.map((r) => [r.tmdb_id, r.id])), fallbackOverviews);
     return NextResponse.json({ items });
   } catch (error) {
     if (isTmdbTimeout(error)) return jsonError("Timeout — brak odpowiedzi z TMDB", 504);
     console.error(error);
     return serverError("Failed to load new series");
   }
+}
+
+/** Discover results for the month in `language`; null when TMDB answers with an error */
+async function discover(apiKey: string, range: { first: string; last: string }, language: string) {
+  const results: NonNullable<DiscoverPage["results"]> = [];
+  // ponytail: two pages (40 shows) is plenty for one month; more would be noise
+  for (let page = 1; page <= 2; page++) {
+    const res = await fetchTmdb<DiscoverPage>(buildTmdbUrl("discover/tv", apiKey, {
+      language,
+      "first_air_date.gte": range.first,
+      "first_air_date.lte": range.last,
+      with_origin_country: NEW_SERIES_COUNTRIES.join("|"),
+      with_networks: Object.keys(NEW_SERIES_NETWORKS).join("|"),
+      without_genres: NEW_SERIES_EXCLUDED_GENRES.join("|"),
+      sort_by: "popularity.desc",
+      page: String(page),
+    }));
+    if (!res.ok) return null;
+    results.push(...(res.data.results ?? []));
+    if ((res.data.total_pages ?? 1) <= page) break;
+  }
+  return results;
 }
 
 /**

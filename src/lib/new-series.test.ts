@@ -14,6 +14,15 @@ test("toNewSeriesItems keeps dated shows once and links library ones", () => {
   assert.equal(items[1].poster_url, null);
 });
 
+test("toNewSeriesItems falls back to the English overview only when the Polish one is missing", () => {
+  const items = toNewSeriesItems([
+    { id: 1, name: "Ciało", first_air_date: "2026-11-11", overview: "Po polsku" },
+    { id: 2, name: "Honey", first_air_date: "2026-11-14", overview: "" },
+    { id: 3, name: "Bez opisu", first_air_date: "2026-11-15" },
+  ], new Map(), new Map([[1, "In English"], [2, "Also English"]]));
+  assert.deepEqual(items.map((i) => i.overview), ["Po polsku", "Also English", ""]);
+});
+
 test("parseNewSeriesInput rejects bad bodies", () => {
   const ok = { tmdb_id: 5, title: " Ciało ", first_air_date: "2026-11-11", poster_url: null };
   assert.deepEqual(parseNewSeriesInput(ok), { tmdb_id: 5, title: "Ciało", original_title: null, poster_url: null, first_air_date: "2026-11-11" });

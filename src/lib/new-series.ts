@@ -58,8 +58,15 @@ type TmdbDiscoverResult = {
   poster_path?: string | null;
 };
 
-/** Discover results → schedule items: dated ones only, each show once, linked to the library by TMDB id. */
-export function toNewSeriesItems(results: TmdbDiscoverResult[], libraryIds: Map<number, number>): NewSeriesItem[] {
+/**
+ * Discover results → schedule items: dated ones only, each show once, linked to the library by TMDB id.
+ * `fallbackOverviews` (TMDB id → English overview) fills in shows without a Polish overview.
+ */
+export function toNewSeriesItems(
+  results: TmdbDiscoverResult[],
+  libraryIds: Map<number, number>,
+  fallbackOverviews: Map<number, string> = new Map(),
+): NewSeriesItem[] {
   const seen = new Set<number>();
   const items: NewSeriesItem[] = [];
   for (const r of results) {
@@ -69,7 +76,7 @@ export function toNewSeriesItems(results: TmdbDiscoverResult[], libraryIds: Map<
       tmdb_id: r.id,
       title: r.name || r.original_name || "",
       original_title: r.original_name ?? "",
-      overview: r.overview ?? "",
+      overview: r.overview || fallbackOverviews.get(r.id) || "",
       first_air_date: r.first_air_date,
       origin_country: r.origin_country ?? [],
       poster_url: r.poster_path ? `https://image.tmdb.org/t/p/w185${r.poster_path}` : null,

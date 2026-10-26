@@ -65,10 +65,13 @@ export default function NewSeriesList({ initialMonth }: { initialMonth: string |
             <li key={item.tmdb_id} className="flex gap-3 rounded-lg border border-gray-100 p-2">
               <MediaCoverThumb coverUrl={item.poster_url} title={item.title} mediaType="series" className="w-10 h-14" sizes="40px" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate" title={item.overview || undefined}>{item.title}</p>
+                <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
                 <p className="text-xs text-gray-500">
                   {formatDate(item.first_air_date)} · {item.origin_country.map((c) => FLAGS[c] ?? c).join(" ")}
                 </p>
+                {item.overview && (
+                  <p className="text-xs text-gray-600 line-clamp-2 my-0.5" title={item.overview}>{item.overview}</p>
+                )}
                 {item.media_id ? (
                   <Link href={`/media/${item.media_id}`} className="text-xs text-green-700 hover:underline">✓ w bibliotece</Link>
                 ) : (
