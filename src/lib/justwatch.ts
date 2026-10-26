@@ -1,3 +1,5 @@
+import { MOVIE_TYPES, TV_TYPES } from "./utils.ts";
+
 /**
  * JustWatch unofficial GraphQL client for Poland VOD availability.
  * Endpoint: https://apis.justwatch.com/graphql
@@ -237,7 +239,7 @@ export function hasPolish(languages: string[]): boolean {
 
 /** Map app media_type to JustWatch objectType */
 export function toJwObjectType(mediaType: string): "SHOW" | "MOVIE" | undefined {
-  if (mediaType === "movie" || mediaType === "cartoon") return "MOVIE";
-  if (mediaType === "series" || mediaType === "anime") return "SHOW";
+  if (MOVIE_TYPES.includes(mediaType)) return "MOVIE";
+  if (TV_TYPES.includes(mediaType)) return "SHOW";
   return undefined;
 }

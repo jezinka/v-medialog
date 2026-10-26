@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
-import { SCREEN_TYPES, ITUNES_TYPES } from "@/lib/utils";
+import { SCREEN_TYPES, ITUNES_TYPES, TV_TYPES } from "@/lib/utils";
 import { downloadCover } from "@/lib/covers";
 import { replaceMediaPersons, type PersonInput } from "@/lib/media-persons";
 import { buildTmdbUrl, fetchTmdb, tmdbCandidates, tmdbImageUrl, tmdbPersons, type TmdbCandidate } from "@/lib/tmdb";
@@ -82,7 +82,7 @@ async function saveCover(mediaId: number, remoteUrl: string | null): Promise<str
 }
 
 async function syncTmdb(media: MediaRow, apiKey: string): Promise<{ ok: true; coverUrl: string | null } | { candidates: TmdbCandidate[] } | { error: string }> {
-  const isTv = media.media_type === "series" || media.media_type === "anime";
+  const isTv = TV_TYPES.includes(media.media_type);
   let tmdbId = media.tmdb_id;
 
   if (!tmdbId) {

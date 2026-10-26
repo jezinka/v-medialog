@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildTmdbUrl, fetchTmdb, isTmdbTimeout, tmdbCandidates, tmdbImageUrl, tmdbPersons, type TmdbPerson } from "@/lib/tmdb";
+import { TV_TYPES } from "@/lib/utils";
 
 export interface TmdbInfoResult {
   tmdb_id: number;
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest) {
   const yearParam = searchParams.get("year");
 
   const searchQuery = originalTitle || title;
-  const isTv = type === "series" || type === "anime";
+  const isTv = TV_TYPES.includes(type);
 
   let tmdbId: number;
   let resolvedIsTv = isTv;
