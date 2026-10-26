@@ -6,6 +6,8 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- Przy serialach na liście „✨ Nowe seriale” widać średnią ocenę z TMDB i liczbę głosów (np. „★ 7.4 (12)”), o ile ktoś już oceniał.
+
 ## 2026-10-26
 
 - Na liście „✨ Nowe seriale” można zaznaczyć „Bez seriali z biblioteki”, żeby ukryć seriale, które już są w bibliotece. Wybór zapisuje się w adresie strony.

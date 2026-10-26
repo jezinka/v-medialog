@@ -63,3 +63,12 @@ test("parseNewSeriesInput rejects bad bodies", () => {
   assert.equal(parseNewSeriesInput({ ...ok, tmdb_id: "5" }), null);
   assert.equal(parseNewSeriesInput(null), null);
 });
+
+test("toNewSeriesItems gives a rating only once someone voted", () => {
+  const items = toNewSeriesItems([
+    { id: 1, name: "A", first_air_date: "2026-11-01", vote_average: 7.4, vote_count: 12 },
+    { id: 2, name: "B", first_air_date: "2026-11-02", vote_average: 0, vote_count: 0 },
+    { id: 3, name: "C", first_air_date: "2026-11-03" },
+  ], new Map());
+  assert.deepEqual(items.map((i) => i.rating), [{ average: 7.4, count: 12 }, null, null]);
+});
