@@ -2,7 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Modal from "../Modal";
-import { hasSeasonNumbers, MOVIE_TYPES, SCREEN_TYPES } from "@/lib/utils";
+import { BOOK_TYPES, MOVIE_TYPES, SCREEN_TYPES } from "@/lib/utils";
 import { partNo, seasonLabel } from "@/lib/part-number";
 import { SEASON_COLORS } from "@/lib/calendar-days";
 import type { SeasonRow } from "./types";
@@ -54,8 +54,8 @@ export default function SeasonPickerModal({
         {seasons.length > 1 && (
           <p className="text-xs font-medium text-gray-500 pt-1">Wybierz {partLabel.toLowerCase()}:</p>
         )}
-        {/* Books and movies have no season numbers, so their parts are picked by cover */}
-        {!hasSeasonNumbers(mediaType) ? (
+        {/* Book parts are picked by cover; so is a movie with one part, which has nothing to list */}
+        {BOOK_TYPES.includes(mediaType) || (MOVIE_TYPES.includes(mediaType) && seasons.length === 1) ? (
           <div className="grid grid-cols-5 gap-2 max-h-80 overflow-y-auto p-1">
             {seasons.map((s, idx) => {
               // A single part has no cover of its own, so it shows the book's or movie's cover

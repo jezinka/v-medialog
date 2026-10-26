@@ -6,7 +6,7 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
-- Przy dodawaniu sesji z kalendarza okienko pokazuje okładkę książki lub filmu (bez podziału na części) zamiast pustego kafelka czy wiersza „1”.
+- Przy dodawaniu sesji z kalendarza okienko pokazuje okładkę książki lub filmu (gdy nie ma osobnych części) zamiast pustego kafelka czy wiersza „1”.
 
 ## 2026-10-26
 
