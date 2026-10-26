@@ -58,6 +58,8 @@ export interface NewSeriesItem {
   first_air_date: string;
   origin_country: string[];
   poster_url: string | null;
+  /** TMDB vote average (0–10) and vote count; null before anyone voted */
+  rating: { average: number; count: number } | null;
   /** id of the media in the library with this TMDB id */
   media_id: number | null;
   /** hidden from the list by the user */
@@ -72,6 +74,8 @@ type TmdbDiscoverResult = {
   first_air_date?: string;
   origin_country?: string[];
   poster_path?: string | null;
+  vote_average?: number;
+  vote_count?: number;
 };
 
 /**
@@ -97,6 +101,7 @@ export function toNewSeriesItems(
       first_air_date: r.first_air_date,
       origin_country: r.origin_country ?? [],
       poster_url: r.poster_path ? `https://image.tmdb.org/t/p/w185${r.poster_path}` : null,
+      rating: r.vote_count ? { average: r.vote_average ?? 0, count: r.vote_count } : null,
       media_id: libraryIds.get(r.id) ?? null,
       ignored: ignoredIds.has(r.id),
     });
