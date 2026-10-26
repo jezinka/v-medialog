@@ -50,6 +50,13 @@ export function discoverFilters(country: string | null, platform: string | null)
 /** Reality (10764), talk (10767) and news (10763) are not series to wait for */
 export const NEW_SERIES_EXCLUDED_GENRES = [10764, 10767, 10763];
 
+/** TMDB TV genres in Polish (TMDB leaves some in English); the excluded ones are left out */
+const GENRE_NAMES: Record<number, string> = {
+  10759: "Akcja i przygoda", 16: "Animacja", 35: "Komedia", 80: "Kryminał", 99: "Dokumentalny",
+  18: "Dramat", 10751: "Familijny", 10762: "Dla dzieci", 9648: "Tajemnica", 10765: "Sci-Fi i fantasy",
+  10766: "Telenowela", 10768: "Wojna i polityka", 37: "Western",
+};
+
 export interface NewSeriesItem {
   tmdb_id: number;
   title: string;
@@ -57,6 +64,8 @@ export interface NewSeriesItem {
   overview: string;
   first_air_date: string;
   origin_country: string[];
+  /** Polish genre names; unknown TMDB genres are skipped */
+  genres: string[];
   poster_url: string | null;
   /** TMDB vote average (0–10) and vote count; null before anyone voted */
   rating: { average: number; count: number } | null;
@@ -73,6 +82,7 @@ type TmdbDiscoverResult = {
   overview?: string;
   first_air_date?: string;
   origin_country?: string[];
+  genre_ids?: number[];
   poster_path?: string | null;
   vote_average?: number;
   vote_count?: number;
@@ -100,6 +110,7 @@ export function toNewSeriesItems(
       overview: r.overview || fallbackOverviews.get(r.id) || "",
       first_air_date: r.first_air_date,
       origin_country: r.origin_country ?? [],
+      genres: (r.genre_ids ?? []).flatMap((id) => GENRE_NAMES[id] ?? []),
       poster_url: r.poster_path ? `https://image.tmdb.org/t/p/w185${r.poster_path}` : null,
       rating: r.vote_count ? { average: r.vote_average ?? 0, count: r.vote_count } : null,
       media_id: libraryIds.get(r.id) ?? null,

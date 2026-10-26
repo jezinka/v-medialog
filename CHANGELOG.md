@@ -6,6 +6,8 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- Przy serialach na liście „✨ Nowe seriale” widać ich gatunki (np. „Dramat, Kryminał”).
+
 ## 2026-10-26
 
 - Tytuł serialu na liście „✨ Nowe seriale” otwiera jego stronę na TMDB w nowej karcie.

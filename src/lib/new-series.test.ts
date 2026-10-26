@@ -72,3 +72,11 @@ test("toNewSeriesItems gives a rating only once someone voted", () => {
   ], new Map());
   assert.deepEqual(items.map((i) => i.rating), [{ average: 7.4, count: 12 }, null, null]);
 });
+
+test("toNewSeriesItems names genres in Polish and skips unknown ones", () => {
+  const items = toNewSeriesItems([
+    { id: 1, name: "A", first_air_date: "2026-11-01", genre_ids: [18, 80, 99999] },
+    { id: 2, name: "B", first_air_date: "2026-11-02" },
+  ], new Map());
+  assert.deepEqual(items.map((i) => i.genres), [["Dramat", "Kryminał"], []]);
+});
