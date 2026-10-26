@@ -30,7 +30,7 @@ export default function SessionCalendarSection({
   actions?: ReactNode;
   children?: ReactNode;
 }) {
-  const { isBook, hasSpecials, partLabel, partsLabel, historyLabel } = partLabels(media.media_type);
+  const { hasSpecials, partLabel, partsLabel, historyLabel } = partLabels(media.media_type);
   const [seasonPickerDate, setSeasonPickerDate] = useState<string | null>(null);
   const [addingSession, setAddingSession] = useState(false);
   const [editingSession, setEditingSession] = useState<SessionApiRow | null>(null);
@@ -206,8 +206,8 @@ export default function SessionCalendarSection({
         <SeasonPickerModal
           date={seasonPickerDate}
           seasons={seasons}
+          coverUrl={media.cover_url}
           mediaType={media.media_type}
-          isBook={isBook}
           partLabel={partLabel}
           hasSpecials={hasSpecials}
           adding={addingSession}
