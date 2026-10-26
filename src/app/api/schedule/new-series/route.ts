@@ -25,10 +25,12 @@ export async function GET(request: NextRequest) {
   try {
     const results = await discover(apiKey, range, filters, "pl-PL");
     if (!results) return jsonError("Błąd TMDB", 502);
-    // Many new shows have no Polish overview yet; the same query in English fills them in
+    // Many new shows have no Polish overview yet; the same query in English fills them in.
+    // Overviews are optional, so a failed or timed-out English query leaves them empty instead of failing the list.
     const fallbackOverviews = new Map<number, string>();
     if (results.some((r) => r.first_air_date && !r.overview)) {
-      for (const r of (await discover(apiKey, range, filters, "en-US")) ?? []) if (r.overview) fallbackOverviews.set(r.id, r.overview);
+      const english = await discover(apiKey, range, filters, "en-US").catch(() => null);
+      for (const r of english ?? []) if (r.overview) fallbackOverviews.set(r.id, r.overview);
     }
 
     const library = sqlite.prepare(

@@ -13,17 +13,23 @@ const FLAGS: Record<string, string> = { PL: "🇵🇱", US: "🇺🇸", GB: "�
 const COUNTRY_NAMES: Record<string, string> = { PL: "Polska", US: "USA", GB: "Wielka Brytania" };
 
 /** New PL / US / GB series premiering in a month on platforms available in Poland (from TMDB). */
-export default function NewSeriesList({ initialMonth }: { initialMonth: string | null }) {
+export default function NewSeriesList({ initialMonth, initialCountry, initialPlatform }: {
+  initialMonth: string | null;
+  initialCountry: string;
+  initialPlatform: string;
+}) {
   const [month, setMonth] = useState(() => initialMonth ?? monthKey(new Date()));
-  const [country, setCountry] = useState("");
-  const [platform, setPlatform] = useState("");
+  const [country, setCountry] = useState(initialCountry);
+  const [platform, setPlatform] = useState(initialPlatform);
   // Tagged with the month and filters, so a slower or failed load never shows another query's list
-  const query = new URLSearchParams({ month, country, platform }).toString();
+  const query = new URLSearchParams(Object.entries({ month, country, platform }).filter(([, v]) => v)).toString();
   const [loaded, setLoaded] = useState<{ query: string; items: NewSeriesItem[] } | { query: string; error: true } | null>(null);
   const [adding, setAdding] = useState<number | null>(null);
   const [showIgnored, setShowIgnored] = useState(false);
 
   useEffect(() => {
+    // Keeps the month and filters across a reload and in a copied link
+    window.history.replaceState(null, "", `?${query}`);
     let stale = false;
     fetch(`/api/schedule/new-series?${query}`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))

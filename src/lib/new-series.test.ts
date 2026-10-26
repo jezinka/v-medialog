@@ -36,11 +36,14 @@ test("discoverFilters narrows to one country and every network of a platform", (
     with_origin_country: "PL|US|GB",
     with_networks: Object.keys(NEW_SERIES_NETWORKS).join("|"),
   });
-  assert.deepEqual(discoverFilters("PL", "TVP"), { with_origin_country: "PL", with_networks: "483|5892" });
-  assert.equal(discoverFilters("", "Disney+")?.with_networks.split("|").length, 3);
+  const networks = (country: string | null, platform: string | null) => discoverFilters(country, platform)?.with_networks.split("|").sort();
+  assert.equal(discoverFilters("PL", "TVP")?.with_origin_country, "PL");
+  assert.deepEqual(networks("PL", "TVP"), ["483", "5892"]);
+  assert.deepEqual(networks("", "Disney+"), ["2739", "453", "88"]);
   assert.equal(discoverFilters("FR", null), null);
   assert.equal(discoverFilters(null, "Hulu"), null);
-  assert.equal(new Set(NEW_SERIES_PLATFORMS).size, NEW_SERIES_PLATFORMS.length);
+  // Producing networks are offered under the Polish platform, not on their own
+  for (const name of ["Hulu", "FX", "HBO", "Max", "Paramount+", "Peacock"]) assert.ok(!NEW_SERIES_PLATFORMS.includes(name), name);
 });
 
 test("parseTmdbId accepts only positive integers", () => {

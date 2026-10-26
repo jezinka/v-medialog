@@ -6,7 +6,7 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
-- Zakładkę „✨ Nowe seriale” można zawęzić do kraju (Polska, USA, Wielka Brytania) i platformy lub stacji dostępnej w Polsce (np. Netflix, HBO Max, Disney+, SkyShowtime, TVP). Seriale z Hulu i FX są pod Disney+, z HBO i Max pod HBO Max, a z Paramount+ i Peacock pod SkyShowtime.
+- Zakładkę „✨ Nowe seriale” można zawęzić do kraju (Polska, USA, Wielka Brytania) i platformy lub stacji dostępnej w Polsce (np. Netflix, HBO Max, Disney+, SkyShowtime, TVP). Seriale z Hulu i FX są pod Disney+, z HBO i Max pod HBO Max, a z Paramount+ i Peacock pod SkyShowtime. Miesiąc i filtry zapisują się w adresie strony, więc zostają po odświeżeniu i w skopiowanym linku.
 
 - Serial na liście „✨ Nowe seriale” można ukryć przyciskiem „ukryj”: znika we wszystkich miesiącach, a „Pokaż ukryte (n)” pod listą pozwala go przywrócić.
 
