@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join } from "node:path";
+import { COVERS_DIR } from "@/lib/covers";
 import { sqlite } from "@/db";
 
 export const runtime = "nodejs";
 
-const DB_PATH = process.env.DATABASE_URL ?? join(process.cwd(), "medialog.db");
-const COVERS_DIR = join(dirname(DB_PATH), "covers");
 
 type Cover = { title: string; cover_url: string };
 

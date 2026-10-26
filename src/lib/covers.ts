@@ -3,7 +3,16 @@ import { join, dirname } from "path";
 import { createHash } from "crypto";
 
 const DB_PATH = process.env.DATABASE_URL ?? join(process.cwd(), "medialog.db");
-const COVERS_DIR = join(dirname(DB_PATH), "covers");
+/** Local cover images, next to the database; served as `/api/covers/<file>`. */
+export const COVERS_DIR = join(dirname(DB_PATH), "covers");
+
+/** Saves image bytes under a content-hash name and returns the local `/api/covers/...` path. */
+export function saveCover(buffer: Buffer, ext: string): string {
+  if (!existsSync(COVERS_DIR)) mkdirSync(COVERS_DIR, { recursive: true });
+  const filename = createHash("md5").update(buffer).digest("hex") + ext;
+  writeFileSync(join(COVERS_DIR, filename), buffer);
+  return `/api/covers/${filename}`;
+}
 
 /**
  * Downloads an image from a remote URL to the local covers directory.

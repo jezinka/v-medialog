@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFileSync, mkdirSync, existsSync } from "fs";
-import { join, dirname } from "path";
-import { createHash } from "crypto";
-
-const DB_PATH = process.env.DATABASE_URL ?? join(process.cwd(), "medialog.db");
-const COVERS_DIR = join(dirname(DB_PATH), "covers");
+import { saveCover } from "@/lib/covers";
 
 const ALLOWED_TYPES: Record<string, string> = {
   "image/jpeg": ".jpg",
@@ -29,12 +24,7 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(data, "base64");
     if (buffer.length === 0) return NextResponse.json({ error: "Pusty plik" }, { status: 400 });
 
-    if (!existsSync(COVERS_DIR)) mkdirSync(COVERS_DIR, { recursive: true });
-
-    const filename = createHash("md5").update(buffer).digest("hex") + ext;
-    writeFileSync(join(COVERS_DIR, filename), buffer);
-
-    return NextResponse.json({ path: `/api/covers/${filename}` });
+    return NextResponse.json({ path: saveCover(buffer, ext) });
   } catch (err) {
     console.error("Cover upload error:", err);
     return NextResponse.json({ error: "Błąd uploadu" }, { status: 500 });
