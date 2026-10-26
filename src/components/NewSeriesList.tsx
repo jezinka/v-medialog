@@ -3,14 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import MediaCoverThumb from "./MediaCoverThumb";
+import MonthSwitcher from "./MonthSwitcher";
 import { toast } from "./Toast";
 import { formatDate } from "@/lib/utils";
+import { monthKey } from "@/lib/schedule";
 import type { NewSeriesItem } from "@/lib/new-series";
 
 const FLAGS: Record<string, string> = { PL: "🇵🇱", US: "🇺🇸", GB: "🇬🇧" };
 
-/** New PL / US / GB series premiering in `month` on platforms available in Poland (from TMDB). */
-export default function NewSeriesList({ month, onAdded }: { month: string; onAdded: () => void }) {
+/** New PL / US / GB series premiering in a month on platforms available in Poland (from TMDB). */
+export default function NewSeriesList({ initialMonth }: { initialMonth: string | null }) {
+  const [month, setMonth] = useState(() => initialMonth ?? monthKey(new Date()));
   const [loaded, setLoaded] = useState<{ month: string; items: NewSeriesItem[] } | { month: string; error: true } | null>(null);
   const [adding, setAdding] = useState<number | null>(null);
 
@@ -37,7 +40,6 @@ export default function NewSeriesList({ month, onAdded }: { month: string; onAdd
         ? { ...prev, items: prev.items.map((i) => (i.tmdb_id === item.tmdb_id ? { ...i, media_id } : i)) }
         : prev);
       toast(added ? `Dodano „${item.title}” do listy ✓` : `„${item.title}” już jest w bibliotece`, "success");
-      onAdded();
     } catch {
       toast("Błąd dodawania", "error");
     } finally {
@@ -47,8 +49,11 @@ export default function NewSeriesList({ month, onAdded }: { month: string; onAdd
 
   const current = loaded?.month === month ? loaded : null;
   return (
-    <div className="mt-5 pt-4 border-t border-gray-100">
-      <h3 className="text-sm font-semibold text-gray-800 mb-2">✨ Nowe seriale</h3>
+    <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <MonthSwitcher label="✨ Nowe seriale" month={month} onChange={setMonth} />
+        <Link href="/wishlist" className="text-xs text-gray-600 hover:text-gray-900">← Do obejrzenia</Link>
+      </div>
       {current === null ? (
         <p className="text-sm text-gray-400">Ładowanie…</p>
       ) : "error" in current ? (
@@ -82,6 +87,7 @@ export default function NewSeriesList({ month, onAdded }: { month: string; onAdd
           ))}
         </ul>
       )}
-    </div>
+      <p className="text-[11px] text-gray-400 mt-3">Produkcje z Polski, USA i Wielkiej Brytanii od stacji i platform dostępnych w Polsce. Daty z TMDB (zwykle premiera w USA); polska platforma może pokazać serial później.</p>
+    </section>
   );
 }
