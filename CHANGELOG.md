@@ -6,7 +6,7 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
-- „✨ Nowe seriale” mają osobny widok z własnym przełącznikiem miesięcy, otwierany linkiem „✨ Nowe seriale →” z rozkładu jazdy na stronie „Do obejrzenia” (w tym samym miesiącu). Rozkład jazdy pokazuje już tylko premiery kolejnych sezonów śledzonych seriali.
+- „✨ Nowe seriale” mają własną zakładkę w nawigacji (obok „Do obejrzenia”) z przełącznikiem miesięcy; link „✨ Nowe seriale →” w rozkładzie jazdy otwiera ją w tym samym miesiącu. Rozkład jazdy pokazuje już tylko premiery kolejnych sezonów śledzonych seriali.
 
 ## 2026-10-26
 

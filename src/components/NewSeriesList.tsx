@@ -50,9 +50,8 @@ export default function NewSeriesList({ initialMonth }: { initialMonth: string |
   const current = loaded?.month === month ? loaded : null;
   return (
     <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-      <div className="flex items-center justify-between gap-3 mb-3">
+      <div className="mb-3">
         <MonthSwitcher label="✨ Nowe seriale" month={month} onChange={setMonth} />
-        <Link href="/wishlist" className="text-xs text-gray-600 hover:text-gray-900">← Do obejrzenia</Link>
       </div>
       {current === null ? (
         <p className="text-sm text-gray-400">Ładowanie…</p>

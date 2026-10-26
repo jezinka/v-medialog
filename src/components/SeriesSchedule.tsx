@@ -47,7 +47,7 @@ export default function SeriesSchedule({ refreshKey, onChecked }: { refreshKey: 
       <div className="flex items-center justify-between gap-3 mb-3">
         <MonthSwitcher label="📅 Premiery" month={month} onChange={setMonth} />
         <div className="flex items-center gap-3">
-          <Link href={`/wishlist/new-series?month=${month}`} className="text-xs text-purple-600 hover:text-purple-800">✨ Nowe seriale →</Link>
+          <Link href={`/new-series?month=${month}`} className="text-xs text-purple-600 hover:text-purple-800">✨ Nowe seriale →</Link>
           <button onClick={() => void checkNow()} disabled={checking} className="text-xs text-gray-600 hover:text-gray-900 disabled:opacity-50">
             {checking ? "Sprawdzam…" : "Sprawdź nowe sezony"}
           </button>
