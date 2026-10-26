@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseNewSeriesInput, parseTmdbId, toNewSeriesItems } from "./new-series.ts";
+import { NEW_SERIES_NETWORKS, NEW_SERIES_PLATFORMS, discoverFilters, parseNewSeriesInput, parseTmdbId, toNewSeriesItems } from "./new-series.ts";
 
 test("toNewSeriesItems keeps dated shows once and links library ones", () => {
   const items = toNewSeriesItems([
@@ -29,6 +29,18 @@ test("toNewSeriesItems marks ignored shows", () => {
     { id: 2, name: "B", first_air_date: "2026-11-12" },
   ], new Map(), new Map(), new Set([2]));
   assert.deepEqual(items.map((i) => i.ignored), [false, true]);
+});
+
+test("discoverFilters narrows to one country and every network of a platform", () => {
+  assert.deepEqual(discoverFilters(null, null), {
+    with_origin_country: "PL|US|GB",
+    with_networks: Object.keys(NEW_SERIES_NETWORKS).join("|"),
+  });
+  assert.deepEqual(discoverFilters("PL", "TVP"), { with_origin_country: "PL", with_networks: "483|5892" });
+  assert.equal(discoverFilters("", "Disney+")?.with_networks.split("|").length, 3);
+  assert.equal(discoverFilters("FR", null), null);
+  assert.equal(discoverFilters(null, "Hulu"), null);
+  assert.equal(new Set(NEW_SERIES_PLATFORMS).size, NEW_SERIES_PLATFORMS.length);
 });
 
 test("parseTmdbId accepts only positive integers", () => {

@@ -2,8 +2,8 @@
 export const NEW_SERIES_COUNTRIES = ["PL", "US", "GB"];
 
 /**
- * TMDB networks whose originals stream in Poland. TMDB only knows a show's Polish platforms after it
- * airs, so for upcoming premieres the producing network is the best predictor.
+ * TMDB networks whose originals stream in Poland → the platform they stream on here. TMDB only knows a
+ * show's Polish platforms after it airs, so for upcoming premieres the producing network is the best predictor.
  * ponytail: hand-picked list; add an id here when a platform starts or stops in Poland.
  */
 export const NEW_SERIES_NETWORKS: Record<number, string> = {
@@ -11,27 +11,41 @@ export const NEW_SERIES_NETWORKS: Record<number, string> = {
   1024: "Prime Video",
   2552: "Apple TV+",
   2739: "Disney+",
-  453: "Hulu (Disney+)",
-  88: "FX (Disney+)",
-  49: "HBO",
-  8102: "HBO",
+  453: "Disney+", // Hulu
+  88: "Disney+", // FX
+  49: "HBO Max", // HBO
+  8102: "HBO Max", // HBO
   3186: "HBO Max",
   8304: "HBO Max",
-  6783: "Max",
-  4330: "Paramount+ (SkyShowtime)",
-  3353: "Peacock (SkyShowtime)",
+  6783: "HBO Max", // Max
+  4330: "SkyShowtime", // Paramount+
+  3353: "SkyShowtime", // Peacock
   5944: "SkyShowtime",
   174: "AMC",
   318: "Starz",
-  4: "BBC One",
-  332: "BBC Two",
+  4: "BBC", // BBC One
+  332: "BBC", // BBC Two
   26: "Channel 4",
-  483: "TVP1",
-  5892: "TVP VOD",
+  483: "TVP", // TVP1
+  5892: "TVP", // TVP VOD
   504: "TVN",
   5033: "Player",
   951: "Canal+",
 };
+
+/** Platform names for the filter, alphabetically */
+export const NEW_SERIES_PLATFORMS = [...new Set(Object.values(NEW_SERIES_NETWORKS))].sort((a, b) => a.localeCompare(b, "pl"));
+
+/**
+ * TMDB discover filters for an optional country and platform ("" or null = all);
+ * null when either is not one the list knows.
+ */
+export function discoverFilters(country: string | null, platform: string | null): { with_origin_country: string; with_networks: string } | null {
+  if (country && !NEW_SERIES_COUNTRIES.includes(country)) return null;
+  const networks = Object.entries(NEW_SERIES_NETWORKS).filter(([, name]) => !platform || name === platform).map(([id]) => id);
+  if (networks.length === 0) return null;
+  return { with_origin_country: country || NEW_SERIES_COUNTRIES.join("|"), with_networks: networks.join("|") };
+}
 
 /** Reality (10764), talk (10767) and news (10763) are not series to wait for */
 export const NEW_SERIES_EXCLUDED_GENRES = [10764, 10767, 10763];

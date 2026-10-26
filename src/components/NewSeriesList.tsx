@@ -7,25 +7,30 @@ import MonthSwitcher from "./MonthSwitcher";
 import { toast } from "./Toast";
 import { formatDate } from "@/lib/utils";
 import { monthKey } from "@/lib/schedule";
-import type { NewSeriesItem } from "@/lib/new-series";
+import { NEW_SERIES_COUNTRIES, NEW_SERIES_PLATFORMS, type NewSeriesItem } from "@/lib/new-series";
 
 const FLAGS: Record<string, string> = { PL: "🇵🇱", US: "🇺🇸", GB: "🇬🇧" };
+const COUNTRY_NAMES: Record<string, string> = { PL: "Polska", US: "USA", GB: "Wielka Brytania" };
 
 /** New PL / US / GB series premiering in a month on platforms available in Poland (from TMDB). */
 export default function NewSeriesList({ initialMonth }: { initialMonth: string | null }) {
   const [month, setMonth] = useState(() => initialMonth ?? monthKey(new Date()));
-  const [loaded, setLoaded] = useState<{ month: string; items: NewSeriesItem[] } | { month: string; error: true } | null>(null);
+  const [country, setCountry] = useState("");
+  const [platform, setPlatform] = useState("");
+  // Tagged with the month and filters, so a slower or failed load never shows another query's list
+  const query = new URLSearchParams({ month, country, platform }).toString();
+  const [loaded, setLoaded] = useState<{ query: string; items: NewSeriesItem[] } | { query: string; error: true } | null>(null);
   const [adding, setAdding] = useState<number | null>(null);
   const [showIgnored, setShowIgnored] = useState(false);
 
   useEffect(() => {
     let stale = false;
-    fetch(`/api/schedule/new-series?month=${month}`)
+    fetch(`/api/schedule/new-series?${query}`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((data: { items: NewSeriesItem[] }) => { if (!stale) setLoaded({ month, items: data.items }); })
-      .catch(() => { if (!stale) setLoaded({ month, error: true }); });
+      .then((data: { items: NewSeriesItem[] }) => { if (!stale) setLoaded({ query, items: data.items }); })
+      .catch(() => { if (!stale) setLoaded({ query, error: true }); });
     return () => { stale = true; };
-  }, [month]);
+  }, [query]);
 
   const add = async (item: NewSeriesItem) => {
     setAdding(item.tmdb_id);
@@ -64,22 +69,32 @@ export default function NewSeriesList({ initialMonth }: { initialMonth: string |
     }
   };
 
-  const current = loaded?.month === month ? loaded : null;
+  const current = loaded?.query === query ? loaded : null;
   const ignoredCount = current && "items" in current ? current.items.filter((i) => i.ignored).length : 0;
   const visible = current && "items" in current
     ? current.items.filter((i) => showIgnored || !i.ignored).sort((a, b) => a.first_air_date.localeCompare(b.first_air_date))
     : [];
   return (
     <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-      <div className="mb-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <MonthSwitcher label="✨ Nowe seriale" month={month} onChange={setMonth} />
+        <div className="flex flex-wrap gap-2">
+          <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Kraj" className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-gray-700">
+            <option value="">Wszystkie kraje</option>
+            {NEW_SERIES_COUNTRIES.map((c) => <option key={c} value={c}>{FLAGS[c]} {COUNTRY_NAMES[c]}</option>)}
+          </select>
+          <select value={platform} onChange={(e) => setPlatform(e.target.value)} aria-label="Platforma lub stacja" className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-gray-700">
+            <option value="">Wszystkie platformy</option>
+            {NEW_SERIES_PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+        </div>
       </div>
       {current === null ? (
         <p className="text-sm text-gray-400">Ładowanie…</p>
       ) : "error" in current ? (
         <p className="text-sm text-red-500">Nie udało się pobrać listy z TMDB.</p>
       ) : visible.length === 0 ? (
-        <p className="text-sm text-gray-400">{ignoredCount > 0 ? "Wszystkie zapowiedzi w tym miesiącu są ukryte." : "Brak zapowiedzi w tym miesiącu."}</p>
+        <p className="text-sm text-gray-400">{ignoredCount > 0 ? "Wszystkie zapowiedzi w tym miesiącu są ukryte." : country || platform ? "Brak zapowiedzi dla tych filtrów w tym miesiącu." : "Brak zapowiedzi w tym miesiącu."}</p>
       ) : (
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {visible.map((item) => (
