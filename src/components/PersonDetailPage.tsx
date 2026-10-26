@@ -140,15 +140,16 @@ function MediaTile({
 
 export default function PersonDetailPage({ personId, onBack, onOpenMedia }: Props) {
   const [person, setPerson] = useState<PersonDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Loading until the fetch for the current personId settles
+  const [loadedId, setLoadedId] = useState<number | null>(null);
+  const loading = loadedId !== personId;
 
   useEffect(() => {
-    setLoading(true);
     fetch(`/api/persons/${personId}`)
       .then((r) => r.json())
       .then((data: PersonDetail) => setPerson(data))
       .catch(() => toast("Błąd ładowania osoby", "error"))
-      .finally(() => setLoading(false));
+      .finally(() => setLoadedId(personId));
   }, [personId]);
 
   // After a merge, shows the links moved over from the merged person
