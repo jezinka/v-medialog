@@ -120,7 +120,7 @@ export default function NewSeriesList({ initialMonth, initialCountry, initialPla
                 <p className="text-xs text-gray-500">
                   {formatDate(item.first_air_date)} · {item.origin_country.map((c) => FLAGS[c] ?? c).join(" ")}
                   {item.rating && (
-                    <span title={`Średnia ocena na TMDB, głosów: ${item.rating.count}`}> · ★ {item.rating.average.toFixed(1)} ({item.rating.count})</span>
+                    <span title={`Średnia ocena na TMDB, głosów: ${item.rating.count}`}> · ★ {item.rating.average.toLocaleString("pl-PL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} ({item.rating.count})</span>
                   )}
                 </p>
                 {item.overview && (
