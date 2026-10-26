@@ -116,7 +116,15 @@ export default function NewSeriesList({ initialMonth, initialCountry, initialPla
             <li key={item.tmdb_id} className={`flex gap-3 rounded-lg border border-gray-100 p-2 ${item.ignored ? "opacity-50" : ""}`}>
               <MediaCoverThumb coverUrl={item.poster_url} title={item.title} mediaType="series" className="w-10 h-14" sizes="40px" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
+                <a
+                  href={`https://www.themoviedb.org/tv/${item.tmdb_id}?language=pl-PL`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={`${item.title} – otwórz na TMDB w nowej karcie`}
+                  className="block text-sm font-medium text-gray-900 truncate hover:text-purple-700 hover:underline"
+                >
+                  {item.title}
+                </a>
                 <p className="text-xs text-gray-500">
                   {formatDate(item.first_air_date)} · {item.origin_country.map((c) => FLAGS[c] ?? c).join(" ")}
                   {item.rating && (
