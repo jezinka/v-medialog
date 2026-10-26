@@ -6,7 +6,6 @@ import { sqlite } from "@/db";
 
 export const runtime = "nodejs";
 
-
 type Cover = { title: string; cover_url: string };
 
 function crc32(data: Buffer): number {

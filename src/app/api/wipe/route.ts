@@ -4,7 +4,6 @@ import { readdirSync, unlinkSync, existsSync } from "fs";
 import { join } from "path";
 import { COVERS_DIR } from "@/lib/covers";
 
-
 export async function POST() {
   try {
     sqlite.pragma("foreign_keys = OFF");
