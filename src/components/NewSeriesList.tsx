@@ -13,14 +13,16 @@ const FLAGS: Record<string, string> = { PL: "🇵🇱", US: "🇺🇸", GB: "�
 const COUNTRY_NAMES: Record<string, string> = { PL: "Polska", US: "USA", GB: "Wielka Brytania" };
 
 /** New PL / US / GB series premiering in a month on platforms available in Poland (from TMDB). */
-export default function NewSeriesList({ initialMonth, initialCountry, initialPlatform }: {
+export default function NewSeriesList({ initialMonth, initialCountry, initialPlatform, initialHideLibrary }: {
   initialMonth: string | null;
   initialCountry: string;
   initialPlatform: string;
+  initialHideLibrary: boolean;
 }) {
   const [month, setMonth] = useState(() => initialMonth ?? monthKey(new Date()));
   const [country, setCountry] = useState(initialCountry);
   const [platform, setPlatform] = useState(initialPlatform);
+  const [hideLibrary, setHideLibrary] = useState(initialHideLibrary);
   // Tagged with the month and filters, so a slower or failed load never shows another query's list
   const query = new URLSearchParams(Object.entries({ month, country, platform }).filter(([, v]) => v)).toString();
   const [loaded, setLoaded] = useState<{ query: string; items: NewSeriesItem[] } | { query: string; error: true } | null>(null);
@@ -29,7 +31,10 @@ export default function NewSeriesList({ initialMonth, initialCountry, initialPla
 
   useEffect(() => {
     // Keeps the month and filters across a reload and in a copied link
-    window.history.replaceState(null, "", `?${query}`);
+    window.history.replaceState(null, "", `?${query}${hideLibrary ? "&library=hide" : ""}`);
+  }, [query, hideLibrary]);
+
+  useEffect(() => {
     let stale = false;
     fetch(`/api/schedule/new-series?${query}`)
       .then((res) => (res.ok ? res.json() : Promise.reject()))
@@ -76,9 +81,9 @@ export default function NewSeriesList({ initialMonth, initialCountry, initialPla
   };
 
   const current = loaded?.query === query ? loaded : null;
-  const ignoredCount = current && "items" in current ? current.items.filter((i) => i.ignored).length : 0;
+  const ignoredCount = current && "items" in current ? current.items.filter((i) => i.ignored && !(hideLibrary && i.media_id)).length : 0;
   const visible = current && "items" in current
-    ? current.items.filter((i) => showIgnored || !i.ignored).sort((a, b) => a.first_air_date.localeCompare(b.first_air_date))
+    ? current.items.filter((i) => (showIgnored || !i.ignored) && !(hideLibrary && i.media_id)).sort((a, b) => a.first_air_date.localeCompare(b.first_air_date))
     : [];
   return (
     <section className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
@@ -93,6 +98,10 @@ export default function NewSeriesList({ initialMonth, initialCountry, initialPla
             <option value="">Wszystkie platformy</option>
             {NEW_SERIES_PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
+          <label className="flex items-center gap-1 text-xs text-gray-700">
+            <input type="checkbox" checked={hideLibrary} onChange={(e) => setHideLibrary(e.target.checked)} />
+            Bez seriali z biblioteki
+          </label>
         </div>
       </div>
       {current === null ? (
@@ -100,7 +109,7 @@ export default function NewSeriesList({ initialMonth, initialCountry, initialPla
       ) : "error" in current ? (
         <p className="text-sm text-red-500">Nie udało się pobrać listy z TMDB.</p>
       ) : visible.length === 0 ? (
-        <p className="text-sm text-gray-400">{ignoredCount > 0 ? "Wszystkie zapowiedzi w tym miesiącu są ukryte." : country || platform ? "Brak zapowiedzi dla tych filtrów w tym miesiącu." : "Brak zapowiedzi w tym miesiącu."}</p>
+        <p className="text-sm text-gray-400">{current.items.length > 0 ? `Wszystkie zapowiedzi w tym miesiącu są ukryte${hideLibrary ? " lub już w bibliotece" : ""}.` : country || platform ? "Brak zapowiedzi dla tych filtrów w tym miesiącu." : "Brak zapowiedzi w tym miesiącu."}</p>
       ) : (
         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {visible.map((item) => (
