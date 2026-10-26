@@ -2,19 +2,19 @@
 import { useState } from "react";
 import Image from "next/image";
 import Modal from "../Modal";
-import { MOVIE_TYPES, SCREEN_TYPES } from "@/lib/utils";
+import { hasSeasonNumbers, MOVIE_TYPES, SCREEN_TYPES } from "@/lib/utils";
 import { partNo, seasonLabel } from "@/lib/part-number";
 import { SEASON_COLORS } from "@/lib/calendar-days";
 import type { SeasonRow } from "./types";
 
 /** Picks the season a new session on `date` goes to, with cinema / with-child flags. */
 export default function SeasonPickerModal({
-  date, seasons, mediaType, isBook, partLabel, hasSpecials, adding, onPick, onClose,
+  date, seasons, coverUrl, mediaType, partLabel, hasSpecials, adding, onPick, onClose,
 }: {
   date: string;
   seasons: SeasonRow[];
+  coverUrl: string | null;
   mediaType: string;
-  isBook: boolean;
   partLabel: string;
   hasSpecials: boolean;
   adding: boolean;
@@ -54,9 +54,13 @@ export default function SeasonPickerModal({
         {seasons.length > 1 && (
           <p className="text-xs font-medium text-gray-500 pt-1">Wybierz {partLabel.toLowerCase()}:</p>
         )}
-        {isBook ? (
+        {/* Books and movies have no season numbers, so their parts are picked by cover */}
+        {!hasSeasonNumbers(mediaType) ? (
           <div className="grid grid-cols-5 gap-2 max-h-80 overflow-y-auto p-1">
-            {seasons.map((s, idx) => (
+            {seasons.map((s, idx) => {
+              // A single part has no cover of its own, so it shows the book's or movie's cover
+              const cover = s.cover_url ?? (seasons.length === 1 ? coverUrl : null);
+              return (
               <button
                 key={s.id}
                 onClick={() => onPick(s.id, { cinema, withChild })}
@@ -65,8 +69,8 @@ export default function SeasonPickerModal({
                 className="rounded-md hover:ring-2 hover:ring-blue-400 disabled:opacity-50"
               >
                 <div className="relative aspect-[2/3] rounded-md overflow-hidden bg-gray-100">
-                  {s.cover_url ? (
-                    <Image unoptimized src={s.cover_url} alt="" fill className="object-cover" />
+                  {cover ? (
+                    <Image unoptimized src={cover} alt="" fill className="object-cover" />
                   ) : (
                     <div className={`absolute inset-0 flex items-center justify-center text-white text-sm font-semibold ${SEASON_COLORS[idx % SEASON_COLORS.length]}`}>
                       {partNo(seasons, idx, hasSpecials)}
@@ -75,7 +79,8 @@ export default function SeasonPickerModal({
                 </div>
                 <p className="text-[11px] text-gray-600 text-center mt-0.5">{partNo(seasons, idx, hasSpecials)}</p>
               </button>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="space-y-2">
