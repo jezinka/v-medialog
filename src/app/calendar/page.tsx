@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import CoverImg from "@/components/CoverImg";
 import { toast } from "@/components/Toast";
 import { CALENDAR_TYPES, MONTH_NAMES, DAY_LABELS, MEDIA_TYPES, MEDIA_TYPE_LABELS, MEDIA_TYPE_EMOJI } from "@/lib/utils";
-import { dateKey, getDaysInMonth, getFirstDayOfMonth } from "@/lib/calendar-days";
+import { dateKey, getDaysInMonth, getFirstDayOfMonth, getPolishHolidays } from "@/lib/calendar-days";
+import { printMonthCovers } from "./print-covers";
 
 interface CalendarEntry {
   season_id: number;
@@ -18,34 +19,6 @@ interface CalendarEntry {
   is_placeholder: boolean;
   cinema: boolean;
   with_child: boolean;
-}
-
-function getPolishHolidays(year: number) {
-  const a = year % 19;
-  const b = Math.floor(year / 100);
-  const c = year % 100;
-  const d = Math.floor(b / 4);
-  const e = b % 4;
-  const f = Math.floor((b + 8) / 25);
-  const g = Math.floor((b - f + 1) / 3);
-  const h = (19 * a + b - d - g + 15) % 30;
-  const i = Math.floor(c / 4);
-  const k = c % 4;
-  const l = (32 + 2 * e + 2 * i - h - k) % 7;
-  const m = Math.floor((a + 11 * h + 22 * l) / 451);
-  const easter = new Date(year, Math.floor((h + l - 7 * m + 114) / 31) - 1, (h + l - 7 * m + 114) % 31 + 1);
-  const movable = (offset: number) => {
-    const date = new Date(easter);
-    date.setDate(date.getDate() + offset);
-    return dateKey(date.getFullYear(), date.getMonth() + 1, date.getDate());
-  };
-
-  return new Set([
-    dateKey(year, 1, 1), dateKey(year, 1, 6), dateKey(year, 5, 1), dateKey(year, 5, 3),
-    dateKey(year, 8, 15), dateKey(year, 11, 1), dateKey(year, 11, 11),
-    dateKey(year, 12, 24), dateKey(year, 12, 25), dateKey(year, 12, 26),
-    movable(0), movable(1), movable(49), movable(60),
-  ]);
 }
 
 function CalendarInner() {
@@ -149,77 +122,7 @@ function CalendarInner() {
 
   const printCovers = useCallback((month: number, monthEntries: CalendarEntry[]) => {
     if (monthEntries.every((entry) => !entry.cover_url)) return;
-
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) {
-      toast("Przeglądarka zablokowała okno druku", "error");
-      return;
-    }
-
-    printWindow.opener = null;
-    printWindow.document.write(`<!doctype html><html lang="pl"><head><title>Okładki ${MONTH_NAMES[month - 1]} ${year}</title><style>
-      @page { size: A4 landscape; margin: 10mm; }
-      body { font-family: Arial, sans-serif; margin: 0; color: #111; }
-      h1 { font-size: 16pt; margin: 0 0 4mm; }
-      .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: .75mm; }
-      .label { text-align: center; font-size: 8pt; font-weight: bold; color: #666; padding: 1mm 0; }
-      .day { position: relative; height: 27mm; border: .25mm solid #ddd; overflow: hidden; }
-      .empty { background: #fafafa; }
-      img { position: absolute; top: 5mm; width: 100%; height: calc(100% - 5mm); object-fit: contain; }
-      .number { position: absolute; top: 0; left: 0; box-sizing: border-box; width: 100%; height: 5mm; padding: 1mm; border-bottom: .25mm solid #bbb; background: #fff; color-adjust: exact; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 8pt; font-weight: bold; color: #555; }
-      .saturday .number { background: #e5e7eb; }
-      .sunday .number { background: #fee2e2; color: #b91c1c; }
-      .holiday .number { background: #fee2e2; color: #b91c1c; }
-    </style></head><body><h1>${MONTH_NAMES[month - 1]} ${year}</h1><div class="grid"></div></body></html>`);
-    printWindow.document.close();
-
-    const grid = printWindow.document.querySelector(".grid");
-    if (!grid) return;
-
-    const images: HTMLImageElement[] = [];
-    for (const label of DAY_LABELS) {
-      const header = printWindow.document.createElement("div");
-      header.className = "label";
-      header.textContent = label;
-      grid.append(header);
-    }
-
-    const firstDay = getFirstDayOfMonth(year, month);
-    for (let i = 0; i < firstDay; i++) {
-      const empty = printWindow.document.createElement("div");
-      empty.className = "day empty";
-      grid.append(empty);
-    }
-
-    const entriesByDay = new Map(monthEntries.map((entry) => [entry.assigned_day, entry]));
-    const holidays = getPolishHolidays(year);
-    for (let day = 1; day <= getDaysInMonth(year, month); day++) {
-      const cell = printWindow.document.createElement("div");
-      const weekday = (firstDay + day - 1) % 7;
-      cell.className = `day${holidays.has(dateKey(year, month, day)) ? " holiday" : weekday === 5 ? " saturday" : weekday === 6 ? " sunday" : ""}`;
-      const entry = entriesByDay.get(day);
-      if (entry?.cover_url) {
-        const image = printWindow.document.createElement("img");
-        image.src = new URL(entry.cover_url, window.location.href).href;
-        image.alt = entry.title;
-        cell.append(image);
-        images.push(image);
-      }
-      const number = printWindow.document.createElement("span");
-      number.className = "number";
-      number.textContent = String(day);
-      cell.append(number);
-      grid.append(cell);
-    }
-
-    Promise.all(images.map((image) => new Promise<void>((resolve) => {
-      image.onload = () => resolve();
-      image.onerror = () => resolve();
-      if (image.complete) resolve();
-    }))).then(() => {
-      printWindow.focus();
-      printWindow.print();
-    });
+    if (!printMonthCovers(year, month, monthEntries)) toast("Przeglądarka zablokowała okno druku", "error");
   }, [year]);
 
   // Build lookup: month → Map<day, entry>

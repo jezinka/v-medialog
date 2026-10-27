@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildSessionDaysMap, getDaysInMonth, getFirstDayOfMonth, groupByYearMonth, monthCells, SEASON_COLORS } from "./calendar-days.ts";
+import { buildSessionDaysMap, getDaysInMonth, getFirstDayOfMonth, getPolishHolidays, groupByYearMonth, monthCells, SEASON_COLORS } from "./calendar-days.ts";
 
 test("monthCells pads to Monday", () => {
   // 1 Oct 2026 is a Thursday → 3 empty cells
@@ -31,4 +31,12 @@ test("month helpers: Monday-first offset and month length", () => {
   assert.equal(getFirstDayOfMonth(2026, 2), 6); // Sunday
   assert.equal(getDaysInMonth(2024, 2), 29);
   assert.equal(getDaysInMonth(2026, 12), 31);
+});
+
+test("getPolishHolidays includes Easter-based and fixed holidays", () => {
+  const h = getPolishHolidays(2026);
+  // Easter 2026: 5 April → Easter Monday 6 April, Pentecost 24 May, Corpus Christi 4 June
+  for (const d of ["2026-04-05", "2026-04-06", "2026-05-24", "2026-06-04", "2026-11-11", "2026-12-24"]) assert.ok(h.has(d), d);
+  assert.equal(h.size, 14);
+  assert.ok(!h.has("2026-04-07"));
 });
