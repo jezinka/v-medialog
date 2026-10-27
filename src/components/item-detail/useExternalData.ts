@@ -2,8 +2,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BOOK_TYPES, SCREEN_TYPES, ITUNES_TYPES } from "@/lib/utils";
 import type { CachedData, MediaData } from "./types";
+import type { TmdbCandidate } from "@/lib/tmdb";
+import type { TmdbInfoResult } from "@/app/api/tmdb/info/route";
 
-type TmdbCandidate = { tmdb_id: number; name: string; first_air_date: string; poster_path: string | null };
 type ItunesCandidate = { itunes_id: number; title: string; artist: string; year: number | null; cover_url: string | null };
 export type ExternalSyncState =
   | { status: "idle" }
@@ -12,21 +13,6 @@ export type ExternalSyncState =
   | { status: "itunes_candidates"; candidates: ItunesCandidate[] }
   | { status: "done" }
   | { status: "error"; message: string };
-
-// Full TMDB API response shape
-type TmdbInfoResult = {
-  tmdb_id: number;
-  overview: string | null;
-  genres: string[];
-  vote_average: number | null;
-  runtime: number | null;
-  release_date?: string | null;
-  first_air_date?: string | null;
-  poster_url: string | null;
-  persons: unknown[];
-  status?: string | null;
-  number_of_seasons?: number | null;
-};
 
 /**
  * Cached external details of the media (loaded once per media) and the TMDB / iTunes sync that refreshes them.

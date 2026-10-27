@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { toast } from "../Toast";
 
-type TmdbCandidate = { tmdb_id: number; name: string; first_air_date: string; poster_path: string | null };
+import type { TmdbCandidate } from "@/lib/tmdb";
 
 /** Searches TMDB series by title so a series without a TMDB id can be linked to one. */
 export default function TmdbLinkPanel({ initialSearch, onPick }: {
