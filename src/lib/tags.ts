@@ -16,6 +16,23 @@ export function getMediaTags(mediaId: number): { id: number; name: string }[] {
   return rows;
 }
 
+/** Tags of many media in one query, keyed by media id; media without tags are absent. */
+export function getTagsForMedia(mediaIds: number[]): Map<number, { id: number; name: string }[]> {
+  const rows = sqlite.prepare(`
+    SELECT mt.media_id, t.id, t.name FROM tags t
+    JOIN media_tags mt ON mt.tag_id = t.id
+    WHERE mt.media_id IN (SELECT value FROM json_each(?))
+    ORDER BY t.name
+  `).all(JSON.stringify(mediaIds)) as { media_id: number; id: number; name: string }[];
+  const byMedia = new Map<number, { id: number; name: string }[]>();
+  for (const { media_id, id, name } of rows) {
+    const list = byMedia.get(media_id);
+    if (list) list.push({ id, name });
+    else byMedia.set(media_id, [{ id, name }]);
+  }
+  return byMedia;
+}
+
 export function setMediaTags(mediaId: number, tagNames: string[]): void {
   sqlite.prepare("DELETE FROM media_tags WHERE media_id = ?").run(mediaId);
   
