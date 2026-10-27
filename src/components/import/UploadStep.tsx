@@ -58,7 +58,7 @@ export default function UploadStep({ importType, setImportType, csvText, setCsvT
             ? 'title,author,media_type,start_date\n"Dune","Frank Herbert","book","2024-01-15"'
             : 'title,author,media_type,priority\n"Dune Messiah","Frank Herbert","book","high"'
           }
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          className="input w-full px-3 py-1.5 text-sm font-mono"
         />
       </div>
 

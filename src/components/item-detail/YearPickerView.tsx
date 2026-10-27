@@ -97,7 +97,7 @@ export default function YearPickerView({
           <button
             onClick={handleCreate}
             disabled={saving}
-            className="ml-2 text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            className="btn-primary ml-2 text-xs px-3 py-1.5"
           >
             {saving ? "Zapisuję..." : `Utwórz ${selected.size} sesj${selected.size === 1 ? "ę" : "e"}`}
           </button>

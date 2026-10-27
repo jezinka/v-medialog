@@ -38,12 +38,12 @@ export default function TmdbLinkPanel({ initialSearch, onPick }: {
           onChange={(e) => setTmdbLinkSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && searchTmdbCandidates()}
           placeholder="Tytuł serialu..."
-          className="flex-1 text-sm border border-blue-200 rounded px-2 py-1 bg-white"
+          className="input flex-1 text-sm px-2 py-1"
         />
         <button
           onClick={searchTmdbCandidates}
           disabled={tmdbLinkLoading}
-          className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+          className="btn-primary text-sm px-3 py-1"
         >
           {tmdbLinkLoading ? "..." : "Szukaj"}
         </button>

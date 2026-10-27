@@ -53,7 +53,7 @@ export default function EditSeasonModal({ season, partLabel, onClose, onSaved }:
               value={seasonEditForm.season_number}
               onChange={(e) => setSeasonEditForm((f) => ({ ...f, season_number: e.target.value }))}
               placeholder="np. 1"
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="input w-full px-3 py-1.5 text-sm"
             />
           </div>
           <div>
@@ -63,7 +63,7 @@ export default function EditSeasonModal({ season, partLabel, onClose, onSaved }:
               value={seasonEditForm.title}
               onChange={(e) => setSeasonEditForm((f) => ({ ...f, title: e.target.value }))}
               placeholder="opcjonalnie"
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="input w-full px-3 py-1.5 text-sm"
             />
           </div>
         </div>
@@ -81,7 +81,7 @@ export default function EditSeasonModal({ season, partLabel, onClose, onSaved }:
           <button
             onClick={handleSave}
             disabled={seasonEditSaving || uploadingSeason}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            className="btn-primary flex-1 py-2 text-sm"
           >
             {seasonEditSaving ? "Zapisuję..." : uploadingSeason ? "Wgrywanie…" : "Zapisz"}
           </button>

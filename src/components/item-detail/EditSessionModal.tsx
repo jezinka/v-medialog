@@ -77,7 +77,7 @@ export default function EditSessionModal({
               type="date"
               value={editStartDate}
               onChange={(e) => setEditStartDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="input w-full px-3 py-1.5 text-sm"
             />
           </div>
           <div>
@@ -86,7 +86,7 @@ export default function EditSessionModal({
               type="date"
               value={editEndDate}
               onChange={(e) => setEditEndDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="input w-full px-3 py-1.5 text-sm"
             />
             <div className="flex items-center gap-2 mt-1.5">
               <span className="text-xs text-gray-400">start +</span>
@@ -96,7 +96,7 @@ export default function EditSessionModal({
                 placeholder="odcinki"
                 value={editEpisodeCount}
                 onChange={(e) => setEditEpisodeCount(e.target.value)}
-                className="w-24 border border-gray-200 rounded px-2 py-1 text-xs"
+                className="input w-24 px-2 py-1 text-xs"
               />
               <button
                 type="button"
@@ -118,7 +118,7 @@ export default function EditSessionModal({
             <select
               value={editSeasonId}
               onChange={(e) => setEditSeasonId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="input w-full px-3 py-1.5 text-sm"
             >
               {seasons.map((s, idx) => (
                 <option key={s.id} value={s.id}>
@@ -152,7 +152,7 @@ export default function EditSessionModal({
           <button
             onClick={handleSave}
             disabled={editSaving}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            className="btn-primary flex-1 py-2 text-sm"
           >
             {editSaving ? "Zapisuję..." : "Zapisz"}
           </button>

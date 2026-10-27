@@ -59,7 +59,7 @@ export default function WishlistPage() {
             value={mediaSearch}
             onChange={(event) => handleSearchChange(event.target.value)}
             placeholder="Szukaj po tytule..."
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="input w-full px-3 py-1.5 text-sm"
           />
           {candidates.length > 0 && (
             <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-lg mt-1 max-h-64 overflow-y-auto z-50">

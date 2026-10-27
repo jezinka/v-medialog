@@ -19,7 +19,7 @@ export default function CoverUrlField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="flex-1 border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+          className="input flex-1 px-3 py-1.5 text-sm"
         />
         <label className={`shrink-0 cursor-pointer px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${uploading ? "bg-gray-200 text-gray-400 cursor-not-allowed" : "bg-gray-100 hover:bg-gray-200"}`}>
           {uploading ? "Wgrywam…" : "Wgraj"}

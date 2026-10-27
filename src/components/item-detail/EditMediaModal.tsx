@@ -97,7 +97,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
               onChange={(e) => setLcEditUrl(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleLcEditFetch()}
               placeholder="Uzupełnij z lubimyczytac.pl (URL)…"
-              className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-orange-200 focus:outline-none"
+              className="input flex-1 px-3 py-1.5 text-xs"
             />
             <button
               onClick={handleLcEditFetch}
@@ -114,7 +114,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
             type="text"
             value={mediaEditForm.title}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, title: e.target.value }))}
-            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+            className="input w-full px-3 py-1.5 text-sm"
           />
         </div>
         <div>
@@ -123,7 +123,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
             type="text"
             value={mediaEditForm.original_title}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, original_title: e.target.value }))}
-            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+            className="input w-full px-3 py-1.5 text-sm"
           />
         </div>
         <div>
@@ -132,7 +132,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
             type="text"
             value={mediaEditForm.author}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, author: e.target.value }))}
-            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+            className="input w-full px-3 py-1.5 text-sm"
           />
         </div>
         <div>
@@ -142,7 +142,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
             value={mediaEditForm.tags}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, tags: e.target.value }))}
             placeholder="np. fantasy, klasyka"
-            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+            className="input w-full px-3 py-1.5 text-sm"
           />
         </div>
         <div>
@@ -151,7 +151,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
             value={mediaEditForm.description}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, description: e.target.value }))}
             rows={3}
-            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm resize-none"
+            className="input w-full px-3 py-1.5 text-sm resize-none"
           />
         </div>
         <div>
@@ -178,7 +178,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
           <select
             value={mediaEditForm.media_type}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, media_type: e.target.value }))}
-            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+            className="input w-full px-3 py-1.5 text-sm"
           >
             {Object.entries(MEDIA_TYPE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
@@ -195,7 +195,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
               value={mediaEditForm.tmdb_id}
               onChange={(e) => setMediaEditForm((f) => ({ ...f, tmdb_id: e.target.value }))}
               placeholder="np. 1399"
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="input w-full px-3 py-1.5 text-sm"
             />
           </div>
         )}
@@ -203,7 +203,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
           <button
             onClick={handleSave}
             disabled={mediaEditSaving || uploadingCover}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            className="btn-primary flex-1 py-2 text-sm"
           >
             {mediaEditSaving ? "Zapisuję..." : uploadingCover ? "Wgrywanie…" : "Zapisz"}
           </button>

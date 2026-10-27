@@ -87,7 +87,7 @@ export default function PodcastEpisodesPanel({ mediaId, seasons, sessionDaysMap,
               value={podcastUrl}
               onChange={(e) => setPodcastUrl(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter" && podcastUrl) fetchPodcastEpisodes(podcastUrl); }}
-              className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-cyan-400"
+              className="input flex-1 text-xs px-2 py-1"
             />
             <button
               onClick={() => { if (podcastUrl) fetchPodcastEpisodes(podcastUrl); }}

@@ -68,7 +68,7 @@ export default function PeopleView({ onOpenPerson }: Props) {
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           placeholder="Szukaj osoby…"
-          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-56 focus:ring-2 focus:ring-purple-400 focus:outline-none"
+          className="input px-3 py-1.5 text-sm w-56"
         />
         <div className="flex gap-1 flex-wrap">
           {ROLE_FILTERS.map((r) => (

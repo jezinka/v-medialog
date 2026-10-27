@@ -73,19 +73,19 @@ export default function SplitAssignForm({
           <input
             type="number" placeholder={`Nr ${part}`} value={newSeasonNumber}
             onChange={(e) => setNewSeasonNumber(e.target.value)}
-            className="w-28 text-sm border border-gray-300 rounded px-2 py-1"
+            className="input w-28 text-sm px-2 py-1"
           />
           <input
             type="text" placeholder="Tytuł (opcjonalny)" value={newSeasonTitle}
             onChange={(e) => setNewSeasonTitle(e.target.value)}
-            className="flex-1 text-sm border border-gray-300 rounded px-2 py-1"
+            className="input flex-1 text-sm px-2 py-1"
           />
         </div>
       )}
       {choice === "existing" && (
         <select
           value={existingSeasonId} onChange={(e) => setExistingSeasonId(e.target.value)}
-          className="w-full text-sm border border-gray-300 rounded px-2 py-1"
+          className="input w-full text-sm px-2 py-1"
         >
           <option value="">— wybierz {part} —</option>
           {seasons.map((s, idx) => (

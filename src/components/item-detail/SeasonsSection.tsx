@@ -242,7 +242,7 @@ export default function SeasonsSection({ media, seasons, onEditSeason, onChanged
                 type="number"
                 value={addSeasonForm.season_number}
                 onChange={(e) => setAddSeasonForm((f) => ({ ...f, season_number: e.target.value }))}
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                className="input w-full px-2 py-1 text-sm"
               />
             </div>
             <div className="flex-1">
@@ -252,7 +252,7 @@ export default function SeasonsSection({ media, seasons, onEditSeason, onChanged
                 value={addSeasonForm.title}
                 onChange={(e) => setAddSeasonForm((f) => ({ ...f, title: e.target.value }))}
                 placeholder="np. Część 1"
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                className="input w-full px-2 py-1 text-sm"
               />
             </div>
           </div>
@@ -266,7 +266,7 @@ export default function SeasonsSection({ media, seasons, onEditSeason, onChanged
             <button
               onClick={handleAddSeason}
               disabled={addSeasonLoading}
-              className="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+              className="btn-primary text-xs px-3 py-1.5"
             >
               {addSeasonLoading ? "Zapisuję..." : `Dodaj ${partLabel.toLowerCase()}`}
             </button>
