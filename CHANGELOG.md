@@ -6,7 +6,7 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
-- Aplikacja używa systemowej czcionki zamiast Ariala. Pola formularzy mają jednolite obramowanie i niebieską obwódkę po kliknięciu (także te, które dotąd nie miały żadnej), a niebieskie przyciski jeden wygląd.
+- Aplikacja używa systemowej czcionki zamiast Ariala. Pola formularzy mają jednolite obramowanie i niebieską obwódkę po kliknięciu (także te, które dotąd nie miały żadnej), a niebieskie przyciski jeden wygląd. Wskaźniki ładowania i etykiety pól w oknach edycji też wyglądają wszędzie tak samo.
 
 ## 2026-10-26
 
