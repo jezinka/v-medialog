@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { saveCover } from "@/lib/covers";
+import { downloadCover } from "@/lib/covers";
 
 export interface LubimyczytacData {
   title: string;
@@ -7,24 +7,6 @@ export interface LubimyczytacData {
   author: string | null;
   cover_url: string | null;
   description: string | null;
-}
-
-async function downloadCover(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; MediaLog/1.0)" },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) return null;
-    const contentType = res.headers.get("content-type") ?? "";
-    const ext = contentType.includes("png") ? ".png" : contentType.includes("webp") ? ".webp" : ".jpg";
-    const buffer = Buffer.from(await res.arrayBuffer());
-    if (buffer.length === 0) return null;
-
-    return saveCover(buffer, ext);
-  } catch {
-    return null;
-  }
 }
 
 function extractMeta(html: string, property: string): string | null {
