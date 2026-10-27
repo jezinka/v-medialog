@@ -1,7 +1,6 @@
 "use client";
 import { useState } from "react";
 import { toast } from "../Toast";
-
 import type { TmdbCandidate } from "@/lib/tmdb";
 
 /** Searches TMDB series by title so a series without a TMDB id can be linked to one. */

@@ -92,7 +92,8 @@ export async function POST(req: NextRequest) {
     null;
 
   const externalCoverUrl =
-    (jsonLd?.["image"] as string | undefined) ||
+    // schema.org `image` may also be an ImageObject or an array; only a plain URL is used
+    (typeof jsonLd?.["image"] === "string" ? jsonLd["image"] : undefined) ||
     extractMeta(html, "og:image") ||
     null;
 
