@@ -267,7 +267,7 @@ export default function MediaLibraryView() {
       <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center py-10">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400" />
+            <div className="spinner" />
           </div>
         ) : items.length === 0 ? (
           <p className="text-sm text-gray-500 p-6 text-center">Brak wyników</p>

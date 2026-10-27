@@ -109,7 +109,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
           </div>
         )}
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Tytuł *</label>
+          <label className="label">Tytuł *</label>
           <input
             type="text"
             value={mediaEditForm.title}
@@ -118,7 +118,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Tytuł oryginalny</label>
+          <label className="label">Tytuł oryginalny</label>
           <input
             type="text"
             value={mediaEditForm.original_title}
@@ -127,7 +127,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Autor</label>
+          <label className="label">Autor</label>
           <input
             type="text"
             value={mediaEditForm.author}
@@ -136,7 +136,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Tagi (oddzielone przecinkami)</label>
+          <label className="label">Tagi (oddzielone przecinkami)</label>
           <input
             type="text"
             value={mediaEditForm.tags}
@@ -146,7 +146,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Opis</label>
+          <label className="label">Opis</label>
           <textarea
             value={mediaEditForm.description}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, description: e.target.value }))}
@@ -155,7 +155,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">URL okładki</label>
+          <label className="label">URL okładki</label>
           <CoverUrlField
             value={mediaEditForm.cover_url}
             onChange={(cover_url) => setMediaEditForm((f) => ({ ...f, cover_url }))}
@@ -174,7 +174,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
           Porzucone
         </label>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Typ</label>
+          <label className="label">Typ</label>
           <select
             value={mediaEditForm.media_type}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, media_type: e.target.value }))}
@@ -187,7 +187,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
         </div>
         {SCREEN_TYPES.includes(media.media_type) && (
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-1">
+            <label className="label">
               TMDB ID <span className="text-gray-400 font-normal">(opcjonalnie)</span>
             </label>
             <input
@@ -209,7 +209,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
           </button>
           <button
             onClick={onClose}
-            className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200"
+            className="btn-secondary px-3 py-2 text-sm"
           >
             Anuluj
           </button>

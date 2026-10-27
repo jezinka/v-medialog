@@ -47,7 +47,7 @@ export default function EditSeasonModal({ season, partLabel, onClose, onSaved }:
         <h3 className="text-sm font-semibold text-gray-900">Edytuj {partLabel.toLowerCase()}</h3>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-1">Numer {partLabel.toLowerCase()}</label>
+            <label className="label">Numer {partLabel.toLowerCase()}</label>
             <input
               type="number"
               value={seasonEditForm.season_number}
@@ -57,7 +57,7 @@ export default function EditSeasonModal({ season, partLabel, onClose, onSaved }:
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-1">Tytuł {partLabel.toLowerCase()}</label>
+            <label className="label">Tytuł {partLabel.toLowerCase()}</label>
             <input
               type="text"
               value={seasonEditForm.title}
@@ -68,7 +68,7 @@ export default function EditSeasonModal({ season, partLabel, onClose, onSaved }:
           </div>
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Okładka</label>
+          <label className="label">Okładka</label>
           <CoverUrlField
             value={seasonEditForm.cover_url}
             onChange={(cover_url) => setSeasonEditForm((f) => ({ ...f, cover_url }))}
@@ -87,7 +87,7 @@ export default function EditSeasonModal({ season, partLabel, onClose, onSaved }:
           </button>
           <button
             onClick={onClose}
-            className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200"
+            className="btn-secondary px-3 py-2 text-sm"
           >
             Anuluj
           </button>
