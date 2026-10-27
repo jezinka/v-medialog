@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sqlite } from "@/db";
-import { parseTagsInput, setMediaTags, getMediaTags } from "@/lib/tags";
+import { parseTagsInput, setMediaTags, getMediaTags, getTagsForMedia } from "@/lib/tags";
+
+function withTagLists(items: Record<string, unknown>[]) {
+  const tags = getTagsForMedia(items.map((item) => item.id as number));
+  return items.map((item) => ({ ...item, tagList: tags.get(item.id as number) ?? [] }));
+}
 
 /**
  * GET /api/media?year=2025
@@ -116,12 +121,12 @@ export async function GET(request: NextRequest) {
           ? "last_session_date IS NULL, last_session_date DESC, m.title ASC"
           : "m.title ASC";
       const items = sqlite.prepare(`${baseSelect} ORDER BY ${orderSql} LIMIT ? OFFSET ?`).all(...args, limit, offset) as Record<string, unknown>[];
-      const withTags = items.map((item) => ({ ...item, tagList: getMediaTags(item.id as number) }));
+      const withTags = withTagLists(items);
       return NextResponse.json({ items: withTags, total: totalRow.count, page, limit });
     }
 
     const items = sqlite.prepare(`${baseSelect} ORDER BY ${sortBy === "last_session" ? "last_session_date IS NULL, last_session_date DESC, m.title ASC" : "m.title ASC"}`).all(...args) as Record<string, unknown>[];
-    const withTags = items.map((item) => ({ ...item, tagList: getMediaTags(item.id as number) }));
+    const withTags = withTagLists(items);
     (withTags as unknown as { title?: string }[]).sort((a, b) =>
       (a.title ?? "").localeCompare(b.title ?? "", "pl", { sensitivity: "base" })
     );
