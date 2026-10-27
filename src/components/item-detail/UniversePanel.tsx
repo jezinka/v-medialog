@@ -137,7 +137,7 @@ export default function UniversePanel({ media, onOpenDetail, onChanged }: {
             value={universeSearch}
             onChange={(e) => setUniverseSearch(e.target.value)}
             placeholder="Szukaj istniejącego…"
-            className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-blue-200 focus:outline-none"
+            className="input w-full px-2 py-1.5 text-xs"
           />
           <div className="max-h-40 overflow-y-auto space-y-1">
             {universesList
@@ -166,7 +166,7 @@ export default function UniversePanel({ media, onOpenDetail, onChanged }: {
                 onChange={(e) => setNewUniverseName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleCreateAndAssignUniverse()}
                 placeholder="Nazwa nowego uniwersum"
-                className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:ring-2 focus:ring-blue-200 focus:outline-none"
+                className="input flex-1 px-2 py-1.5 text-xs"
               />
               <button
                 onClick={handleCreateAndAssignUniverse}

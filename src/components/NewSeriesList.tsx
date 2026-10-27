@@ -90,11 +90,11 @@ export default function NewSeriesList({ initialMonth, initialCountry, initialPla
       <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
         <MonthSwitcher label="✨ Nowe seriale" month={month} onChange={setMonth} />
         <div className="flex flex-wrap gap-2">
-          <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Kraj" className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-gray-700">
+          <select value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Kraj" className="input text-xs px-2 py-1 text-gray-700">
             <option value="">Wszystkie kraje</option>
             {NEW_SERIES_COUNTRIES.map((c) => <option key={c} value={c}>{FLAGS[c]} {COUNTRY_NAMES[c]}</option>)}
           </select>
-          <select value={platform} onChange={(e) => setPlatform(e.target.value)} aria-label="Platforma lub stacja" className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-gray-700">
+          <select value={platform} onChange={(e) => setPlatform(e.target.value)} aria-label="Platforma lub stacja" className="input text-xs px-2 py-1 text-gray-700">
             <option value="">Wszystkie platformy</option>
             {NEW_SERIES_PLATFORMS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>

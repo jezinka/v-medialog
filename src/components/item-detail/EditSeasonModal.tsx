@@ -47,28 +47,28 @@ export default function EditSeasonModal({ season, partLabel, onClose, onSaved }:
         <h3 className="text-sm font-semibold text-gray-900">Edytuj {partLabel.toLowerCase()}</h3>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-1">Numer {partLabel.toLowerCase()}</label>
+            <label className="label">Numer {partLabel.toLowerCase()}</label>
             <input
               type="number"
               value={seasonEditForm.season_number}
               onChange={(e) => setSeasonEditForm((f) => ({ ...f, season_number: e.target.value }))}
               placeholder="np. 1"
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="input w-full px-3 py-1.5 text-sm"
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-1">Tytuł {partLabel.toLowerCase()}</label>
+            <label className="label">Tytuł {partLabel.toLowerCase()}</label>
             <input
               type="text"
               value={seasonEditForm.title}
               onChange={(e) => setSeasonEditForm((f) => ({ ...f, title: e.target.value }))}
               placeholder="opcjonalnie"
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="input w-full px-3 py-1.5 text-sm"
             />
           </div>
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Okładka</label>
+          <label className="label">Okładka</label>
           <CoverUrlField
             value={seasonEditForm.cover_url}
             onChange={(cover_url) => setSeasonEditForm((f) => ({ ...f, cover_url }))}
@@ -81,13 +81,13 @@ export default function EditSeasonModal({ season, partLabel, onClose, onSaved }:
           <button
             onClick={handleSave}
             disabled={seasonEditSaving || uploadingSeason}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            className="btn-primary flex-1 py-2 text-sm"
           >
             {seasonEditSaving ? "Zapisuję..." : uploadingSeason ? "Wgrywanie…" : "Zapisz"}
           </button>
           <button
             onClick={onClose}
-            className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200"
+            className="btn-secondary px-3 py-2 text-sm"
           >
             Anuluj
           </button>

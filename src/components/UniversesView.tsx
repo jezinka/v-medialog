@@ -106,7 +106,7 @@ export default function UniversesView() {
           onChange={(e) => setFilter(e.target.value)}
           placeholder="Szukaj uniwersum…"
           aria-label="Szukaj uniwersum"
-          className="flex-1 min-w-[12rem] border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+          className="input flex-1 min-w-[12rem] px-3 py-1.5 text-sm"
         />
         <form onSubmit={(e) => { e.preventDefault(); void handleCreate(); }} className="flex gap-2">
           <input
@@ -114,7 +114,7 @@ export default function UniversesView() {
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Nowe uniwersum"
             aria-label="Nazwa nowego uniwersum"
-            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
+            className="input px-3 py-1.5 text-sm"
           />
           <button type="submit" disabled={!newName.trim()} className="text-sm px-3 py-1.5 rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-40">
             + Utwórz
@@ -243,7 +243,7 @@ function UniverseDetail({ universe, onChanged, onDeleted }: {
           onBlur={() => void rename()}
           onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
           aria-label="Nazwa uniwersum"
-          className="flex-1 min-w-[10rem] border border-gray-200 rounded px-2 py-1 text-sm bg-white"
+          className="input flex-1 min-w-[10rem] px-2 py-1 text-sm"
         />
         <button onClick={() => void remove()} className="text-xs text-red-500 hover:text-red-700">Usuń uniwersum</button>
       </div>
@@ -271,7 +271,7 @@ function UniverseDetail({ universe, onChanged, onDeleted }: {
           onChange={(e) => { setQuery(e.target.value); if (e.target.value.trim().length < 2) setResults([]); }}
           placeholder="Dodaj pozycję: wpisz tytuł…"
           aria-label="Szukaj pozycji do dodania"
-          className="w-full border border-gray-200 rounded px-2 py-1 text-sm bg-white"
+          className="input w-full px-2 py-1 text-sm"
         />
         {results.filter((r) => !memberIds.has(r.id)).map((r) => (
           <button

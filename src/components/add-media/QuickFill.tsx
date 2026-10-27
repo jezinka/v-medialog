@@ -114,7 +114,7 @@ export default function QuickFill({ onFilled }: {
             onChange={(e) => setLcUrl(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleLcFetch()}
             placeholder="https://lubimyczytac.pl/ksiazka/..."
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-200 focus:outline-none"
+            className="input flex-1 px-3 py-1.5 text-xs"
           />
           <button
             type="button"
@@ -136,7 +136,7 @@ export default function QuickFill({ onFilled }: {
             onChange={(e) => setTmdbUrl(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleTmdbFetch()}
             placeholder="np. Inception lub https://www.themoviedb.org/movie/..."
-            className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-200 focus:outline-none"
+            className="input flex-1 px-3 py-1.5 text-xs"
           />
           <button
             type="button"

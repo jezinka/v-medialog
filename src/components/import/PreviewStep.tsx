@@ -97,7 +97,7 @@ export default function PreviewStep({
                       type="text"
                       value={(item.data as MediaPreviewRow | WishlistPreviewRow).title}
                       onChange={(e) => onUpdateField(item.row, "title", e.target.value)}
-                      className="w-full border border-gray-200 rounded px-1.5 py-0.5 text-xs min-w-[120px]"
+                      className="input w-full px-1.5 py-0.5 text-xs min-w-[120px]"
                     />
                   </td>
                   <td className="p-1">
@@ -105,7 +105,7 @@ export default function PreviewStep({
                       type="text"
                       value={(item.data as MediaPreviewRow | WishlistPreviewRow).author}
                       onChange={(e) => onUpdateField(item.row, "author", e.target.value)}
-                      className="w-full border border-gray-200 rounded px-1.5 py-0.5 text-xs min-w-[100px]"
+                      className="input w-full px-1.5 py-0.5 text-xs min-w-[100px]"
                     />
                   </td>
                   <td className="p-2 text-gray-700">
@@ -142,7 +142,7 @@ export default function PreviewStep({
                           value={mediaData.volume_episode ?? ""}
                           onChange={(e) => onUpdateField(item.row, "volume_episode", e.target.value)}
                           placeholder="np. 2"
-                          className="border border-gray-200 rounded px-1.5 py-0.5 text-xs w-14"
+                          className="input px-1.5 py-0.5 text-xs w-14"
                         />
                       </td>
                       <td className="p-1 min-w-[120px]">

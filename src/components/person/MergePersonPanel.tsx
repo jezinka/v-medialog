@@ -87,7 +87,7 @@ export default function MergePersonPanel({ personId, personName, onMerged }: {
               value={mergeSearch}
               onChange={(e) => setMergeSearch(e.target.value)}
               placeholder="Wpisz imię i nazwisko…"
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm bg-white"
+              className="input w-full px-3 py-1.5 text-sm"
               autoFocus
             />
             {mergeResults.length > 0 && (

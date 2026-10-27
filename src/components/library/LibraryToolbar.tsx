@@ -48,7 +48,7 @@ export default function LibraryToolbar({
       value={search}
       onChange={(e) => setSearch(e.target.value)}
       placeholder="Szukaj…"
-      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm w-56 focus:ring-2 focus:ring-purple-400 focus:outline-none"
+      className="input px-3 py-1.5 text-sm w-56"
     />
     <div className="flex gap-1 flex-wrap">
       {TYPE_FILTERS.map((t) => (

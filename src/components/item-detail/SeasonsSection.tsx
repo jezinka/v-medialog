@@ -237,22 +237,22 @@ export default function SeasonsSection({ media, seasons, onEditSeason, onChanged
           <p className="text-xs font-semibold text-gray-700">{newPartLabel}</p>
           <div className="flex gap-2">
             <div className="w-20">
-              <label className="text-xs text-gray-500 block mb-1">Numer</label>
+              <label className="label">Numer</label>
               <input
                 type="number"
                 value={addSeasonForm.season_number}
                 onChange={(e) => setAddSeasonForm((f) => ({ ...f, season_number: e.target.value }))}
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                className="input w-full px-2 py-1 text-sm"
               />
             </div>
             <div className="flex-1">
-              <label className="text-xs text-gray-500 block mb-1">Tytuł (opcjonalnie)</label>
+              <label className="label">Tytuł (opcjonalnie)</label>
               <input
                 type="text"
                 value={addSeasonForm.title}
                 onChange={(e) => setAddSeasonForm((f) => ({ ...f, title: e.target.value }))}
                 placeholder="np. Część 1"
-                className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
+                className="input w-full px-2 py-1 text-sm"
               />
             </div>
           </div>
@@ -266,7 +266,7 @@ export default function SeasonsSection({ media, seasons, onEditSeason, onChanged
             <button
               onClick={handleAddSeason}
               disabled={addSeasonLoading}
-              className="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+              className="btn-primary text-xs px-3 py-1.5"
             >
               {addSeasonLoading ? "Zapisuję..." : `Dodaj ${partLabel.toLowerCase()}`}
             </button>

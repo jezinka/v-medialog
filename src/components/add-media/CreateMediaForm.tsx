@@ -98,7 +98,7 @@ export default function CreateMediaForm({ form, setForm, showLcLink, onBack, onC
         value={form.title}
         onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
         placeholder="Tytuł *"
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
+        className="input w-full px-3 py-1.5 text-sm"
         autoFocus
       />
       <input
@@ -106,19 +106,19 @@ export default function CreateMediaForm({ form, setForm, showLcLink, onBack, onC
         value={form.original_title}
         onChange={(e) => setForm((f) => ({ ...f, original_title: e.target.value }))}
         placeholder="Tytuł oryginalny"
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
+        className="input w-full px-3 py-1.5 text-sm"
       />
       <input
         type="text"
         value={form.author}
         onChange={(e) => setForm((f) => ({ ...f, author: e.target.value }))}
         placeholder="Autor"
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
+        className="input w-full px-3 py-1.5 text-sm"
       />
       <select
         value={form.media_type}
         onChange={(e) => setForm((f) => ({ ...f, media_type: e.target.value }))}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
+        className="input w-full px-3 py-1.5 text-sm"
       >
         {MEDIA_TYPES.map((t) => (
           <option key={t} value={t}>{MEDIA_TYPE_LABELS[t] ?? t}</option>
@@ -129,21 +129,21 @@ export default function CreateMediaForm({ form, setForm, showLcLink, onBack, onC
         value={form.cover_url}
         onChange={(e) => setForm((f) => ({ ...f, cover_url: e.target.value }))}
         placeholder="URL okładki / miniatury"
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
+        className="input w-full px-3 py-1.5 text-sm"
       />
       <textarea
         value={form.description}
         onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
         placeholder="Opis"
         rows={3}
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none resize-none"
+        className="input w-full px-3 py-1.5 text-sm resize-none"
       />
       <input
         type="number"
         value={form.universe_id}
         onChange={(e) => setForm((f) => ({ ...f, universe_id: e.target.value }))}
         placeholder="ID Uniwersum (opcjonalnie)"
-        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-200 focus:outline-none"
+        className="input w-full px-3 py-1.5 text-sm"
       />
       {CALENDAR_TYPES.includes(form.media_type) && (
         <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none pt-1">

@@ -72,21 +72,21 @@ export default function EditSessionModal({
         <h3 className="text-sm font-semibold text-gray-900">Edytuj sesję</h3>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Data rozpoczęcia</label>
+            <label className="label">Data rozpoczęcia</label>
             <input
               type="date"
               value={editStartDate}
               onChange={(e) => setEditStartDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="input w-full px-3 py-1.5 text-sm"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Data zakończenia</label>
+            <label className="label">Data zakończenia</label>
             <input
               type="date"
               value={editEndDate}
               onChange={(e) => setEditEndDate(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="input w-full px-3 py-1.5 text-sm"
             />
             <div className="flex items-center gap-2 mt-1.5">
               <span className="text-xs text-gray-400">start +</span>
@@ -96,7 +96,7 @@ export default function EditSessionModal({
                 placeholder="odcinki"
                 value={editEpisodeCount}
                 onChange={(e) => setEditEpisodeCount(e.target.value)}
-                className="w-24 border border-gray-200 rounded px-2 py-1 text-xs"
+                className="input w-24 px-2 py-1 text-xs"
               />
               <button
                 type="button"
@@ -114,11 +114,11 @@ export default function EditSessionModal({
             </div>
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">{partLabel}</label>
+            <label className="label">{partLabel}</label>
             <select
               value={editSeasonId}
               onChange={(e) => setEditSeasonId(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="input w-full px-3 py-1.5 text-sm"
             >
               {seasons.map((s, idx) => (
                 <option key={s.id} value={s.id}>
@@ -152,7 +152,7 @@ export default function EditSessionModal({
           <button
             onClick={handleSave}
             disabled={editSaving}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            className="btn-primary flex-1 py-2 text-sm"
           >
             {editSaving ? "Zapisuję..." : "Zapisz"}
           </button>
@@ -165,7 +165,7 @@ export default function EditSessionModal({
           </button>
           <button
             onClick={onClose}
-            className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200"
+            className="btn-secondary px-3 py-2 text-sm"
           >
             Anuluj
           </button>

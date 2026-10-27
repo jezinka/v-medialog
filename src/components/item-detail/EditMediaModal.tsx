@@ -97,7 +97,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
               onChange={(e) => setLcEditUrl(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleLcEditFetch()}
               placeholder="Uzupełnij z lubimyczytac.pl (URL)…"
-              className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-orange-200 focus:outline-none"
+              className="input flex-1 px-3 py-1.5 text-xs"
             />
             <button
               onClick={handleLcEditFetch}
@@ -109,53 +109,53 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
           </div>
         )}
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Tytuł *</label>
+          <label className="label">Tytuł *</label>
           <input
             type="text"
             value={mediaEditForm.title}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, title: e.target.value }))}
-            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+            className="input w-full px-3 py-1.5 text-sm"
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Tytuł oryginalny</label>
+          <label className="label">Tytuł oryginalny</label>
           <input
             type="text"
             value={mediaEditForm.original_title}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, original_title: e.target.value }))}
-            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+            className="input w-full px-3 py-1.5 text-sm"
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Autor</label>
+          <label className="label">Autor</label>
           <input
             type="text"
             value={mediaEditForm.author}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, author: e.target.value }))}
-            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+            className="input w-full px-3 py-1.5 text-sm"
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Tagi (oddzielone przecinkami)</label>
+          <label className="label">Tagi (oddzielone przecinkami)</label>
           <input
             type="text"
             value={mediaEditForm.tags}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, tags: e.target.value }))}
             placeholder="np. fantasy, klasyka"
-            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+            className="input w-full px-3 py-1.5 text-sm"
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Opis</label>
+          <label className="label">Opis</label>
           <textarea
             value={mediaEditForm.description}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, description: e.target.value }))}
             rows={3}
-            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm resize-none"
+            className="input w-full px-3 py-1.5 text-sm resize-none"
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">URL okładki</label>
+          <label className="label">URL okładki</label>
           <CoverUrlField
             value={mediaEditForm.cover_url}
             onChange={(cover_url) => setMediaEditForm((f) => ({ ...f, cover_url }))}
@@ -174,11 +174,11 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
           Porzucone
         </label>
         <div>
-          <label className="text-xs font-medium text-gray-600 block mb-1">Typ</label>
+          <label className="label">Typ</label>
           <select
             value={mediaEditForm.media_type}
             onChange={(e) => setMediaEditForm((f) => ({ ...f, media_type: e.target.value }))}
-            className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+            className="input w-full px-3 py-1.5 text-sm"
           >
             {Object.entries(MEDIA_TYPE_LABELS).map(([value, label]) => (
               <option key={value} value={value}>{label}</option>
@@ -187,7 +187,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
         </div>
         {SCREEN_TYPES.includes(media.media_type) && (
           <div>
-            <label className="text-xs font-medium text-gray-600 block mb-1">
+            <label className="label">
               TMDB ID <span className="text-gray-400 font-normal">(opcjonalnie)</span>
             </label>
             <input
@@ -195,7 +195,7 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
               value={mediaEditForm.tmdb_id}
               onChange={(e) => setMediaEditForm((f) => ({ ...f, tmdb_id: e.target.value }))}
               placeholder="np. 1399"
-              className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm"
+              className="input w-full px-3 py-1.5 text-sm"
             />
           </div>
         )}
@@ -203,13 +203,13 @@ export default function EditMediaModal({ media, onClose, onSaved }: {
           <button
             onClick={handleSave}
             disabled={mediaEditSaving || uploadingCover}
-            className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            className="btn-primary flex-1 py-2 text-sm"
           >
             {mediaEditSaving ? "Zapisuję..." : uploadingCover ? "Wgrywanie…" : "Zapisz"}
           </button>
           <button
             onClick={onClose}
-            className="px-3 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm hover:bg-gray-200"
+            className="btn-secondary px-3 py-2 text-sm"
           >
             Anuluj
           </button>

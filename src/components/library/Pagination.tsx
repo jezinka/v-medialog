@@ -1,5 +1,7 @@
 import { pageList } from "./page-list";
 
+const ARROW = "px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40";
+
 /** Library pagination: first / previous, page numbers, next / last and the shown range. */
 export default function Pagination({ page, total, pageSize, setPage }: {
   page: number;
@@ -14,14 +16,14 @@ export default function Pagination({ page, total, pageSize, setPage }: {
       <button
         onClick={() => setPage(1)}
         disabled={page === 1}
-        className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+        className={ARROW}
       >
         «
       </button>
       <button
         onClick={() => setPage(Math.max(1, page - 1))}
         disabled={page === 1}
-        className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+        className={ARROW}
       >
         ‹
       </button>
@@ -45,14 +47,14 @@ export default function Pagination({ page, total, pageSize, setPage }: {
       <button
         onClick={() => setPage(Math.min(totalPages, page + 1))}
         disabled={page === totalPages}
-        className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+        className={ARROW}
       >
         ›
       </button>
       <button
         onClick={() => setPage(totalPages)}
         disabled={page === totalPages}
-        className="px-2 py-1 text-xs rounded border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40"
+        className={ARROW}
       >
         »
       </button>

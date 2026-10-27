@@ -28,7 +28,7 @@ export function SyncButtons({ media, sync }: { media: MediaData; sync: ExternalD
             placeholder="lub wklej link z Apple Music…"
             value={appleMusicUrlInput}
             onChange={(e) => setAppleMusicUrlInput(e.target.value)}
-            className="text-xs border border-gray-200 rounded px-2 py-1 w-52 focus:outline-none focus:border-pink-400"
+            className="input text-xs px-2 py-1 w-52"
           />
           <button
             onClick={() => { if (appleMusicUrlInput) { const u = appleMusicUrlInput; setAppleMusicUrlInput(""); sync.syncFromItunes(undefined, u); } }}
