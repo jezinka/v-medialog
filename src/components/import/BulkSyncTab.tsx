@@ -2,6 +2,7 @@
 import React from "react";
 import Image from "next/image";
 import { TV_TYPES } from "@/lib/utils";
+import type { TmdbInfoResult } from "@/app/api/tmdb/info/route";
 
 type TmdbSyncCandidate = { tmdb_id: number; name: string; first_air_date: string; poster_path: string | null };
 type BookSyncCandidate = { ol_key: string; title: string; author: string; year: number | null; cover_url: string | null };
@@ -22,20 +23,6 @@ type BulkSyncResult = {
   needs_review: NeedsReviewItem[];
   failed: FailedItem[];
   total: number;
-};
-
-type TmdbInfoResponse = {
-  tmdb_id: number;
-  overview: string;
-  poster_url: string | null;
-  genres: string[];
-  vote_average: number;
-  persons: unknown[];
-  status?: string;
-  first_air_date?: string;
-  release_date?: string;
-  number_of_seasons?: number;
-  runtime?: number;
 };
 
 type BookInfoResponse = {
@@ -87,13 +74,13 @@ export default function BulkSyncTab() {
   const applyCandidate = async (item: NeedsReviewItem, candidateId: number | string) => {
     setApplyingId(item.id);
     try {
-      let infoData: TmdbInfoResponse | BookInfoResponse | ItunesInfoResponse | null = null;
+      let infoData: TmdbInfoResult | BookInfoResponse | ItunesInfoResponse | null = null;
 
       if (item.source === "tmdb") {
         const type = TV_TYPES.includes(item.media_type) ? "series" : "movie";
         const res = await fetch(`/api/tmdb/info?tmdb_id=${candidateId}&type=${type}`);
         if (!res.ok) throw new Error("Błąd TMDB");
-        infoData = await res.json() as TmdbInfoResponse;
+        infoData = await res.json() as TmdbInfoResult;
       } else if (item.source === "books") {
         const res = await fetch(`/api/books/info?ol_key=${encodeURIComponent(String(candidateId))}`);
         if (!res.ok) throw new Error("Błąd serwisu książek");
@@ -108,7 +95,7 @@ export default function BulkSyncTab() {
 
       let body: Record<string, unknown> = {};
       if (item.source === "tmdb") {
-        const d = infoData as TmdbInfoResponse;
+        const d = infoData as TmdbInfoResult;
         const isTv = TV_TYPES.includes(item.media_type);
         const dateStr = isTv ? d.first_air_date : d.release_date;
         const releaseYear = dateStr ? parseInt(dateStr.slice(0, 4)) || null : null;
@@ -151,7 +138,7 @@ export default function BulkSyncTab() {
       });
 
       const posterUrl = item.source === "tmdb"
-        ? (infoData as TmdbInfoResponse).poster_url
+        ? (infoData as TmdbInfoResult).poster_url
         : item.source === "books"
         ? (infoData as BookInfoResponse).cover_url
         : (infoData as ItunesInfoResponse).cover_url;

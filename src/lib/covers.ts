@@ -20,8 +20,8 @@ export function saveCover(buffer: Buffer, ext: string): string {
  * If the URL is already local, it is returned as-is.
  */
 export async function downloadCover(url: string): Promise<string | null> {
-  if (!url || !url.startsWith("http")) return null;
   if (url.startsWith("/api/covers/") || url.startsWith("/covers/")) return url;
+  if (!url.startsWith("http")) return null;
 
   try {
     if (!existsSync(COVERS_DIR)) mkdirSync(COVERS_DIR, { recursive: true });
@@ -31,9 +31,14 @@ export async function downloadCover(url: string): Promise<string | null> {
     const filepath = join(COVERS_DIR, filename);
 
     if (!existsSync(filepath)) {
-      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      // Some sites (lubimyczytac.pl) refuse requests without a browser-like User-Agent
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; MediaLog/1.0)" },
+        signal: AbortSignal.timeout(10000),
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const buffer = Buffer.from(await res.arrayBuffer());
+      if (buffer.length === 0) throw new Error("Empty image");
       writeFileSync(filepath, buffer);
     }
 

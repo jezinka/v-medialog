@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { toast } from "../Toast";
 import type { MediaForm } from "./CreateMediaForm";
+import type { TmdbCandidate } from "@/lib/tmdb";
+import type { TmdbInfoResult } from "@/app/api/tmdb/info/route";
 
 /** Fills the new-media form from a lubimyczytac.pl link or a TMDB link / title. */
 export default function QuickFill({ onFilled }: {
@@ -45,7 +47,7 @@ export default function QuickFill({ onFilled }: {
     setTmdbLoading(true);
     try {
       const value = tmdbUrl.trim();
-      const applyTmdbData = (data: { title?: string; original_title?: string; director?: string; poster_url?: string; overview?: string }, type: "movie" | "series", tmdbId: string) => {
+      const applyTmdbData = (data: TmdbInfoResult, type: "movie" | "series", tmdbId: string) => {
         onFilled((f) => ({
           ...f,
           title: data.title || f.title,
@@ -71,13 +73,13 @@ export default function QuickFill({ onFilled }: {
       }
 
       let resolved:
-        | { data: { tmdb_id: number; title?: string; original_title?: string; director?: string; poster_url?: string; overview?: string; candidates?: Array<{ tmdb_id: number; name: string }> }; type: "series" | "movie" }
+        | { data: TmdbInfoResult & { candidates?: TmdbCandidate[] }; type: "series" | "movie" }
         | null = null;
       for (const type of ["series", "movie"] as const) {
         const res = await fetch(`/api/tmdb/info?title=${encodeURIComponent(value)}&type=${type}`);
-        const data = await res.json() as { candidates?: Array<{ tmdb_id: number; name: string }> };
-        if (res.ok) { resolved = { data: data as { tmdb_id: number; title?: string; original_title?: string; director?: string; poster_url?: string; overview?: string; candidates?: Array<{ tmdb_id: number; name: string }> }, type }; break; }
-        if (res.status !== 404) { toast((data as { error?: string }).error ?? "Błąd TMDB", "error"); return; }
+        const data = await res.json() as TmdbInfoResult & { candidates?: TmdbCandidate[]; error?: string };
+        if (res.ok) { resolved = { data, type }; break; }
+        if (res.status !== 404) { toast(data.error ?? "Błąd TMDB", "error"); return; }
       }
       if (!resolved) { toast(`Nie znaleziono "${value}"`, "error"); return; }
 
@@ -88,7 +90,7 @@ export default function QuickFill({ onFilled }: {
         const detailRes = await fetch(`/api/tmdb/info?tmdb_id=${picked.tmdb_id}&type=${resolved.type}`);
         const detailData = await detailRes.json();
         if (!detailRes.ok) { toast(detailData.error ?? "Błąd TMDB", "error"); return; }
-        finalData = detailData as { tmdb_id: number; title?: string; original_title?: string; director?: string; poster_url?: string; overview?: string };
+        finalData = detailData as TmdbInfoResult;
       }
 
       applyTmdbData(finalData, resolved.type, String(finalData.tmdb_id));

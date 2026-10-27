@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { toast } from "./Toast";
+import { Initials, ROLE_BADGE, ROLE_NAME } from "./person/roles";
 
 interface PersonItem {
   id: number;
@@ -26,34 +27,7 @@ const ROLE_LABELS: Record<string, string> = {
   author: "Autorzy",
 };
 
-const ROLE_BADGE: Record<string, string> = {
-  actor: "bg-blue-100 text-blue-700",
-  director: "bg-purple-100 text-purple-700",
-  creator: "bg-indigo-100 text-indigo-700",
-  author: "bg-green-100 text-green-700",
-};
-
-const ROLE_NAME: Record<string, string> = {
-  actor: "Aktor",
-  director: "Reżyser",
-  creator: "Twórca",
-  author: "Autor",
-};
-
 const PAGE_SIZE = 48;
-
-function Initials({ name }: { name: string }) {
-  const parts = name.trim().split(/\s+/);
-  const initials =
-    parts.length >= 2
-      ? parts[0][0] + parts[parts.length - 1][0]
-      : parts[0]?.[0] ?? "?";
-  return (
-    <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-600 font-semibold text-lg select-none">
-      {initials.toUpperCase()}
-    </div>
-  );
-}
 
 export default function PeopleView({ onOpenPerson }: Props) {
   const [persons, setPersons] = useState<PersonItem[]>([]);
@@ -140,7 +114,7 @@ export default function PeopleView({ onOpenPerson }: Props) {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <Initials name={person.name} />
+                      <Initials name={person.name} className="font-semibold text-lg" />
                     )}
                   </div>
                   {/* Name */}

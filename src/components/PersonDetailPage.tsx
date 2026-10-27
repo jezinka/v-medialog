@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import CoverImg from "./CoverImg";
-import { MEDIA_TYPE_EMOJI, MONTH_NAMES } from "@/lib/utils";
+import { formatDate, MEDIA_TYPE_EMOJI, MONTH_NAMES } from "@/lib/utils";
 import { dateKey, monthCells } from "@/lib/calendar-days";
 import MonthGrid from "./MonthGrid";
 import { toast } from "./Toast";
+import { Initials, ROLE_BADGE, ROLE_NAME } from "./person/roles";
 import MergePersonPanel from "./person/MergePersonPanel";
 
 function PersonYearCalendar({ year, daysMap }: { year: number; daysMap: Map<string, string> }) {
@@ -51,45 +52,14 @@ interface Props {
   onOpenMedia?: (mediaId: number) => void;
 }
 
-const ROLE_BADGE: Record<string, string> = {
-  actor: "bg-blue-100 text-blue-700",
-  director: "bg-purple-100 text-purple-700",
-  creator: "bg-indigo-100 text-indigo-700",
-  author: "bg-green-100 text-green-700",
-};
-
-const ROLE_NAME: Record<string, string> = {
-  actor: "Aktor",
-  director: "Reżyser",
-  creator: "Twórca",
-  author: "Autor",
-};
-
 const SCREEN_AND_GAME_ROLES = ["actor", "director", "creator"];
 const BOOK_ROLES = ["author"];
-
-function Initials({ name, size = "sm" }: { name: string; size?: "sm" | "lg" }) {
-  const parts = name.trim().split(/\s+/);
-  const initials =
-    parts.length >= 2
-      ? parts[0][0] + parts[parts.length - 1][0]
-      : parts[0]?.[0] ?? "?";
-  const cls =
-    size === "lg"
-      ? "w-full h-full flex items-center justify-center bg-gray-200 text-gray-600 font-bold text-2xl select-none"
-      : "w-full h-full flex items-center justify-center bg-gray-200 text-gray-500 font-semibold text-xs select-none";
-  return <div className={cls}>{initials.toUpperCase()}</div>;
-}
 
 function formatWatchDates(raw: string | null): string | null {
   if (!raw) return null;
   const dates = raw.split(",").filter(Boolean);
   if (dates.length === 0) return null;
-  const fmt = (d: string) => {
-    const parts = d.trim().split("-");
-    if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
-    return d.trim();
-  };
+  const fmt = (d: string) => formatDate(d.trim());
   if (dates.length === 1) return fmt(dates[0]);
   return `${fmt(dates[dates.length - 1])} – ${fmt(dates[0])}`;
 }
@@ -208,7 +178,7 @@ export default function PersonDetailPage({ personId, onBack, onOpenMedia }: Prop
             // eslint-disable-next-line @next/next/no-img-element
             <img src={person.photo_url} alt={person.name} className="w-full h-full object-cover" />
           ) : (
-            <Initials name={person.name} size="lg" />
+            <Initials name={person.name} className="font-bold text-2xl" />
           )}
         </div>
         <div className="space-y-1">

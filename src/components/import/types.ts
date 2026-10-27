@@ -1,3 +1,5 @@
+import type { TmdbCandidate } from "@/lib/tmdb";
+
 export type ImportType = "media" | "wishlist";
 
 export interface MediaPreviewRow {
@@ -56,12 +58,7 @@ export interface ImportResult {
   message: string;
 }
 
-export interface TmdbCandidate {
-  tmdb_id: number;
-  name: string;
-  first_air_date: string;
-  poster_path: string | null;
-}
+export type { TmdbCandidate };
 
 export type TmdbFetchState =
   | { status: "idle" }
