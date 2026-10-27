@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import CoverImg from "./CoverImg";
-import { MEDIA_TYPE_EMOJI, MONTH_NAMES } from "@/lib/utils";
+import { formatDate, MEDIA_TYPE_EMOJI, MONTH_NAMES } from "@/lib/utils";
 import { dateKey, monthCells } from "@/lib/calendar-days";
 import MonthGrid from "./MonthGrid";
 import { toast } from "./Toast";
@@ -59,11 +59,7 @@ function formatWatchDates(raw: string | null): string | null {
   if (!raw) return null;
   const dates = raw.split(",").filter(Boolean);
   if (dates.length === 0) return null;
-  const fmt = (d: string) => {
-    const parts = d.trim().split("-");
-    if (parts.length === 3) return `${parts[2]}.${parts[1]}.${parts[0]}`;
-    return d.trim();
-  };
+  const fmt = (d: string) => formatDate(d.trim());
   if (dates.length === 1) return fmt(dates[0]);
   return `${fmt(dates[dates.length - 1])} – ${fmt(dates[0])}`;
 }
