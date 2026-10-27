@@ -237,7 +237,7 @@ export default function SeasonsSection({ media, seasons, onEditSeason, onChanged
           <p className="text-xs font-semibold text-gray-700">{newPartLabel}</p>
           <div className="flex gap-2">
             <div className="w-20">
-              <label className="text-xs text-gray-500 block mb-1">Numer</label>
+              <label className="label">Numer</label>
               <input
                 type="number"
                 value={addSeasonForm.season_number}
@@ -246,7 +246,7 @@ export default function SeasonsSection({ media, seasons, onEditSeason, onChanged
               />
             </div>
             <div className="flex-1">
-              <label className="text-xs text-gray-500 block mb-1">Tytuł (opcjonalnie)</label>
+              <label className="label">Tytuł (opcjonalnie)</label>
               <input
                 type="text"
                 value={addSeasonForm.title}
