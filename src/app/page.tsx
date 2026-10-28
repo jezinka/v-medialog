@@ -15,6 +15,9 @@ import SeasonPickerModal from "@/components/item-detail/SeasonPickerModal";
 import { partLabels } from "@/components/item-detail/part-labels";
 import type { MediaData, SeasonRow } from "@/components/item-detail/types";
 
+/** Series and anime: seasons that can be added from the log (games, podcasts etc. also have numbered seasons, but aren't logged here). */
+const isSeries = (mediaType: string) => SCREEN_TYPES.includes(mediaType) && hasSeasonNumbers(mediaType);
+
 interface SeasonPick { media: MediaData; seasons: SeasonRow[]; startDate: string; endDate: string }
 
 function LogContent() {
@@ -74,7 +77,7 @@ function LogContent() {
       if (!mediaRes.ok || !seasonsRes.ok) throw new Error();
       const media = await mediaRes.json() as MediaData;
       const seasons = await seasonsRes.json() as SeasonRow[];
-      if (seasons.length > 1 || hasSeasonNumbers(media.media_type)) {
+      if (seasons.length > 1 || isSeries(media.media_type)) {
         setSeasonPick({ media, seasons, startDate, endDate });
         return;
       }
@@ -185,7 +188,7 @@ function LogContent() {
             setSeasonPick(null);
             void createSessionAndOpen(media.id, startDate, endDate, { seasonId, ...flags });
           }}
-          onAddNew={hasSeasonNumbers(seasonPick.media.media_type) ? (seasonNumber, flags) => {
+          onAddNew={isSeries(seasonPick.media.media_type) ? (seasonNumber, flags) => {
             const { media, startDate, endDate } = seasonPick;
             setSeasonPick(null);
             void addSessionToNewSeason(media.id, seasonNumber, startDate, endDate, flags);
