@@ -153,7 +153,7 @@ export default function Calendar({ year, items: rawItems, title, onDayClick }: P
       }}
     >
       <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {months.map(({ monthIdx, firstDay, days }) => (
           <div key={monthIdx} className="min-w-0">
             <div className="text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
