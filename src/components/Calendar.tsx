@@ -186,13 +186,13 @@ export default function Calendar({ year, items: rawItems, title, onDayClick }: P
                   const byMedia = new Map(mediaOnDay.map((item) => [item.mediaId ?? item.id, item]));
                   const colors = [...byMedia.values()]
                     .sort((x, y) => x.startDate.localeCompare(y.startDate) || x.id - y.id)
-                    .map((item) =>
-                    getItemColor(item.mediaType, itemParityMap.get(item.id) ?? false)
-                  );
+                    .map((item) => getItemColor(item.mediaType, itemParityMap.get(item.id) ?? false));
                   const w = 100 / colors.length;
+                  // A 1px white gap before each stripe but the first, so two stripes of the same colour stay apart
+                  const stops = colors.map((c, i) => `${i ? `white ${i * w}% calc(${i * w}% + 1px), ${c} calc(${i * w}% + 1px)` : `${c} 0%`} ${(i + 1) * w}%`);
                   bgStyle = colors.length === 1
                     ? { backgroundColor: colors[0] }
-                    : { background: `linear-gradient(90deg, ${colors.map((c, i) => `${c} ${i * w}% ${(i + 1) * w}%`).join(", ")})` };
+                    : { background: `linear-gradient(90deg, ${stops.join(", ")})` };
                 }
 
                 // Hover ring via box-shadow (no extra DOM element needed)
