@@ -6,7 +6,7 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
-- Dziennik ma przełącznik „Oś czasu”: rok jako wykres Gantta, w którym każda sesja to pasek od początku do końca, osobno czytanie i ekran. Kliknięcie paska otwiera tytuł.
+- Dziennik ma przełącznik „Oś czasu”: rok jako wykres Gantta, w którym każda sesja to pasek od początku do końca, osobno czytanie i ekran. Sesje jednego tytułu z przerwą do tygodnia łączą się w jeden pasek. Kliknięcie paska otwiera tytuł.
 
 ## 2026-10-28
 

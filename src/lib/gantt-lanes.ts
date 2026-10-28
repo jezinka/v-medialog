@@ -23,3 +23,24 @@ export function packLanes(spans: GanttSpan[]): { lanes: number[]; count: number 
   }
   return { lanes, count: rowEnds.length };
 }
+
+/**
+ * Merges spans of the same key whose gap is at most `maxGap` days into one run,
+ * so a series watched over a few weeks reads as one bar. Runs come back in start order.
+ */
+export function mergeRuns<T extends GanttSpan>(spans: T[], maxGap: number): { key: number; start: number; end: number; members: T[] }[] {
+  const runs: { key: number; start: number; end: number; members: T[] }[] = [];
+  const open = new Map<number, (typeof runs)[number]>();
+  for (const s of [...spans].sort((a, b) => a.start - b.start || a.end - b.end)) {
+    const run = open.get(s.key);
+    if (run && s.start - run.end - 1 <= maxGap) {
+      run.end = Math.max(run.end, s.end);
+      run.members.push(s);
+    } else {
+      const next = { key: s.key, start: s.start, end: s.end, members: [s] };
+      runs.push(next);
+      open.set(s.key, next);
+    }
+  }
+  return runs;
+}

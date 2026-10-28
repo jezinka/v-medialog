@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef } from "react";
 import { BOOK_TYPES, MEDIA_TYPE_HEX, MONTH_NAMES, SCREEN_TYPES } from "@/lib/utils";
-import { packLanes } from "@/lib/gantt-lanes";
+import { mergeRuns, packLanes } from "@/lib/gantt-lanes";
 import { dateKey } from "@/lib/calendar-days";
 
 interface GanttItem {
@@ -16,6 +16,8 @@ interface GanttItem {
 
 const DAY_PX = 12;
 const ROW_PX = 26;
+/** Sessions of a title at most this many days apart show as one bar */
+const MERGE_GAP_DAYS = 7;
 /** Day index of `date` (YYYY-MM-DD) within `year`, 0 = 1 January */
 const dayOf = (year: number, date: string) => Math.round((Date.parse(date) - Date.UTC(year, 0, 1)) / 864e5);
 
@@ -32,11 +34,12 @@ export default function GanttView({ year, items, onOpen }: { year: number; items
   const groups = useMemo(() => GROUPS.map(({ label, types }) => {
     const bars = items
       .filter((i) => types.includes(i.mediaType))
-      .map((i) => ({ item: i, start: Math.max(0, dayOf(year, i.startDate)), end: Math.min(days - 1, dayOf(year, i.endDate ?? i.startDate)) }))
+      .map((i) => ({ item: i, key: i.mediaId, start: Math.max(0, dayOf(year, i.startDate)), end: Math.min(days - 1, dayOf(year, i.endDate ?? i.startDate)) }))
       // Skip year placeholders (whole-year spans) like the calendar does
       .filter((b) => b.end >= b.start && b.end - b.start < 364);
-    const { lanes, count } = packLanes(bars.map((b) => ({ key: b.item.mediaId, start: b.start, end: b.end })));
-    return { label, bars: bars.map((b, i) => ({ ...b, lane: lanes[i] })), count };
+    const runs = mergeRuns(bars, MERGE_GAP_DAYS);
+    const { lanes, count } = packLanes(runs);
+    return { label, bars: runs.map((r, i) => ({ ...r, lane: lanes[i] })), count };
   }), [items, year, days]);
 
   const now = new Date(); // local date, so the line doesn't sit on yesterday just after midnight
@@ -75,15 +78,19 @@ export default function GanttView({ year, items, onOpen }: { year: number; items
             <div key={label} className="relative mt-2">
               <div className="sticky left-0 inline-block text-sm font-semibold text-gray-800 mb-1 bg-white/80 pr-2">{label}</div>
               <div className="relative" style={{ height: Math.max(count, 1) * ROW_PX }}>
-                {bars.map(({ item, start, end, lane }) => {
+                {bars.map(({ members, start, end, lane }) => {
+                  const item = members[0].item;
                   const w = (end - start + 1) * DAY_PX - 1;
-                  const name = item.volumeEpisode ? `${item.title} (${item.volumeEpisode})` : item.title;
+                  const volumes = [...new Set(members.map((m) => m.item.volumeEpisode).filter((v) => v != null))];
+                  const name = volumes.length ? `${item.title} (${volumes.length > 1 ? `${volumes[0]}–${volumes.at(-1)}` : volumes[0]})` : item.title;
+                  const last = members.map((m) => m.item.endDate ?? m.item.startDate).sort().at(-1)!;
+                  const dates = last !== item.startDate ? `${item.startDate} – ${last}` : item.startDate;
                   return (
                     <button
                       key={item.id}
                       onClick={() => onOpen(item.mediaId)}
                       aria-label={name}
-                      title={`${name}\n${item.startDate}${item.endDate && item.endDate !== item.startDate ? ` – ${item.endDate}` : ""}`}
+                      title={`${name}\n${dates}${members.length > 1 ? ` · ${members.length} sesji` : ""}`}
                       className="absolute h-[22px] rounded px-1.5 text-left text-xs leading-[22px] text-white font-medium truncate hover:ring-2 hover:ring-gray-800 focus-visible:ring-2 focus-visible:ring-gray-800 focus-visible:outline-none"
                       style={{ left: start * DAY_PX, top: lane * ROW_PX, width: w, backgroundColor: MEDIA_TYPE_HEX[item.mediaType] ?? "#9333ea" }}
                     >
