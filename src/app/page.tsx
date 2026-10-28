@@ -26,11 +26,12 @@ function LogContent() {
   const searchParams = useSearchParams();
   const yearParam = searchParams.get("year");
   const year = yearParam ? parseInt(yearParam) : new Date().getFullYear();
-  const gantt = searchParams.get("view") === "gantt";
+  // The timeline is the default; the calendar is for entering sessions
+  const gantt = searchParams.get("view") !== "calendar";
 
   const setView = (view: "calendar" | "gantt") => {
     const params = new URLSearchParams(searchParams.toString());
-    if (view === "gantt") params.set("view", "gantt"); else params.delete("view");
+    if (view === "calendar") params.set("view", "calendar"); else params.delete("view");
     router.replace(`?${params}`);
   };
 
@@ -132,7 +133,7 @@ function LogContent() {
       ) : (
         <>
           <div className="flex gap-1" role="group" aria-label="Widok dziennika">
-            {([["calendar", "📅 Kalendarz"], ["gantt", "📊 Oś czasu"]] as const).map(([view, label]) => (
+            {([["gantt", "📊 Oś czasu"], ["calendar", "📅 Kalendarz"]] as const).map(([view, label]) => (
               <button
                 key={view}
                 onClick={() => setView(view)}
@@ -149,7 +150,7 @@ function LogContent() {
             <Calendar
               year={year}
               items={logItems}
-              title="📚 Książki, komiksy · 🎬 filmy, seriale, anime"
+              title="Kliknij dzień albo przeciągnij po kilku, żeby dodać sesję"
               onDayClick={handleDayClick}
             />
           )}
