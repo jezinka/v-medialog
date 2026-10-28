@@ -42,7 +42,7 @@ export default function GanttView({ year, items, onOpen }: { year: number; items
     const runs = mergeRuns(bars, MERGE_GAP_DAYS);
     const { lanes, count } = packLanes(runs);
     return { label, bars: runs.map((r, i) => ({ ...r, lane: lanes[i] })), count };
-  }), [items, year, days]);
+  }).filter((g) => g.bars.length > 0), [items, year, days]);
 
   const now = new Date(); // local date, so the line doesn't sit on yesterday just after midnight
   const today = now.getFullYear() === year ? dayOf(year, dateKey(year, now.getMonth() + 1, now.getDate())) : null;
