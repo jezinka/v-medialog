@@ -6,7 +6,7 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
-- Dziennik ma jeden kalendarz zamiast dwóch: książki, komiksy, filmy i seriale razem. Dzień z kilkoma tytułami jest podzielony na pionowe paski, po jednym na tytuł.
+- Dziennik ma jeden kalendarz zamiast dwóch: książki, komiksy, filmy i seriale razem. Dzień z kilkoma tytułami jest podzielony na poziome paski, po jednym na tytuł.
 
 ## 2026-10-28
 

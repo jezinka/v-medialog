@@ -182,7 +182,7 @@ export default function Calendar({ year, items: rawItems, title, onDayClick }: P
                 if (inRange) {
                   bgStyle = { backgroundColor: "#a855f7" };
                 } else if (hasMedia) {
-                  // One vertical stripe per medium on that day, earliest started on the left so stripes don't jump between days
+                  // One horizontal stripe per medium on that day, earliest started on top so stripes don't jump between days
                   const byMedia = new Map(mediaOnDay.map((item) => [item.mediaId ?? item.id, item]));
                   const colors = [...byMedia.values()]
                     .sort((x, y) => x.startDate.localeCompare(y.startDate) || x.id - y.id)
@@ -192,7 +192,7 @@ export default function Calendar({ year, items: rawItems, title, onDayClick }: P
                   const stops = colors.map((c, i) => `${i ? `white ${i * w}% calc(${i * w}% + 1px), ${c} calc(${i * w}% + 1px)` : `${c} 0%`} ${(i + 1) * w}%`);
                   bgStyle = colors.length === 1
                     ? { backgroundColor: colors[0] }
-                    : { background: `linear-gradient(90deg, ${stops.join(", ")})` };
+                    : { background: `linear-gradient(180deg, ${stops.join(", ")})` };
                 }
 
                 // Hover ring via box-shadow (no extra DOM element needed)
