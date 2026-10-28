@@ -150,7 +150,7 @@ function LogContent() {
             <Calendar
               year={year}
               items={logItems}
-              title="Kliknij dzień albo przeciągnij po kilku, żeby dodać sesję"
+              hint="Kliknij dzień albo przeciągnij po kilku, żeby dodać sesję"
               onDayClick={handleDayClick}
             />
           )}

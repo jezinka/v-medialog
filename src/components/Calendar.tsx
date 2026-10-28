@@ -5,26 +5,24 @@ import { dateKey, getDaysInMonth, getFirstDayOfMonth } from "@/lib/calendar-days
 
 interface MediaItem {
   id: number;
-  mediaId?: number;
   title: string;
   author: string | null;
-  mediaType: string;
   startDate: string;
   endDate: string | null;
   volumeEpisode: string | null;
-  discontinued: boolean | null;
   additionalSessions?: string | null;
 }
 
 interface Props {
   year: number;
   items: MediaItem[];
-  title: string;
+  /** Line above the months, e.g. how to add a session */
+  hint: string;
   onDayClick?: (startDate: string, endDate: string, itemIds: number[]) => void;
 }
 
 /** A plain year calendar for entering sessions: click a day or drag across several; a dot marks days that already have one. */
-export default function Calendar({ year, items: rawItems, title, onDayClick }: Props) {
+export default function Calendar({ year, items: rawItems, hint, onDayClick }: Props) {
   // Skip year-placeholder items (start=YYYY-01-01, end=YYYY-12-31, ~365 days)
   const items = rawItems.filter((item) => daysBetween(item.startDate, item.endDate) < 365);
 
@@ -105,7 +103,7 @@ export default function Calendar({ year, items: rawItems, title, onDayClick }: P
       className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 select-none"
       onMouseLeave={() => { if (isDragging) handleMouseUp(); }}
     >
-      <p className="text-sm text-gray-500 mb-4">{title}</p>
+      <p className="text-sm text-gray-500 mb-4">{hint}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
         {months.map(({ monthIdx, firstDay, days }) => (
           <div key={monthIdx} className="min-w-0">
