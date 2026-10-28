@@ -9,7 +9,7 @@ import PageContainer from "@/components/PageContainer";
 import { BOOK_TYPES, SCREEN_TYPES, hasSeasonNumbers } from "@/lib/utils";
 import { type SessionRow, mapSession } from "@/lib/types";
 import { toast } from "@/components/Toast";
-import { createSessionForMedia } from "@/lib/session-actions";
+import { createDefaultSeason, createSessionForMedia } from "@/lib/session-actions";
 import { sessionToCalendarItem } from "@/lib/session-items";
 import SeasonPickerModal from "@/components/item-detail/SeasonPickerModal";
 import { partLabels } from "@/components/item-detail/part-labels";
@@ -64,21 +64,39 @@ function LogContent() {
     openMedia(mediaId);
   }, [openMedia]);
 
-  /** With several seasons / parts asks which one the session goes to; otherwise adds it to the only one. */
+  /**
+   * Asks which season the session goes to for series (where a new season can also be added)
+   * and for media with several parts; otherwise adds it to the only one.
+   */
   const addSessionForMedia = useCallback(async (mediaId: number, startDate: string, endDate: string) => {
     try {
       const [mediaRes, seasonsRes] = await Promise.all([fetch(`/api/media/${mediaId}`), fetch(`/api/seasons?media_id=${mediaId}`)]);
       if (!mediaRes.ok || !seasonsRes.ok) throw new Error();
+      const media = await mediaRes.json() as MediaData;
       const seasons = await seasonsRes.json() as SeasonRow[];
-      if (seasons.length > 1) {
-        setSeasonPick({ media: await mediaRes.json() as MediaData, seasons, startDate, endDate });
+      if (seasons.length > 1 || hasSeasonNumbers(media.media_type)) {
+        setSeasonPick({ media, seasons, startDate, endDate });
         return;
       }
     } catch {
       toast("Nie udało się pobrać sezonów", "error");
+      openMedia(mediaId);
       return;
     }
     await createSessionAndOpen(mediaId, startDate, endDate);
+  }, [createSessionAndOpen, openMedia]);
+
+  const addSessionToNewSeason = useCallback(async (
+    mediaId: number, seasonNumber: number, startDate: string, endDate: string, flags: { cinema: boolean; withChild: boolean },
+  ) => {
+    let seasonId: number;
+    try {
+      seasonId = await createDefaultSeason(mediaId, seasonNumber);
+    } catch {
+      toast("Nie udało się utworzyć sezonu", "error");
+      return;
+    }
+    await createSessionAndOpen(mediaId, startDate, endDate, { seasonId, ...flags });
   }, [createSessionAndOpen]);
 
   const handleDayClick = useCallback((startDate: string, endDate: string, _mediaType: "book" | "movie", itemIds: number[]) => {
@@ -167,6 +185,11 @@ function LogContent() {
             setSeasonPick(null);
             void createSessionAndOpen(media.id, startDate, endDate, { seasonId, ...flags });
           }}
+          onAddNew={hasSeasonNumbers(seasonPick.media.media_type) ? (seasonNumber, flags) => {
+            const { media, startDate, endDate } = seasonPick;
+            setSeasonPick(null);
+            void addSessionToNewSeason(media.id, seasonNumber, startDate, endDate, flags);
+          } : undefined}
           onClose={() => setSeasonPick(null)}
         />
       )}

@@ -7,9 +7,12 @@ import { partNo, seasonLabel } from "@/lib/part-number";
 import { SEASON_COLORS } from "@/lib/calendar-days";
 import type { SeasonRow } from "./types";
 
-/** Picks the season a new session on `date` goes to, with cinema / with-child flags. */
+/**
+ * Picks the season a new session on `date` goes to, with cinema / with-child flags.
+ * With `onAddNew` it also offers a new season with a chosen number.
+ */
 export default function SeasonPickerModal({
-  date, seasons, coverUrl, mediaType, partLabel, hasSpecials, adding, onPick, onClose,
+  date, seasons, coverUrl, mediaType, partLabel, hasSpecials, adding, onPick, onAddNew, onClose,
 }: {
   date: string;
   seasons: SeasonRow[];
@@ -19,10 +22,16 @@ export default function SeasonPickerModal({
   hasSpecials: boolean;
   adding: boolean;
   onPick: (seasonId: number, flags: { cinema: boolean; withChild: boolean }) => void;
+  onAddNew?: (seasonNumber: number, flags: { cinema: boolean; withChild: boolean }) => void;
   onClose: () => void;
 }) {
   const [cinema, setCinema] = useState(false);
   const [withChild, setWithChild] = useState(false);
+  const usedNumbers = seasons.map((s) => s.season_number).filter((n): n is number => n != null);
+  // Next after the highest number; with no numbered seasons, next after their count
+  const [newNumber, setNewNumber] = useState(String((usedNumbers.length ? Math.max(...usedNumbers) : seasons.length) + 1));
+  const newNo = Number(newNumber);
+  const newNumberValid = Number.isInteger(newNo) && newNo >= 0 && newNumber.trim() !== "" && !usedNumbers.includes(newNo);
 
   return (
     <Modal onClose={onClose} label="Dodaj sesję" className="rounded-xl shadow-xl p-5 max-w-sm w-full space-y-3">
@@ -51,7 +60,7 @@ export default function SeasonPickerModal({
             <span className="text-sm text-gray-700">👶 Z dzieckiem</span>
           </label>
         )}
-        {seasons.length > 1 && (
+        {(seasons.length > 1 || onAddNew) && (
           <p className="text-xs font-medium text-gray-500 pt-1">Wybierz {partLabel.toLowerCase()}:</p>
         )}
         {/* Book parts are picked by cover; so is a movie with one part, which has nothing to list */}
@@ -103,6 +112,28 @@ export default function SeasonPickerModal({
               </button>
             ))}
           </div>
+        )}
+        {onAddNew && (
+          <form
+            onSubmit={(e) => { e.preventDefault(); if (newNumberValid) onAddNew(newNo, { cinema, withChild }); }}
+            className="flex items-center gap-2"
+          >
+            <input
+              type="number"
+              min={0}
+              value={newNumber}
+              onChange={(e) => setNewNumber(e.target.value)}
+              aria-label={`Numer: ${partLabel.toLowerCase()}`}
+              className="input w-16 px-2 py-1.5 text-sm"
+            />
+            <button
+              type="submit"
+              disabled={adding || !newNumberValid}
+              className="flex-1 text-left px-3 py-1.5 rounded-lg border border-dashed border-gray-300 text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+            >
+              + {partLabel} {newNumber}{usedNumbers.includes(newNo) ? " już jest" : ""}
+            </button>
+          </form>
         )}
         <button
           onClick={onClose}

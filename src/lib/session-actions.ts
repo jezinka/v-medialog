@@ -65,7 +65,7 @@ export async function addDaySessions(
   return added;
 }
 
-/** Creates the media's first season (number `seasonNumber`, or none for unnumbered types) and returns its id. */
+/** Creates a season of the media (number `seasonNumber`, or none for unnumbered types) and returns its id. */
 export async function createDefaultSeason(mediaId: number, seasonNumber: number | null): Promise<number> {
   const res = await fetch("/api/seasons", {
     method: "POST",
