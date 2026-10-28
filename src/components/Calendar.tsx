@@ -1,12 +1,13 @@
 "use client";
 import { useMemo, useState, useCallback } from "react";
-import { DAY_LABELS, MONTH_NAMES, isDateInRange, daysBetween } from "@/lib/utils";
+import { BOOK_TYPES, DAY_LABELS, MONTH_NAMES, isDateInRange, daysBetween } from "@/lib/utils";
 import { dateKey, getDaysInMonth, getFirstDayOfMonth } from "@/lib/calendar-days";
 
 interface MediaItem {
   id: number;
   title: string;
   author: string | null;
+  mediaType: string;
   startDate: string;
   endDate: string | null;
   volumeEpisode: string | null;
@@ -21,7 +22,7 @@ interface Props {
   onDayClick?: (startDate: string, endDate: string, itemIds: number[]) => void;
 }
 
-/** A plain year calendar for entering sessions: click a day or drag across several; a dot marks days that already have one. */
+/** A plain year calendar for entering sessions: click a day or drag across several; a purple dot marks days with reading, an orange one days with watching. */
 export default function Calendar({ year, items: rawItems, hint, onDayClick }: Props) {
   // Skip year-placeholder items (start=YYYY-01-01, end=YYYY-12-31, ~365 days)
   const items = rawItems.filter((item) => daysBetween(item.startDate, item.endDate) < 365);
@@ -120,7 +121,8 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
                 <div key={`empty-${i}`} />
               ))}
               {days.map(({ day, dateStr, mediaOnDay }) => {
-                const hasMedia = mediaOnDay.length > 0;
+                const read = mediaOnDay.some((m) => BOOK_TYPES.includes(m.mediaType));
+                const watched = mediaOnDay.some((m) => !BOOK_TYPES.includes(m.mediaType));
                 const inRange = isInDragRange(dateStr);
                 const tooltip = mediaOnDay.map((m) => {
                   let label = m.title;
@@ -143,7 +145,10 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
                     ].join(" ")}
                   >
                     {day}
-                    <span className={`w-1 h-1 rounded-full ${hasMedia ? (inRange ? "bg-white" : "bg-gray-400") : "bg-transparent"}`} />
+                    <span className="flex gap-0.5 h-1">
+                      {read && <span className={`w-1 h-1 rounded-full ${inRange ? "bg-white" : "bg-purple-500"}`} />}
+                      {watched && <span className={`w-1 h-1 rounded-full ${inRange ? "bg-white" : "bg-orange-500"}`} />}
+                    </span>
                   </div>
                 );
               })}
