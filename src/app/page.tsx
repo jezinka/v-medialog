@@ -11,6 +11,11 @@ import { type SessionRow, mapSession } from "@/lib/types";
 import { toast } from "@/components/Toast";
 import { createSessionForMedia } from "@/lib/session-actions";
 import { sessionToCalendarItem } from "@/lib/session-items";
+import SeasonPickerModal from "@/components/item-detail/SeasonPickerModal";
+import { partLabels } from "@/components/item-detail/part-labels";
+import type { MediaData, SeasonRow } from "@/components/item-detail/types";
+
+interface SeasonPick { media: MediaData; seasons: SeasonRow[]; startDate: string; endDate: string }
 
 function LogContent() {
   const router = useRouter();
@@ -22,6 +27,7 @@ function LogContent() {
   const [loading, setLoading] = useState(true);
   const [pickerState, setPickerState] = useState<{ startDate: string; itemIds: number[] } | null>(null);
   const [addModal, setAddModal] = useState<{ startDate?: string; endDate?: string } | null>(null);
+  const [seasonPick, setSeasonPick] = useState<SeasonPick | null>(null);
 
   const openMedia = useCallback((mediaId: number) => router.push(`/media/${mediaId}`), [router]);
 
@@ -46,15 +52,34 @@ function LogContent() {
   const bookItems = calendarItems.filter((i) => BOOK_TYPES.includes(i.mediaType));
   const screenItems = calendarItems.filter((i) => SCREEN_TYPES.includes(i.mediaType));
 
-  const createSessionAndOpen = useCallback(async (mediaId: number, startDate: string, endDate: string) => {
+  const createSessionAndOpen = useCallback(async (
+    mediaId: number, startDate: string, endDate: string, pick?: Parameters<typeof createSessionForMedia>[3],
+  ) => {
     try {
-      await createSessionForMedia(mediaId, startDate, endDate); // the server drops that year's placeholder
+      await createSessionForMedia(mediaId, startDate, endDate, pick); // the server drops that year's placeholder
       toast("Sesja dodana ✓", "success");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Błąd tworzenia sesji", "error");
     }
     openMedia(mediaId);
   }, [openMedia]);
+
+  /** With several seasons / parts asks which one the session goes to; otherwise adds it to the only one. */
+  const addSessionForMedia = useCallback(async (mediaId: number, startDate: string, endDate: string) => {
+    try {
+      const [mediaRes, seasonsRes] = await Promise.all([fetch(`/api/media/${mediaId}`), fetch(`/api/seasons?media_id=${mediaId}`)]);
+      if (!mediaRes.ok || !seasonsRes.ok) throw new Error();
+      const seasons = await seasonsRes.json() as SeasonRow[];
+      if (seasons.length > 1) {
+        setSeasonPick({ media: await mediaRes.json() as MediaData, seasons, startDate, endDate });
+        return;
+      }
+    } catch {
+      toast("Nie udało się pobrać sezonów", "error");
+      return;
+    }
+    await createSessionAndOpen(mediaId, startDate, endDate);
+  }, [createSessionAndOpen]);
 
   const handleDayClick = useCallback((startDate: string, endDate: string, _mediaType: "book" | "movie", itemIds: number[]) => {
     if (itemIds.length === 1) {
@@ -123,8 +148,26 @@ function LogContent() {
           initialEndDate={addModal.endDate}
           onSelect={(mediaId, startDate, endDate) => {
             setAddModal(null);
-            if (startDate && endDate) void createSessionAndOpen(mediaId, startDate, endDate);
+            if (startDate && endDate) void addSessionForMedia(mediaId, startDate, endDate);
           }}
+        />
+      )}
+
+      {seasonPick && (
+        <SeasonPickerModal
+          date={seasonPick.endDate !== seasonPick.startDate ? `${seasonPick.startDate} – ${seasonPick.endDate}` : seasonPick.startDate}
+          seasons={seasonPick.seasons}
+          coverUrl={seasonPick.media.cover_url}
+          mediaType={seasonPick.media.media_type}
+          partLabel={partLabels(seasonPick.media.media_type).partLabel}
+          hasSpecials={partLabels(seasonPick.media.media_type).hasSpecials}
+          adding={false}
+          onPick={(seasonId, flags) => {
+            const { media, startDate, endDate } = seasonPick;
+            setSeasonPick(null);
+            void createSessionAndOpen(media.id, startDate, endDate, { seasonId, ...flags });
+          }}
+          onClose={() => setSeasonPick(null)}
         />
       )}
     </PageContainer>

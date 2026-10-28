@@ -6,6 +6,8 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- Przy dodawaniu sesji z dziennika serialu (lub książki) z kilkoma sezonami (częściami) pojawia się wybór sezonu, a nie zawsze pierwszy. Można też zaznaczyć „w kinie” i „z dzieckiem”.
+
 ## 2026-10-27
 
 - Aplikacja używa systemowej czcionki zamiast Ariala. Pola formularzy mają jednolite obramowanie i niebieską obwódkę po kliknięciu (także te, które dotąd nie miały żadnej), a niebieskie przyciski jeden wygląd. Wskaźniki ładowania i etykiety pól w oknach edycji też wyglądają wszędzie tak samo.
