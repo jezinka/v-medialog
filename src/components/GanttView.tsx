@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { BOOK_TYPES, MEDIA_TYPE_HEX, MONTH_NAMES, SCREEN_TYPES } from "@/lib/utils";
 import { packLanes } from "@/lib/gantt-lanes";
+import { dateKey } from "@/lib/calendar-days";
 
 interface GanttItem {
   id: number;
@@ -38,8 +39,8 @@ export default function GanttView({ year, items, onOpen }: { year: number; items
     return { label, bars: bars.map((b, i) => ({ ...b, lane: lanes[i] })), count };
   }), [items, year, days]);
 
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const today = todayStr.startsWith(`${year}-`) ? dayOf(year, todayStr) : null;
+  const now = new Date(); // local date, so the line doesn't sit on yesterday just after midnight
+  const today = now.getFullYear() === year ? dayOf(year, dateKey(year, now.getMonth() + 1, now.getDate())) : null;
 
   // Open the current year with today near the right edge, the weeks before it in view
   useEffect(() => {
@@ -81,8 +82,9 @@ export default function GanttView({ year, items, onOpen }: { year: number; items
                     <button
                       key={item.id}
                       onClick={() => onOpen(item.mediaId)}
+                      aria-label={name}
                       title={`${name}\n${item.startDate}${item.endDate && item.endDate !== item.startDate ? ` – ${item.endDate}` : ""}`}
-                      className="absolute h-[22px] rounded px-1.5 text-left text-xs leading-[22px] text-white font-medium truncate hover:ring-2 hover:ring-gray-800"
+                      className="absolute h-[22px] rounded px-1.5 text-left text-xs leading-[22px] text-white font-medium truncate hover:ring-2 hover:ring-gray-800 focus-visible:ring-2 focus-visible:ring-gray-800 focus-visible:outline-none"
                       style={{ left: start * DAY_PX, top: lane * ROW_PX, width: w, backgroundColor: MEDIA_TYPE_HEX[item.mediaType] ?? "#9333ea" }}
                     >
                       {w > 40 ? name : ""}
