@@ -37,6 +37,15 @@ export default function GanttView({ year, items, onOpen }: { year: number; items
   const days = dayOf(year, `${year + 1}-01-01`);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [preview, setPreview] = useState<Preview | null>(null);
+  const open = preview != null;
+
+  // Re-measure the card when the page scrolls under it (the timeline's own scroll does this via onScroll)
+  useEffect(() => {
+    if (!open) return;
+    const follow = () => setPreview((p) => p && { ...p });
+    window.addEventListener("scroll", follow, { passive: true });
+    return () => window.removeEventListener("scroll", follow);
+  }, [open]);
 
   const groups = useMemo(() => GROUPS.map(({ label, has }) => {
     const bars = items
@@ -106,7 +115,7 @@ export default function GanttView({ year, items, onOpen }: { year: number; items
                       onFocus={(e) => show(e.currentTarget)}
                       onMouseLeave={() => setPreview(null)}
                       onBlur={() => setPreview(null)}
-                      aria-label={`${name}, ${dates}`}
+                      aria-label={`${name}, ${dates}${members.length > 1 ? `, ${members.length} sesji` : ""}`}
                       className="absolute h-[22px] rounded px-1.5 text-left text-xs leading-[22px] text-white font-medium truncate hover:ring-2 hover:ring-gray-800 focus-visible:ring-2 focus-visible:ring-gray-800 focus-visible:outline-none"
                       style={{ left: start * DAY_PX, top: lane * ROW_PX, width: w, backgroundColor: MEDIA_TYPE_HEX[item.mediaType] ?? "#9333ea" }}
                     >
