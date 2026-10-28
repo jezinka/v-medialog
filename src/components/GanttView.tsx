@@ -12,6 +12,7 @@ interface GanttItem {
   startDate: string;
   endDate: string | null;
   volumeEpisode: string | null;
+  withChild: boolean | number;
 }
 
 const DAY_PX = 12;
@@ -21,19 +22,20 @@ const MERGE_GAP_DAYS = 7;
 /** Day index of `date` (YYYY-MM-DD) within `year`, 0 = 1 January */
 const dayOf = (year: number, date: string) => Math.round((Date.parse(date) - Date.UTC(year, 0, 1)) / 864e5);
 
-const GROUPS = [
-  { label: "📚 Czytanie", types: BOOK_TYPES },
-  { label: "🎬 Ekran", types: SCREEN_TYPES },
+const GROUPS: { label: string; has: (i: GanttItem) => boolean }[] = [
+  { label: "📚 Czytanie", has: (i) => BOOK_TYPES.includes(i.mediaType) },
+  { label: "🎬 Ekran", has: (i) => SCREEN_TYPES.includes(i.mediaType) && !i.withChild },
+  { label: "👶 Z dzieckiem", has: (i) => SCREEN_TYPES.includes(i.mediaType) && !!i.withChild },
 ];
 
-/** The year's sessions as bars on a time axis, books and screen in separate bands. */
+/** The year's sessions as bars on a time axis, books, screen and screen with the child in separate bands. */
 export default function GanttView({ year, items, onOpen }: { year: number; items: GanttItem[]; onOpen: (mediaId: number) => void }) {
   const days = dayOf(year, `${year + 1}-01-01`);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const groups = useMemo(() => GROUPS.map(({ label, types }) => {
+  const groups = useMemo(() => GROUPS.map(({ label, has }) => {
     const bars = items
-      .filter((i) => types.includes(i.mediaType))
+      .filter(has)
       .map((i) => ({ item: i, key: i.mediaId, start: Math.max(0, dayOf(year, i.startDate)), end: Math.min(days - 1, dayOf(year, i.endDate ?? i.startDate)) }))
       // Skip year placeholders (whole-year spans) like the calendar does
       .filter((b) => b.end >= b.start && b.end - b.start < 364);
