@@ -20,8 +20,7 @@ interface Props {
   year: number;
   items: MediaItem[];
   title: string;
-  onDayClick?: (startDate: string, endDate: string, mediaType: "book" | "movie", itemIds: number[]) => void;
-  calendarType?: "book" | "movie";
+  onDayClick?: (startDate: string, endDate: string, itemIds: number[]) => void;
 }
 
 /** Blend hex color toward white by `amount` (0=unchanged, 1=white) */
@@ -37,7 +36,7 @@ function getItemColor(mediaType: string, isAlt: boolean): string {
   return isAlt ? lightenColor(hex, 0.42) : hex;
 }
 
-export default function Calendar({ year, items: rawItems, title, onDayClick, calendarType = "book" }: Props) {
+export default function Calendar({ year, items: rawItems, title, onDayClick }: Props) {
   // Skip year-placeholder items (start=YYYY-01-01, end=YYYY-12-31, ~365 days)
   const items = rawItems.filter((item) => daysBetween(item.startDate, item.endDate) < 365);
 
@@ -142,8 +141,8 @@ export default function Calendar({ year, items: rawItems, title, onDayClick, cal
     setDragStart(null);
     setDragEnd(null);
     const itemIds = start === finish ? (dayItemIdsMap.get(start) ?? []) : [];
-    onDayClick(start, finish, calendarType, itemIds);
-  }, [isDragging, dragStart, dragEnd, onDayClick, calendarType, dayItemIdsMap]);
+    onDayClick(start, finish, itemIds);
+  }, [isDragging, dragStart, dragEnd, onDayClick, dayItemIdsMap]);
 
   return (
     <div
@@ -154,7 +153,7 @@ export default function Calendar({ year, items: rawItems, title, onDayClick, cal
       }}
     >
       <h3 className="text-lg font-semibold text-gray-800 mb-4">{title}</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
         {months.map(({ monthIdx, firstDay, days }) => (
           <div key={monthIdx} className="min-w-0">
             <div className="text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wide">
@@ -183,13 +182,17 @@ export default function Calendar({ year, items: rawItems, title, onDayClick, cal
                 if (inRange) {
                   bgStyle = { backgroundColor: "#a855f7" };
                 } else if (hasMedia) {
-                  const colors = mediaOnDay.map((item) =>
+                  // One vertical stripe per medium on that day, earliest started on the left so stripes don't jump between days
+                  const byMedia = new Map(mediaOnDay.map((item) => [item.mediaId ?? item.id, item]));
+                  const colors = [...byMedia.values()]
+                    .sort((x, y) => x.startDate.localeCompare(y.startDate) || x.id - y.id)
+                    .map((item) =>
                     getItemColor(item.mediaType, itemParityMap.get(item.id) ?? false)
                   );
-                  const uniqueColors = [...new Set(colors)];
-                  bgStyle = uniqueColors.length === 1
-                    ? { backgroundColor: uniqueColors[0] }
-                    : { background: `linear-gradient(135deg, ${uniqueColors.join(", ")})` };
+                  const w = 100 / colors.length;
+                  bgStyle = colors.length === 1
+                    ? { backgroundColor: colors[0] }
+                    : { background: `linear-gradient(90deg, ${colors.map((c, i) => `${c} ${i * w}% ${(i + 1) * w}%`).join(", ")})` };
                 }
 
                 // Hover ring via box-shadow (no extra DOM element needed)

@@ -52,8 +52,7 @@ function LogContent() {
 
   const calendarItems = items.map(sessionToCalendarItem);
 
-  const bookItems = calendarItems.filter((i) => BOOK_TYPES.includes(i.mediaType));
-  const screenItems = calendarItems.filter((i) => SCREEN_TYPES.includes(i.mediaType));
+  const logItems = calendarItems.filter((i) => BOOK_TYPES.includes(i.mediaType) || SCREEN_TYPES.includes(i.mediaType));
 
   const createSessionAndOpen = useCallback(async (
     mediaId: number, startDate: string, endDate: string, pick?: Parameters<typeof createSessionForMedia>[3],
@@ -102,7 +101,7 @@ function LogContent() {
     await createSessionAndOpen(mediaId, startDate, endDate, { seasonId, ...flags });
   }, [createSessionAndOpen]);
 
-  const handleDayClick = useCallback((startDate: string, endDate: string, _mediaType: "book" | "movie", itemIds: number[]) => {
+  const handleDayClick = useCallback((startDate: string, endDate: string, itemIds: number[]) => {
     if (itemIds.length === 1) {
       const session = items.find((s) => s.id === itemIds[0]);
       if (session) { openMedia(session.mediaId); return; }
@@ -123,24 +122,12 @@ function LogContent() {
           <div className="spinner" />
         </div>
       ) : (
-        <>
-          <div className="grid lg:grid-cols-2 gap-6">
-            <Calendar
-              year={year}
-              items={bookItems}
-              title="📚 Książki i Komiksy"
-              calendarType="book"
-              onDayClick={handleDayClick}
-            />
-            <Calendar
-              year={year}
-              items={screenItems}
-              title="🎬 Filmy, Seriale, Anime"
-              calendarType="movie"
-              onDayClick={handleDayClick}
-            />
-          </div>
-        </>
+        <Calendar
+          year={year}
+          items={logItems}
+          title="📚 Książki, komiksy · 🎬 filmy, seriale, anime"
+          onDayClick={handleDayClick}
+        />
       )}
 
       {pickerState && (
