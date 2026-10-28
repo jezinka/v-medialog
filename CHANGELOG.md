@@ -6,9 +6,10 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+## 2026-10-28
+
 - Dziennik ma jeden kalendarz zamiast dwóch: książki, komiksy, filmy i seriale razem. Dzień z kilkoma tytułami jest podzielony na poziome paski, po jednym na tytuł.
 
-## 2026-10-28
 
 - Przy dodawaniu sesji z dziennika serialu (lub książki) z kilkoma sezonami (częściami) pojawia się wybór sezonu, a nie zawsze pierwszy. Można też zaznaczyć „w kinie” i „z dzieckiem”. Przy serialach można tam od razu dodać nowy sezon o wybranym numerze.
 
