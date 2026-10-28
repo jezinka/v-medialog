@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import CoverImg from "./CoverImg";
 import { BOOK_TYPES, MEDIA_TYPE_HEX, MONTH_NAMES, SCREEN_TYPES } from "@/lib/utils";
 import { mergeRuns, packLanes } from "@/lib/gantt-lanes";
 import { dateKey } from "@/lib/calendar-days";
@@ -13,7 +14,10 @@ interface GanttItem {
   endDate: string | null;
   volumeEpisode: string | null;
   withChild: boolean | number;
+  coverUrl: string | null;
 }
+
+interface Preview { name: string; dates: string; count: number; cover: string | null; bar: HTMLElement }
 
 const DAY_PX = 12;
 const ROW_PX = 26;
@@ -32,6 +36,7 @@ const GROUPS: { label: string; has: (i: GanttItem) => boolean }[] = [
 export default function GanttView({ year, items, onOpen }: { year: number; items: GanttItem[]; onOpen: (mediaId: number) => void }) {
   const days = dayOf(year, `${year + 1}-01-01`);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [preview, setPreview] = useState<Preview | null>(null);
 
   const groups = useMemo(() => GROUPS.map(({ label, has }) => {
     const bars = items
@@ -60,7 +65,7 @@ export default function GanttView({ year, items, onOpen }: { year: number; items
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-      <div ref={scrollRef} className="overflow-x-auto">
+      <div ref={scrollRef} className="overflow-x-auto" onScroll={() => setPreview((p) => p && { ...p })}>
         <div className="relative" style={{ width }}>
           {saturdays.map((d) => (
             <div key={d} className="absolute top-0 bottom-0 bg-gray-50" style={{ left: d * DAY_PX, width: 2 * DAY_PX }} />
@@ -90,12 +95,18 @@ export default function GanttView({ year, items, onOpen }: { year: number; items
                   const name = volumes.length ? `${item.title} (${seasons})` : item.title;
                   const last = members.map((m) => m.item.endDate ?? m.item.startDate).sort().at(-1)!;
                   const dates = last !== item.startDate ? `${item.startDate} – ${last}` : item.startDate;
+                  // The latest session's cover: a later season's one when a run spans seasons
+                  const cover = members.map((m) => m.item.coverUrl).filter((c) => c != null).at(-1) ?? null;
+                  const show = (el: HTMLElement) => setPreview({ name, dates, count: members.length, cover, bar: el });
                   return (
                     <button
                       key={item.id}
                       onClick={() => onOpen(item.mediaId)}
-                      aria-label={name}
-                      title={`${name}\n${dates}${members.length > 1 ? ` · ${members.length} sesji` : ""}`}
+                      onMouseEnter={(e) => show(e.currentTarget)}
+                      onFocus={(e) => show(e.currentTarget)}
+                      onMouseLeave={() => setPreview(null)}
+                      onBlur={() => setPreview(null)}
+                      aria-label={`${name}, ${dates}`}
                       className="absolute h-[22px] rounded px-1.5 text-left text-xs leading-[22px] text-white font-medium truncate hover:ring-2 hover:ring-gray-800 focus-visible:ring-2 focus-visible:ring-gray-800 focus-visible:outline-none"
                       style={{ left: start * DAY_PX, top: lane * ROW_PX, width: w, backgroundColor: MEDIA_TYPE_HEX[item.mediaType] ?? "#9333ea" }}
                     >
@@ -107,6 +118,36 @@ export default function GanttView({ year, items, onOpen }: { year: number; items
             </div>
           ))}
         </div>
+      </div>
+      {preview && <PreviewCard preview={preview} />}
+    </div>
+  );
+}
+
+const CARD_W = 240;
+const CARD_H = 112;
+
+/**
+ * Cover, title and dates of the hovered or focused bar, below it, or above when near the window's bottom.
+ * Measured on each render, so it follows the bar when the timeline scrolls (e.g. to a bar focused by keyboard).
+ */
+function PreviewCard({ preview: { name, dates, count, cover, bar } }: { preview: Preview }) {
+  const rect = bar.getBoundingClientRect();
+  const left = Math.min(Math.max(8, rect.left), window.innerWidth - CARD_W - 8);
+  const top = rect.bottom + 6 + CARD_H > window.innerHeight ? rect.top - 6 - CARD_H : rect.bottom + 6;
+  return (
+    <div
+      role="tooltip"
+      className="fixed z-40 flex gap-3 p-2 bg-white rounded-lg shadow-lg border border-gray-200 pointer-events-none"
+      style={{ left, top, width: CARD_W, height: CARD_H }}
+    >
+      <div className="relative w-16 h-24 shrink-0 rounded overflow-hidden bg-gray-100">
+        {cover && <CoverImg src={cover} alt="" fill sizes="64px" className="object-cover" />}
+      </div>
+      <div className="min-w-0 text-xs">
+        <p className="font-semibold text-gray-900 line-clamp-3">{name}</p>
+        <p className="text-gray-500 mt-1">{dates}</p>
+        {count > 1 && <p className="text-gray-400">{count} sesji</p>}
       </div>
     </div>
   );
