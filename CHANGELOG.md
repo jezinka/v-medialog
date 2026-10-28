@@ -6,6 +6,8 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- Większe kafelki dni w kalendarzu dziennika: 4 miesiące w rzędzie zamiast 6.
+
 ## 2026-10-28
 
 - Dziennik ma jeden kalendarz zamiast dwóch: książki, komiksy, filmy i seriale razem. Dzień z kilkoma tytułami jest podzielony na poziome paski, po jednym na tytuł.
