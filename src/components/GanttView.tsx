@@ -81,8 +81,11 @@ export default function GanttView({ year, items, onOpen }: { year: number; items
                 {bars.map(({ members, start, end, lane }) => {
                   const item = members[0].item;
                   const w = (end - start + 1) * DAY_PX - 1;
-                  const volumes = [...new Set(members.map((m) => m.item.volumeEpisode).filter((v) => v != null))];
-                  const name = volumes.length ? `${item.title} (${volumes.length > 1 ? `${volumes[0]}–${volumes.at(-1)}` : volumes[0]})` : item.title;
+                  const volumes = [...new Set(members.map((m) => m.item.volumeEpisode).filter((v) => v != null))].sort((x, y) => Number(x) - Number(y));
+                  // "1–3" only for consecutive seasons, otherwise list them
+                  const consecutive = volumes.every((v, i) => i === 0 || Number(v) === Number(volumes[i - 1]) + 1);
+                  const seasons = volumes.length > 2 && consecutive ? `${volumes[0]}–${volumes.at(-1)}` : volumes.join(", ");
+                  const name = volumes.length ? `${item.title} (${seasons})` : item.title;
                   const last = members.map((m) => m.item.endDate ?? m.item.startDate).sort().at(-1)!;
                   const dates = last !== item.startDate ? `${item.startDate} – ${last}` : item.startDate;
                   return (
