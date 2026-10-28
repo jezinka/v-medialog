@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Calendar from "@/components/Calendar";
+import GanttView from "@/components/GanttView";
 import AddMediaModal from "@/components/AddMediaModal";
 import Modal from "@/components/Modal";
 import PageContainer from "@/components/PageContainer";
@@ -25,6 +26,13 @@ function LogContent() {
   const searchParams = useSearchParams();
   const yearParam = searchParams.get("year");
   const year = yearParam ? parseInt(yearParam) : new Date().getFullYear();
+  const gantt = searchParams.get("view") === "gantt";
+
+  const setView = (view: "calendar" | "gantt") => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (view === "gantt") params.set("view", "gantt"); else params.delete("view");
+    router.replace(`?${params}`);
+  };
 
   const [items, setItems] = useState<SessionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -122,12 +130,30 @@ function LogContent() {
           <div className="spinner" />
         </div>
       ) : (
-        <Calendar
-          year={year}
-          items={logItems}
-          title="📚 Książki, komiksy · 🎬 filmy, seriale, anime"
-          onDayClick={handleDayClick}
-        />
+        <>
+          <div className="flex gap-1" role="group" aria-label="Widok dziennika">
+            {([["calendar", "📅 Kalendarz"], ["gantt", "📊 Oś czasu"]] as const).map(([view, label]) => (
+              <button
+                key={view}
+                onClick={() => setView(view)}
+                aria-pressed={gantt === (view === "gantt")}
+                className="px-3 py-1.5 rounded-lg text-sm border border-gray-200 aria-pressed:bg-gray-900 aria-pressed:text-white aria-pressed:border-gray-900 hover:bg-gray-50 aria-pressed:hover:bg-gray-900"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {gantt ? (
+            <GanttView year={year} items={logItems} onOpen={openMedia} />
+          ) : (
+            <Calendar
+              year={year}
+              items={logItems}
+              title="📚 Książki, komiksy · 🎬 filmy, seriale, anime"
+              onDayClick={handleDayClick}
+            />
+          )}
+        </>
       )}
 
       {pickerState && (
