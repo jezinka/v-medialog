@@ -6,9 +6,10 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+## 2026-10-29
+
 - Podświetlenie po najechaniu na dzień w kalendarzu ma osobny kolor dla każdego tytułu z tego dnia (dni z kilkoma tytułami dzielą się na paski), a nad miesiącami pojawia się legenda kolorów z tytułami.
 
-## 2026-10-29
 
 - W kalendarzu dziennika najechanie na dzień znów podświetla wszystkie dni tytułów z tego dnia (także innych sezonów).
 
