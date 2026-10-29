@@ -6,6 +6,8 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- W kalendarzu dziennika najechanie na dzień znów podświetla wszystkie dni tytułów z tego dnia (także innych sezonów).
+
 ## 2026-10-29
 
 - Dziennik otwiera się na osi czasu: rok jako wykres Gantta, w którym każda sesja to pasek od początku do końca, osobno czytanie, ekran i oglądanie z dzieckiem. Sesje jednego tytułu z przerwą do tygodnia łączą się w jeden pasek. Po najechaniu na pasek widać okładkę, daty i liczbę sesji, a kliknięcie otwiera tytuł. Kalendarz (przełącznik obok) służy już tylko do dodawania sesji: jasne dni z fioletową kropką przy czytaniu i pomarańczową przy oglądaniu, bez kolorowych pasków.
