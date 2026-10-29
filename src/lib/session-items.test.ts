@@ -19,3 +19,8 @@ test("calendar item shows the season number only for numbered types", () => {
   assert.equal(sessionToCalendarItem(row("anime", 3)).volumeEpisode, "3");
   assert.equal(sessionToCalendarItem(row("series", null)).volumeEpisode, null);
 });
+
+test("calendar item takes the season's cover, else the title's", () => {
+  assert.equal(sessionToCalendarItem({ ...row("series", 1), seasonCoverUrl: "s.jpg", mediaCoverUrl: "m.jpg" }).coverUrl, "s.jpg");
+  assert.equal(sessionToCalendarItem({ ...row("series", 1), mediaCoverUrl: "m.jpg" }).coverUrl, "m.jpg");
+});

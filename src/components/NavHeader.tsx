@@ -45,6 +45,12 @@ export default function NavHeader() {
   // This month's season premieres, shown in the bell until dismissed
   const [premieres, setPremieres] = useState<{ month: string; count: number } | null>(null);
   const bellRef = useRef<HTMLDivElement>(null);
+  // The oldest year with data: the switcher stops there
+  const [firstYear, setFirstYear] = useState<number | null>(null);
+  useEffect(() => {
+    fetch("/api/sessions/first-year").then((r) => r.ok ? r.json() : null)
+      .then((d: { year: number | null } | null) => setFirstYear(d?.year ?? null)).catch(() => {});
+  }, []);
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -167,7 +173,9 @@ export default function NavHeader() {
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setYear(year - 1)}
-                  className="w-8 h-8 flex items-center justify-center bg-white border border-gray-100 shadow rounded-xl hover:shadow-md transition-all text-gray-600"
+                  disabled={firstYear != null && year <= firstYear}
+                  aria-label="Poprzedni rok"
+                  className="w-8 h-8 flex items-center justify-center bg-white border border-gray-100 shadow rounded-xl hover:shadow-md transition-all text-gray-600 disabled:opacity-30 disabled:shadow-none disabled:cursor-default"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -176,6 +184,7 @@ export default function NavHeader() {
                 <span className="text-gray-900 font-semibold text-sm min-w-[3.5rem] text-center">{year}</span>
                 <button
                   onClick={() => setYear(year + 1)}
+                  aria-label="Następny rok"
                   className="w-8 h-8 flex items-center justify-center bg-white border border-gray-100 shadow rounded-xl hover:shadow-md transition-all text-gray-600"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

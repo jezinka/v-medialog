@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Calendar from "@/components/Calendar";
+import GanttView from "@/components/GanttView";
 import AddMediaModal from "@/components/AddMediaModal";
 import Modal from "@/components/Modal";
 import PageContainer from "@/components/PageContainer";
@@ -25,10 +26,18 @@ function LogContent() {
   const searchParams = useSearchParams();
   const yearParam = searchParams.get("year");
   const year = yearParam ? parseInt(yearParam) : new Date().getFullYear();
+  // The timeline is the default; the calendar is for entering sessions
+  const gantt = searchParams.get("view") !== "calendar";
+
+  const setView = (view: "calendar" | "gantt") => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (view === "calendar") params.set("view", "calendar"); else params.delete("view");
+    router.replace(`?${params}`);
+  };
 
   const [items, setItems] = useState<SessionRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [pickerState, setPickerState] = useState<{ startDate: string; itemIds: number[] } | null>(null);
+  const [pickerState, setPickerState] = useState<{ day: string; itemIds: number[] } | null>(null);
   const [addModal, setAddModal] = useState<{ startDate?: string; endDate?: string } | null>(null);
   const [seasonPick, setSeasonPick] = useState<SeasonPick | null>(null);
 
@@ -102,18 +111,14 @@ function LogContent() {
   }, [createSessionAndOpen]);
 
   const handleDayClick = useCallback((startDate: string, endDate: string, itemIds: number[]) => {
-    if (itemIds.length === 1) {
-      const session = items.find((s) => s.id === itemIds[0]);
-      if (session) { openMedia(session.mediaId); return; }
-    }
-    if (itemIds.length > 1) {
-      const sd = items.find((s) => s.id === itemIds[0])?.startDate ?? startDate;
-      setPickerState({ startDate: sd, itemIds });
+    // A filled day asks which session to edit, or offers to add another one on that day
+    if (itemIds.length > 0) {
+      setPickerState({ day: startDate, itemIds });
       return;
     }
     // Empty day — open add modal with pre-filled dates
     setAddModal({ startDate, endDate });
-  }, [items, openMedia]);
+  }, []);
 
   return (
     <PageContainer className="space-y-6">
@@ -122,18 +127,36 @@ function LogContent() {
           <div className="spinner" />
         </div>
       ) : (
-        <Calendar
-          year={year}
-          items={logItems}
-          title="📚 Książki, komiksy · 🎬 filmy, seriale, anime"
-          onDayClick={handleDayClick}
-        />
+        <>
+          <div className="flex gap-1" role="group" aria-label="Widok dziennika">
+            {([["gantt", "📊 Oś czasu"], ["calendar", "📅 Kalendarz"]] as const).map(([view, label]) => (
+              <button
+                key={view}
+                onClick={() => setView(view)}
+                aria-pressed={gantt === (view === "gantt")}
+                className="px-3 py-1.5 rounded-lg text-sm border border-gray-200 aria-pressed:bg-gray-900 aria-pressed:text-white aria-pressed:border-gray-900 hover:bg-gray-50 aria-pressed:hover:bg-gray-900"
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {gantt ? (
+            <GanttView year={year} items={logItems} onOpen={openMedia} />
+          ) : (
+            <Calendar
+              year={year}
+              items={logItems}
+              hint="Kliknij dzień albo przeciągnij po kilku, żeby dodać sesję"
+              onDayClick={handleDayClick}
+            />
+          )}
+        </>
       )}
 
       {pickerState && (
         <Modal onClose={() => setPickerState(null)} label="Którą sesję edytować?" closeOnBackdrop z="z-50" className="rounded-2xl shadow-xl p-4 max-w-sm w-full">
             <h3 className="font-semibold text-gray-900 mb-3 text-sm">Którą sesję edytować?</h3>
-            <p className="text-xs text-gray-400 mb-2">{pickerState.startDate}</p>
+            <p className="text-xs text-gray-400 mb-2">{pickerState.day}</p>
             <div className="space-y-2">
               {pickerState.itemIds.map((id) => {
                 const session = items.find((s) => s.id === id);
@@ -145,6 +168,10 @@ function LogContent() {
                   </button>
                 ) : null;
               })}
+              <button onClick={() => { setPickerState(null); setAddModal({ startDate: pickerState.day, endDate: pickerState.day }); }}
+                className="w-full text-left px-3 py-2 hover:bg-purple-50 rounded-lg border border-dashed border-purple-200 text-sm text-purple-700 transition-colors">
+                + Nowa sesja
+              </button>
             </div>
         </Modal>
       )}
