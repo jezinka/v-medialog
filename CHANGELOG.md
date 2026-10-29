@@ -6,6 +6,8 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+## 2026-10-29
+
 - Publikacja na stronę (`publish-medialog.sh`) eksportuje też zakończone lata od 2024 do `data/medialog-RRRR.json`.
 
 ## 2026-10-28
