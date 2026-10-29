@@ -8,6 +8,7 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 - Dziennik otwiera się na osi czasu: rok jako wykres Gantta, w którym każda sesja to pasek od początku do końca, osobno czytanie, ekran i oglądanie z dzieckiem. Sesje jednego tytułu z przerwą do tygodnia łączą się w jeden pasek. Po najechaniu na pasek widać okładkę, daty i liczbę sesji, a kliknięcie otwiera tytuł. Kalendarz (przełącznik obok) służy już tylko do dodawania sesji: jasne dni z fioletową kropką przy czytaniu i pomarańczową przy oglądaniu, bez kolorowych pasków.
 - Kliknięcie w kalendarzu dnia, w którym już jest sesja, pozwala nie tylko ją otworzyć, ale też dodać nową sesję w tym dniu (np. oglądanie do dnia z czytaniem).
+- Przełącznik roku w nagłówku nie cofa się dalej niż do pierwszego roku z zapisaną sesją.
 
 ## 2026-10-28
 
