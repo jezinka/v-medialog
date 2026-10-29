@@ -184,6 +184,7 @@ export default function NavHeader() {
                 <span className="text-gray-900 font-semibold text-sm min-w-[3.5rem] text-center">{year}</span>
                 <button
                   onClick={() => setYear(year + 1)}
+                  aria-label="Następny rok"
                   className="w-8 h-8 flex items-center justify-center bg-white border border-gray-100 shadow rounded-xl hover:shadow-md transition-all text-gray-600"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
