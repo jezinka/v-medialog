@@ -5,6 +5,7 @@ import { dateKey, getDaysInMonth, getFirstDayOfMonth } from "@/lib/calendar-days
 
 interface MediaItem {
   id: number;
+  mediaId: number;
   title: string;
   author: string | null;
   mediaType: string;
@@ -22,7 +23,8 @@ interface Props {
   onDayClick?: (startDate: string, endDate: string, itemIds: number[]) => void;
 }
 
-/** A plain year calendar for entering sessions: click a day or drag across several; a purple dot marks days with reading, an orange one days with watching. */
+/** A plain year calendar for entering sessions: click a day or drag across several; a purple dot marks days with reading, an orange one days with watching.
+ * Hovering a day lights up every day of the titles on it. */
 export default function Calendar({ year, items: rawItems, hint, onDayClick }: Props) {
   // Skip year-placeholder items (start=YYYY-01-01, end=YYYY-12-31, ~365 days)
   const items = rawItems.filter((item) => daysBetween(item.startDate, item.endDate) < 365);
@@ -30,6 +32,8 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<string | null>(null);
   const [dragEnd, setDragEnd] = useState<string | null>(null);
+  // Titles on the hovered day: all their days light up
+  const [hoveredMediaIds, setHoveredMediaIds] = useState<Set<number>>(new Set());
 
   const isInDragRange = useCallback((dateStr: string): boolean => {
     if (!dragStart) return false;
@@ -81,8 +85,10 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
     setDragEnd(dateStr);
   };
 
-  const handleDayMouseEnter = (dateStr: string) => {
+  const handleDayMouseEnter = (dateStr: string, mediaOnDay: MediaItem[]) => {
     if (isDragging) setDragEnd(dateStr);
+    // Empty days keep the highlight, so it doesn't flicker between sessions; leaving the calendar clears it
+    if (mediaOnDay.length > 0) setHoveredMediaIds(new Set(mediaOnDay.map((m) => m.mediaId)));
   };
 
   const handleMouseUp = useCallback(() => {
@@ -102,7 +108,10 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
   return (
     <div
       className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 select-none"
-      onMouseLeave={() => { if (isDragging) handleMouseUp(); }}
+      onMouseLeave={() => {
+        if (isDragging) handleMouseUp();
+        setHoveredMediaIds(new Set());
+      }}
     >
       <p className="text-sm text-gray-500 mb-4">{hint}</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
@@ -124,6 +133,7 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
                 const read = mediaOnDay.some((m) => BOOK_TYPES.includes(m.mediaType));
                 const watched = mediaOnDay.some((m) => !BOOK_TYPES.includes(m.mediaType));
                 const inRange = isInDragRange(dateStr);
+                const highlighted = mediaOnDay.some((m) => hoveredMediaIds.has(m.mediaId));
                 const tooltip = mediaOnDay.map((m) => {
                   let label = m.title;
                   if (m.volumeEpisode) label += ` (${m.volumeEpisode})`;
@@ -136,11 +146,11 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
                     key={dateStr}
                     title={tooltip || undefined}
                     onMouseDown={() => handleMouseDown(dateStr)}
-                    onMouseEnter={() => handleDayMouseEnter(dateStr)}
+                    onMouseEnter={() => handleDayMouseEnter(dateStr, mediaOnDay)}
                     onMouseUp={handleMouseUp}
                     className={[
                       "aspect-square flex flex-col items-center justify-center gap-0.5 text-xs rounded-sm",
-                      inRange ? "bg-purple-500 text-white font-medium" : "text-gray-700 hover:bg-gray-100",
+                      inRange ? "bg-purple-500 text-white font-medium" : highlighted ? "bg-purple-100 text-purple-900 font-medium" : "text-gray-700 hover:bg-gray-100",
                       onDayClick ? "cursor-pointer" : "cursor-default",
                     ].join(" ")}
                   >
