@@ -23,8 +23,18 @@ interface Props {
   onDayClick?: (startDate: string, endDate: string, itemIds: number[]) => void;
 }
 
+/** Hover colours, one per title on the hovered day (light enough for dark day numbers) */
+const HOVER_COLORS = ["#c4b5fd", "#fdba74", "#86efac", "#93c5fd", "#f9a8d4", "#fde047"];
+
+/** Horizontal stripes, one per colour, with a 1px white gap between them */
+function stripes(colors: string[]): string {
+  const w = 100 / colors.length;
+  const stops = colors.map((c, i) => `${i ? `white ${i * w}% calc(${i * w}% + 1px), ${c} calc(${i * w}% + 1px)` : `${c} 0%`} ${(i + 1) * w}%`);
+  return `linear-gradient(180deg, ${stops.join(", ")})`;
+}
+
 /** A plain year calendar for entering sessions: click a day or drag across several; a purple dot marks days with reading, an orange one days with watching.
- * Hovering a day lights up every day of the titles on it. */
+ * Hovering a day lights up every day of the titles on it, each title in its own colour, named above the months. */
 export default function Calendar({ year, items: rawItems, hint, onDayClick }: Props) {
   // Skip year-placeholder items (start=YYYY-01-01, end=YYYY-12-31, ~365 days)
   const items = rawItems.filter((item) => daysBetween(item.startDate, item.endDate) < 365);
@@ -32,8 +42,8 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<string | null>(null);
   const [dragEnd, setDragEnd] = useState<string | null>(null);
-  // Titles on the hovered day: all their days light up
-  const [hoveredMediaIds, setHoveredMediaIds] = useState<Set<number>>(new Set());
+  // Titles on the hovered day, earliest started first: all their days light up, each title in its own colour
+  const [hovered, setHovered] = useState<{ mediaId: number; title: string }[]>([]);
 
   const isInDragRange = useCallback((dateStr: string): boolean => {
     if (!dragStart) return false;
@@ -88,7 +98,13 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
   const handleDayMouseEnter = (dateStr: string, mediaOnDay: MediaItem[]) => {
     if (isDragging) setDragEnd(dateStr);
     // Empty days keep the highlight, so it doesn't flicker between sessions; leaving the calendar clears it
-    if (mediaOnDay.length > 0) setHoveredMediaIds(new Set(mediaOnDay.map((m) => m.mediaId)));
+    if (mediaOnDay.length > 0) {
+      const byMedia = new Map<number, string>();
+      for (const m of [...mediaOnDay].sort((a, b) => a.startDate.localeCompare(b.startDate) || a.id - b.id)) {
+        if (!byMedia.has(m.mediaId)) byMedia.set(m.mediaId, m.title);
+      }
+      setHovered([...byMedia].map(([mediaId, title]) => ({ mediaId, title })));
+    }
   };
 
   const handleMouseUp = useCallback(() => {
@@ -110,10 +126,18 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
       className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 select-none"
       onMouseLeave={() => {
         if (isDragging) handleMouseUp();
-        setHoveredMediaIds(new Set());
+        setHovered([]);
       }}
     >
-      <p className="text-sm text-gray-500 mb-4">{hint}</p>
+      {/* While hovering, the hint gives way to the colour legend: one line, long titles cut, so the months don't jump */}
+      <p className="text-sm text-gray-500 mb-4 h-5 flex gap-x-3 overflow-hidden whitespace-nowrap">
+        {hovered.length > 0 ? hovered.map(({ mediaId, title }, i) => (
+          <span key={mediaId} className="inline-flex items-center gap-1.5 text-gray-700 min-w-0">
+            <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: HOVER_COLORS[i % HOVER_COLORS.length] }} />
+            <span className="truncate">{title}</span>
+          </span>
+        )) : hint}
+      </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
         {months.map(({ monthIdx, firstDay, days }) => (
           <div key={monthIdx} className="min-w-0">
@@ -133,7 +157,7 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
                 const read = mediaOnDay.some((m) => BOOK_TYPES.includes(m.mediaType));
                 const watched = mediaOnDay.some((m) => !BOOK_TYPES.includes(m.mediaType));
                 const inRange = isInDragRange(dateStr);
-                const highlighted = mediaOnDay.some((m) => hoveredMediaIds.has(m.mediaId));
+                const colors = hovered.flatMap(({ mediaId }, i) => mediaOnDay.some((m) => m.mediaId === mediaId) ? [HOVER_COLORS[i % HOVER_COLORS.length]] : []);
                 const tooltip = mediaOnDay.map((m) => {
                   let label = m.title;
                   if (m.volumeEpisode) label += ` (${m.volumeEpisode})`;
@@ -148,16 +172,18 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
                     onMouseDown={() => handleMouseDown(dateStr)}
                     onMouseEnter={() => handleDayMouseEnter(dateStr, mediaOnDay)}
                     onMouseUp={handleMouseUp}
+                    style={!inRange && colors.length ? { background: stripes(colors) } : undefined}
                     className={[
                       "aspect-square flex flex-col items-center justify-center gap-0.5 text-xs rounded-sm",
-                      inRange ? "bg-purple-500 text-white font-medium" : highlighted ? "bg-purple-100 text-purple-900 font-medium" : "text-gray-700 hover:bg-gray-100",
+                      inRange ? "bg-purple-500 text-white font-medium" : colors.length ? "text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-100",
                       onDayClick ? "cursor-pointer" : "cursor-default",
                     ].join(" ")}
                   >
                     {day}
                     <span className="flex gap-0.5 h-1">
-                      {read && <span className={`w-1 h-1 rounded-full ${inRange ? "bg-white" : "bg-purple-500"}`} />}
-                      {watched && <span className={`w-1 h-1 rounded-full ${inRange ? "bg-white" : "bg-orange-500"}`} />}
+                      {/* On a hover colour both dots go dark, so they don't vanish on a stripe of their own colour */}
+                      {read && <span className={`w-1 h-1 rounded-full ${inRange ? "bg-white" : colors.length ? "bg-gray-700" : "bg-purple-500"}`} />}
+                      {watched && <span className={`w-1 h-1 rounded-full ${inRange ? "bg-white" : colors.length ? "bg-gray-700" : "bg-orange-500"}`} />}
                     </span>
                   </div>
                 );
