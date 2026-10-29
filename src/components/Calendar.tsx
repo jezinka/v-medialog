@@ -129,12 +129,12 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
         setHovered([]);
       }}
     >
-      {/* While hovering, the hint gives way to the colour legend */}
-      <p className="text-sm text-gray-500 mb-4 min-h-5 flex flex-wrap gap-x-3 gap-y-1">
+      {/* While hovering, the hint gives way to the colour legend: one line, long titles cut, so the months don't jump */}
+      <p className="text-sm text-gray-500 mb-4 h-5 flex gap-x-3 overflow-hidden whitespace-nowrap">
         {hovered.length > 0 ? hovered.map(({ mediaId, title }, i) => (
-          <span key={mediaId} className="inline-flex items-center gap-1.5 text-gray-700">
-            <span className="w-3 h-3 rounded-sm" style={{ backgroundColor: HOVER_COLORS[i % HOVER_COLORS.length] }} />
-            {title}
+          <span key={mediaId} className="inline-flex items-center gap-1.5 text-gray-700 min-w-0">
+            <span className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: HOVER_COLORS[i % HOVER_COLORS.length] }} />
+            <span className="truncate">{title}</span>
           </span>
         )) : hint}
       </p>
@@ -175,14 +175,15 @@ export default function Calendar({ year, items: rawItems, hint, onDayClick }: Pr
                     style={!inRange && colors.length ? { background: stripes(colors) } : undefined}
                     className={[
                       "aspect-square flex flex-col items-center justify-center gap-0.5 text-xs rounded-sm",
-                      inRange ? "bg-purple-500 text-white font-medium" :  colors.length ? "text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-100",
+                      inRange ? "bg-purple-500 text-white font-medium" : colors.length ? "text-gray-900 font-medium" : "text-gray-700 hover:bg-gray-100",
                       onDayClick ? "cursor-pointer" : "cursor-default",
                     ].join(" ")}
                   >
                     {day}
                     <span className="flex gap-0.5 h-1">
-                      {read && <span className={`w-1 h-1 rounded-full ${inRange ? "bg-white" : "bg-purple-500"}`} />}
-                      {watched && <span className={`w-1 h-1 rounded-full ${inRange ? "bg-white" : "bg-orange-500"}`} />}
+                      {/* On a hover colour both dots go dark, so they don't vanish on a stripe of their own colour */}
+                      {read && <span className={`w-1 h-1 rounded-full ${inRange ? "bg-white" : colors.length ? "bg-gray-700" : "bg-purple-500"}`} />}
+                      {watched && <span className={`w-1 h-1 rounded-full ${inRange ? "bg-white" : colors.length ? "bg-gray-700" : "bg-orange-500"}`} />}
                     </span>
                   </div>
                 );
