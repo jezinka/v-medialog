@@ -6,6 +6,8 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- Seriale na liście „Do obejrzenia” są pogrupowane według platformy streamingowej (najliczniejsze najpierw); serial dostępny w kilku serwisach pojawia się pod każdym z nich, a te bez VOD trafiają na koniec do „Niedostępne w VOD”.
+
 ## 2026-10-29
 
 - Podświetlenie po najechaniu na dzień w kalendarzu ma osobny kolor dla każdego tytułu z tego dnia (dni z kilkoma tytułami dzielą się na paski), a nad miesiącami pojawia się legenda kolorów z tytułami.
