@@ -6,6 +6,8 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+- Na liście „Do obejrzenia” każdy serial jest już tylko raz: trafia pod platformę, na której jest najwięcej seriali z listy, a pod tytułem widać wszystkie serwisy, gdzie jest dostępny.
+
 ## 2026-11-21
 
 - Seriale na liście „Do obejrzenia” są pogrupowane według platformy streamingowej (najliczniejsze najpierw); serial dostępny w kilku serwisach pojawia się pod każdym z nich, a te bez VOD trafiają na koniec do „Niedostępne w VOD”.

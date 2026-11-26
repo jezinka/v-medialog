@@ -12,13 +12,13 @@ test("groupSeasonsByMedia keeps media order and sorts seasons, unnumbered last",
   assert.deepEqual(groups.map((g) => [g.media_id, g.seasons.map((s) => s.id)]), [[2, ["c", "a"]], [1, ["d", "b"]]]);
 });
 
-test("groupByPlatform lists items under each platform, biggest first, unavailable last", () => {
-  const platforms: Record<string, string[]> = { a: ["Netflix", "Max"], b: ["Max"], c: [], d: ["Disney+"] };
-  const groups = groupByPlatform(["a", "b", "c", "d"], (id) => platforms[id]);
+test("groupByPlatform lists each item once, under its most common platform; unavailable last", () => {
+  const platforms: Record<string, string[]> = { a: ["Netflix", "Max"], b: ["Max"], c: [], d: ["Disney+"], e: ["Netflix", "Disney+"] };
+  const groups = groupByPlatform(["a", "b", "c", "d", "e"], (id) => platforms[id]);
+  // counts: Disney+ 2, Max 2, Netflix 2 → ties by name; Netflix ends up empty and is dropped
   assert.deepEqual(groups.map((g) => [g.platform, g.items]), [
+    ["Disney+", ["d", "e"]],
     ["Max", ["a", "b"]],
-    ["Disney+", ["d"]],
-    ["Netflix", ["a"]],
     [null, ["c"]],
   ]);
 });
