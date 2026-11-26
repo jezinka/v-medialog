@@ -6,6 +6,8 @@ Sekcje sprzed 2026-10-25 odtworzono z historii gita: daty to dni commitów, nie 
 
 ## Niewdrożone
 
+## 2026-11-26
+
 - Na liście „Do obejrzenia” każdy serial jest już tylko raz: trafia pod platformę, na której jest najwięcej seriali z listy, a pod tytułem widać wszystkie serwisy, gdzie jest dostępny.
 
 ## 2026-11-21
