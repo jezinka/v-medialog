@@ -18,22 +18,22 @@ export function groupSeasonsByMedia<T extends { media_id: number; season_number:
 export interface PlatformGroup<T> { platform: string | null; items: T[] }
 
 /**
- * Groups items by streaming platform. An item on several platforms appears under each of them.
- * Platforms with the most items come first (ties by name); items on no platform go last.
+ * Groups items by streaming platform, each item once: under the platform that has the most items
+ * overall (ties by name), so the big services collect what they carry. Groups follow that same
+ * order; items on no platform go last.
  */
 export function groupByPlatform<T>(items: T[], platformsOf: (item: T) => string[]): PlatformGroup<T>[] {
-  const map = new Map<string, T[]>();
+  const counts = new Map<string, number>();
+  for (const item of items) for (const p of platformsOf(item)) counts.set(p, (counts.get(p) ?? 0) + 1);
+  const ranked = [...counts.keys()].sort((a, b) => counts.get(b)! - counts.get(a)! || a.localeCompare(b, "pl"));
+  const rank = new Map(ranked.map((p, i) => [p, i]));
+  const groups: PlatformGroup<T>[] = ranked.map((platform) => ({ platform, items: [] }));
   const none: T[] = [];
   for (const item of items) {
     const platforms = platformsOf(item);
     if (platforms.length === 0) none.push(item);
-    for (const platform of platforms) {
-      if (!map.has(platform)) map.set(platform, []);
-      map.get(platform)!.push(item);
-    }
+    else groups[Math.min(...platforms.map((p) => rank.get(p)!))].items.push(item);
   }
-  const groups: PlatformGroup<T>[] = [...map]
-    .sort(([a, x], [b, y]) => y.length - x.length || a.localeCompare(b, "pl"))
-    .map(([platform, items]) => ({ platform, items }));
-  return none.length ? [...groups, { platform: null, items: none }] : groups;
+  const used = groups.filter((g) => g.items.length > 0);
+  return none.length ? [...used, { platform: null, items: none }] : used;
 }
